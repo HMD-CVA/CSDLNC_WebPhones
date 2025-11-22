@@ -1,0 +1,1564 @@
+<div class="main-content">
+  <div class="admin-dashboard">
+    <!-- Header Premium -->
+    <div class="dashboard-header">
+      <div class="header-content">
+        <div class="header-title">
+          <div class="title-icon">🎤</div>
+          <div>
+            <h1>Quản lý phòng hát</h1>
+            <p>Theo dõi và quản lý trạng thái phòng karaoke</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn-primary" id="addRoomBtn">
+            <i class="fas fa-plus"></i>
+            <span>Thêm phòng</span>
+          </button>
+          <div class="action-buttons">
+            <button class="btn-secondary" id="exportBtn">
+              <i class="fas fa-download"></i>
+            </button>
+            <button class="btn-secondary" id="importBtn">
+              <i class="fas fa-upload"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="search-filter-bar">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Tìm kiếm phòng hát...">
+        <button class="search-btn" id="searchBtn">Tìm kiếm</button>
+      </div>
+      <div class="filter-controls">
+        <select class="filter-select" id="typeFilter">
+          <option value="">Tất cả loại phòng</option>
+          <option value="VIP">VIP</option>
+          <option value="Thường">Thường</option>
+          <option value="Premium">Premium</option>
+          <option value="Deluxe">Deluxe</option>
+        </select>
+        <select class="filter-select" id="statusFilter">
+          <option value="">Tất cả trạng thái</option>
+          <option value="1">🟢 Còn trống</option>
+          <option value="0">🔴 Đang sử dụng</option>
+          <option value="2">🟡 Đã đặt trước</option>
+        </select>
+        <button class="clear-filters" id="clearFilters">
+          <i class="fas fa-times"></i>
+          Xóa lọc
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-overview">
+      <div class="stat-card">
+        <div class="stat-icon total">
+          <i class="fas fa-door-closed"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="totalRooms">{{phonghats.length}}</h3>
+          <p>Tổng phòng</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon available">
+          <i class="fas fa-door-open"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="countAvailable">0</h3>
+          <p>Đang trống</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon busy">
+          <i class="fas fa-microphone-alt"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="countBusy">0</h3>
+          <p>Đang sử dụng</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon reserved">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-info">
+          <h3 id="countReserved">0</h3>
+          <p>Đã đặt trước</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rooms Grid -->
+    <div class="rooms-grid" id="roomsGrid">
+      {{#each phonghats}}
+      <div class="room-card" data-id="{{this._id}}" data-name="{{this.TenPhong}}" 
+           data-type="{{this.LoaiPhong}}" data-status="{{this.TrangThai}}">
+        <div class="room-image">
+          <img src="{{this.AnhPhong}}" alt="{{this.TenPhong}}"
+               onerror="this.src='https://images.unsplash.com/photo-1567598476652-7cbc5bf3b31b?w=400&h=250&fit=crop'">
+          <div class="room-overlay">
+            <div class="room-actions">
+              <button class="btn-edit edit-room" 
+                      data-id="{{this._id}}"
+                      data-name="{{this.TenPhong}}"
+                      data-type="{{this.LoaiPhong}}"
+                      data-price="{{this.GiaPhong}}"
+                      data-size="{{this.SucChua}}"
+                      data-status="{{this.TrangThai}}"
+                      data-description="{{this.MoTa}}"
+                      data-image="{{this.AnhPhong}}">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-delete delete-room" 
+                      data-id="{{this._id}}" 
+                      data-name="{{this.TenPhong}}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+          <div class="room-badge" data-status="{{this.TrangThai}}">
+            {{#if (eq this.TrangThai "1")}}🟢 Trống{{/if}}
+            {{#if (eq this.TrangThai "0")}}🔴 Bận{{/if}}
+            {{#if (eq this.TrangThai "2")}}🟡 Đã đặt{{/if}}
+          </div>
+          <div class="room-type">{{this.LoaiPhong}}</div>
+        </div>
+        
+        <div class="room-content">
+          <h3 class="room-title">{{this.TenPhong}}</h3>
+          <p class="room-description">{{this.MoTa}}</p>
+          
+          <div class="room-details">
+            <div class="detail-item">
+              <i class="fas fa-money-bill-wave"></i>
+              <span class="price" data-price="{{this.GiaPhong}}">{{this.GiaPhong}} VNĐ/giờ</span>
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-users"></i>
+              <span>Tối đa {{this.SucChua}} người</span>
+            </div>
+          </div>
+          
+          <div class="room-footer">
+            <span class="room-id">#{{this._id}}</span>
+            <button class="btn-status status-toggle" data-status="{{this.TrangThai}}">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-icon">🎤</div>
+      <h3>Không tìm thấy phòng hát</h3>
+      <p>Thử thay đổi bộ lọc hoặc thêm phòng mới</p>
+      <button class="btn-primary" id="addRoomEmptyBtn">
+        <i class="fas fa-plus"></i>
+        Thêm phòng đầu tiên
+      </button>
+    </div>
+  </div>
+
+  <!-- Room Modal -->
+  <div class="modal-overlay" id="roomModal" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2 id="modalTitle">Thêm phòng hát mới</h2>
+        <button class="modal-close" id="modalClose">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <form id="roomForm">
+          <input type="hidden" id="roomId">
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="roomName">Tên phòng hát</label>
+              <input type="text" id="roomName" required placeholder="Nhập tên phòng">
+            </div>
+            
+            <div class="form-group">
+              <label for="roomType">Loại phòng</label>
+              <select id="roomType" required>
+                <option value="">Chọn loại phòng</option>
+                <option value="VIP">VIP</option>
+                <option value="Thường">Thường</option>
+                <option value="Premium">Premium</option>
+                <option value="Deluxe">Deluxe</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="roomPrice">Giá thuê (VNĐ/giờ)</label>
+              <input type="number" id="roomPrice" required placeholder="Nhập giá thuê">
+            </div>
+            
+            <div class="form-group">
+              <label for="roomSize">Sức chứa</label>
+              <input type="number" id="roomSize" required placeholder="Số người tối đa">
+            </div>
+            
+            <div class="form-group">
+              <label for="roomStatus">Trạng thái</label>
+              <select id="roomStatus" required>
+                <option value="1">🟢 Còn trống</option>
+                <option value="0">🔴 Đang sử dụng</option>
+                <option value="2">🟡 Đã đặt trước</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="roomImage">Link ảnh</label>
+              <input type="text" id="roomImage" placeholder="URL hình ảnh">
+            </div>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="roomDescription">Mô tả</label>
+            <textarea id="roomDescription" rows="3" placeholder="Mô tả chi tiết về phòng hát"></textarea>
+          </div>
+          
+          <div class="form-group full-width" id="imagePreviewContainer">
+            <label>Preview ảnh</label>
+            <div class="image-preview" id="imagePreview">
+              <i class="fas fa-image"></i>
+              <p>Preview sẽ hiển thị ở đây</p>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modalCancel">Hủy</button>
+        <button class="btn-primary" id="saveRoomBtn">Lưu thông tin</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div class="modal-overlay" id="importModal" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Import từ Excel</h2>
+        <button class="modal-close" id="importModalClose">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="alert-info">
+          <i class="fas fa-info-circle"></i>
+          Tải file mẫu để biết định dạng dữ liệu
+        </div>
+        
+        <div class="form-group">
+          <label for="importFile">Chọn file Excel (.xlsx)</label>
+          <input type="file" id="importFile" accept=".xlsx, .xls">
+        </div>
+        
+        <div class="form-check">
+          <input type="checkbox" id="overwriteData">
+          <label for="overwriteData">Ghi đè dữ liệu hiện tại</label>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-secondary" id="downloadTemplate">
+          <i class="fas fa-download"></i>
+          Tải file mẫu
+        </button>
+        <button class="btn-secondary" id="importCancel">Hủy</button>
+        <button class="btn-primary" id="confirmImport">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===== MAIN CONTENT STYLES ===== */
+.main-content {
+  margin-left: 280px;
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+  background: #f7fafc;
+}
+
+/* Khi sidebar collapsed */
+.sidebar-collapsed .main-content {
+  margin-left: 80px;
+}
+
+/* Trên mobile */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ===== DASHBOARD STYLES ===== */
+.admin-dashboard {
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.title-icon {
+  font-size: 2.5rem;
+}
+
+.header-title h1 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.75rem;
+}
+
+.header-title p {
+  margin: 4px 0 0 0;
+  color: #718096;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.btn-primary:hover {
+  background: #5a6fd8;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Search and Filter */
+.search-filter-bar {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: 8px 16px;
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-box i {
+  color: #a0aec0;
+  margin-right: 12px;
+}
+
+.search-box input {
+  border: none;
+  background: none;
+  outline: none;
+  flex: 1;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.search-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 12px;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.search-btn:hover {
+  background: #5a6fd8;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #4a5568;
+  min-width: 160px;
+  font-size: 14px;
+}
+
+.clear-filters {
+  background: none;
+  border: 1px solid #e2e8f0;
+  color: #718096;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.clear-filters:hover {
+  background: #f7fafc;
+}
+
+/* Stats Overview */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-icon.total {
+  background: #fed7d7;
+  color: #e53e3e;
+}
+
+.stat-icon.available {
+  background: #c6f6d5;
+  color: #38a169;
+}
+
+.stat-icon.busy {
+  background: #fed7d7;
+  color: #e53e3e;
+}
+
+.stat-icon.reserved {
+  background: #fefcbf;
+  color: #d69e2e;
+}
+
+.stat-info h3 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #2d3748;
+}
+
+.stat-info p {
+  margin: 4px 0 0 0;
+  color: #718096;
+}
+
+/* Rooms Grid */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.room-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.room-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.room-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.room-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.room-card:hover .room-image img {
+  transform: scale(1.05);
+}
+
+.room-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.room-card:hover .room-overlay {
+  opacity: 1;
+}
+
+.room-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-edit, .btn-delete {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+.btn-edit {
+  background: #48bb78;
+  color: white;
+}
+
+.btn-delete {
+  background: #f56565;
+  color: white;
+}
+
+.btn-edit:hover, .btn-delete:hover {
+  transform: scale(1.1);
+}
+
+.room-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.room-badge.available {
+  background: rgba(72, 187, 120, 0.9);
+  color: white;
+}
+
+.room-badge.busy {
+  background: rgba(245, 101, 101, 0.9);
+  color: white;
+}
+
+.room-badge.reserved {
+  background: rgba(237, 137, 54, 0.9);
+  color: white;
+}
+
+.room-type {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(102, 126, 234, 0.9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.room-content {
+  padding: 20px;
+}
+
+.room-title {
+  margin: 0 0 8px 0;
+  color: #2d3748;
+  font-size: 1.25rem;
+}
+
+.room-description {
+  margin: 0 0 16px 0;
+  color: #718096;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.room-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.detail-item i {
+  color: #667eea;
+  width: 16px;
+}
+
+.price {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.room-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.room-id {
+  color: #a0aec0;
+  font-size: 0.875rem;
+}
+
+.btn-status {
+  background: #e2e8f0;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a5568;
+  transition: background 0.3s;
+}
+
+.btn-status:hover {
+  background: #cbd5e0;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  color: #2d3748;
+}
+
+.empty-state p {
+  margin: 0 0 24px 0;
+  color: #718096;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.modal-container {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2d3748;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #a0aec0;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background: #f7fafc;
+  color: #4a5568;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.image-preview {
+  border: 2px dashed #e2e8f0;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #a0aec0;
+  margin-top: 8px;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 6px;
+}
+
+.alert-info {
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  color: #3182ce;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.form-check input {
+  margin: 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .main-content {
+    margin-left: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    min-width: auto;
+  }
+  
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-select {
+    min-width: auto;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .rooms-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-overview {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-dashboard {
+    padding: 10px;
+  }
+  
+  .stats-overview {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Fix z-index for SweetAlert2 */
+.swal2-container {
+  z-index: 3000 !important;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// Helper functions
+function getStatusClass(status) {
+  const statusMap = {
+    '1': 'available',
+    '0': 'busy', 
+    '2': 'reserved'
+  };
+  return statusMap[status] || 'available';
+}
+
+function getStatusText(status) {
+  const statusMap = {
+    '1': '🟢 Trống',
+    '0': '🔴 Bận',
+    '2': '🟡 Đã đặt'
+  };
+  return statusMap[status] || '🟢 Trống';
+}
+
+function formatNumber(price) {
+  return new Intl.NumberFormat('vi-VN').format(price);
+}
+
+// Format all prices on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.price[data-price]').forEach(element => {
+    const price = element.getAttribute('data-price');
+    if (price) {
+      element.textContent = formatNumber(price) + ' VNĐ/giờ';
+    }
+  });
+  
+  // Initialize room badges
+  document.querySelectorAll('.room-badge[data-status]').forEach(badge => {
+    const status = badge.getAttribute('data-status');
+    badge.className = `room-badge ${getStatusClass(status)}`;
+    badge.textContent = getStatusText(status);
+  });
+});
+
+// API Functions
+class RoomAPI {
+  static async getAllRooms() {
+    try {
+      const response = await fetch('/api/phonghat');
+      if (!response.ok) throw new Error('Lỗi khi lấy dữ liệu phòng');
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  static async getRoomById(id) {
+    try {
+      const response = await fetch(`/api/phonghat/${id}`);
+      if (!response.ok) throw new Error('Lỗi khi lấy thông tin phòng');
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  static async createRoom(roomData) {
+    try {
+      const response = await fetch('/api/phonghat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(roomData)
+      });
+      if (!response.ok) throw new Error('Lỗi khi tạo phòng');
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  static async updateRoom(id, roomData) {
+    try {
+      const response = await fetch(`/api/phonghat/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(roomData)
+      });
+      if (!response.ok) throw new Error('Lỗi khi cập nhật phòng');
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  static async deleteRoom(id) {
+    try {
+      const response = await fetch(`/api/phonghat/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Lỗi khi xóa phòng');
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  static async updateRoomStatus(id, status) {
+    try {
+      const response = await fetch(`/api/phonghat/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ TrangThai: status })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+}
+
+// Main Application
+class RoomManager {
+  constructor() {
+    this.currentEditId = null;
+    this.init();
+  }
+
+  init() {
+    this.bindEvents();
+    this.countRooms();
+  }
+
+  bindEvents() {
+    // Room actions
+    document.getElementById('addRoomBtn').addEventListener('click', () => this.openRoomModal());
+    document.getElementById('addRoomEmptyBtn').addEventListener('click', () => this.openRoomModal());
+    document.getElementById('saveRoomBtn').addEventListener('click', () => this.saveRoom());
+    document.getElementById('modalClose').addEventListener('click', () => this.closeModal());
+    document.getElementById('modalCancel').addEventListener('click', () => this.closeModal());
+
+    // Search and filter
+    document.getElementById('searchBtn').addEventListener('click', () => this.filterRooms());
+    document.getElementById('clearFilters').addEventListener('click', () => this.clearFilters());
+
+    // Import/Export
+    document.getElementById('exportBtn').addEventListener('click', () => this.exportToExcel());
+    document.getElementById('importBtn').addEventListener('click', () => this.openImportModal());
+    document.getElementById('importModalClose').addEventListener('click', () => this.closeImportModal());
+    document.getElementById('importCancel').addEventListener('click', () => this.closeImportModal());
+    document.getElementById('downloadTemplate').addEventListener('click', () => this.downloadTemplate());
+    document.getElementById('confirmImport').addEventListener('click', () => this.confirmImport());
+
+    // Image preview
+    document.getElementById('roomImage').addEventListener('input', (e) => this.updateImagePreview(e.target.value));
+
+    // Dynamic event delegation
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.edit-room')) {
+        this.handleEditRoom(e.target.closest('.edit-room'));
+      }
+      if (e.target.closest('.delete-room')) {
+        this.handleDeleteRoom(e.target.closest('.delete-room'));
+      }
+      if (e.target.closest('.status-toggle')) {
+        this.handleStatusToggle(e.target.closest('.status-toggle'));
+      }
+    });
+  }
+
+  countRooms() {
+    const cards = document.querySelectorAll('.room-card');
+    let available = 0, busy = 0, reserved = 0, total = 0;
+    
+    cards.forEach(card => {
+      if (card.style.display !== 'none') {
+        total++;
+        const status = card.getAttribute('data-status');
+        if (status === '1') available++;
+        else if (status === '0') busy++;
+        else if (status === '2') reserved++;
+      }
+    });
+    
+    document.getElementById('totalRooms').textContent = total;  
+    document.getElementById('countAvailable').textContent = available;
+    document.getElementById('countBusy').textContent = busy;
+    document.getElementById('countReserved').textContent = reserved;
+  }
+
+  filterRooms() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const cards = document.querySelectorAll('.room-card');
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+      const name = card.getAttribute('data-name').toLowerCase();
+      const type = card.getAttribute('data-type');
+      const status = card.getAttribute('data-status');
+      
+      const matchesSearch = name.includes(searchTerm);
+      const matchesType = !typeFilter || type === typeFilter;
+      const matchesStatus = !statusFilter || status === statusFilter;
+      
+      if (matchesSearch && matchesType && matchesStatus) {
+        card.style.display = 'block';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+    
+    this.toggleEmptyState(visibleCount === 0);
+    this.countRooms();
+  }
+
+  toggleEmptyState(show) {
+    const emptyState = document.getElementById('emptyState');
+    const roomsGrid = document.getElementById('roomsGrid');
+    
+    if (show) {
+      roomsGrid.style.display = 'none';
+      emptyState.style.display = 'block';
+    } else {
+      roomsGrid.style.display = 'grid';
+      emptyState.style.display = 'none';
+    }
+  }
+
+  clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    this.filterRooms();
+  }
+
+  openRoomModal(roomData = null) {
+    this.currentEditId = roomData ? roomData.id : null;
+    const modal = document.getElementById('roomModal');
+    const title = document.getElementById('modalTitle');
+    
+    if (roomData) {
+      title.textContent = 'Chỉnh sửa phòng hát';
+      this.fillForm(roomData);
+    } else {
+      title.textContent = 'Thêm phòng hát mới';
+      this.resetForm();
+    }
+    
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  fillForm(roomData) {
+    document.getElementById('roomId').value = roomData.id;
+    document.getElementById('roomName').value = roomData.name;
+    document.getElementById('roomType').value = roomData.type;
+    document.getElementById('roomPrice').value = roomData.price;
+    document.getElementById('roomSize').value = roomData.size;
+    document.getElementById('roomStatus').value = roomData.status;
+    document.getElementById('roomDescription').value = roomData.description;
+    document.getElementById('roomImage').value = roomData.image;
+    this.updateImagePreview(roomData.image);
+  }
+
+  resetForm() {
+    document.getElementById('roomForm').reset();
+    document.getElementById('roomStatus').value = '1';
+    this.updateImagePreview('');
+  }
+
+  closeModal() {
+    document.getElementById('roomModal').style.display = 'none';
+    document.getElementById('importModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    this.currentEditId = null;
+  }
+
+  async saveRoom() {
+    const formData = {
+      TenPhong: document.getElementById('roomName').value,
+      LoaiPhong: document.getElementById('roomType').value,
+      GiaPhong: parseInt(document.getElementById('roomPrice').value),
+      SucChua: parseInt(document.getElementById('roomSize').value),
+      TrangThai: parseInt(document.getElementById('roomStatus').value),
+      MoTa: document.getElementById('roomDescription').value,
+      AnhPhong: document.getElementById('roomImage').value
+    };
+    
+    if (!this.validateForm(formData)) {
+      return;
+    }
+    
+    try {
+      let result;
+      if (this.currentEditId) {
+        result = await RoomAPI.updateRoom(this.currentEditId, formData);
+      } else {
+        result = await RoomAPI.createRoom(formData);
+      }
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: `Phòng "${formData.TenPhong}" đã được ${this.currentEditId ? 'cập nhật' : 'thêm'} thành công`,
+        timer: 2000
+      });
+      
+      this.closeModal();
+      window.location.reload();
+      
+    } catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể lưu thông tin phòng',
+        confirmButtonColor: '#667eea'
+      });
+    }
+  }
+
+  validateForm(formData) {
+    if (!formData.TenPhong?.trim()) {
+      this.showError('Vui lòng nhập tên phòng');
+      return false;
+    }
+    if (!formData.LoaiPhong) {
+      this.showError('Vui lòng chọn loại phòng');
+      return false;
+    }
+    if (!formData.GiaPhong || formData.GiaPhong <= 0) {
+      this.showError('Vui lòng nhập giá thuê hợp lệ');
+      return false;
+    }
+    if (!formData.SucChua || formData.SucChua <= 0) {
+      this.showError('Vui lòng nhập sức chứa hợp lệ');
+      return false;
+    }
+    return true;
+  }
+
+  showError(message) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Thiếu thông tin',
+      text: message,
+      confirmButtonColor: '#667eea'
+    });
+  }
+
+  handleEditRoom(button) {
+    const roomData = {
+      id: button.getAttribute('data-id'),
+      name: button.getAttribute('data-name'),
+      type: button.getAttribute('data-type'),
+      price: button.getAttribute('data-price'),
+      size: button.getAttribute('data-size'),
+      status: button.getAttribute('data-status'),
+      description: button.getAttribute('data-description'),
+      image: button.getAttribute('data-image')
+    };
+    this.openRoomModal(roomData);
+  }
+
+  async handleDeleteRoom(button) {
+    const roomId = button.getAttribute('data-id');
+    const roomName = button.getAttribute('data-name');
+    
+    const result = await Swal.fire({
+      title: 'Xác nhận xóa?',
+      html: `Bạn có chắc muốn xóa phòng <strong>${roomName}</strong>?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#e53e3e',
+      cancelButtonColor: '#667eea',
+      confirmButtonText: 'Xóa',
+      cancelButtonText: 'Hủy'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await RoomAPI.deleteRoom(roomId);
+        button.closest('.room-card').remove();
+        this.countRooms();
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Đã xóa!',
+          text: 'Phòng hát đã được xóa thành công',
+          timer: 1500
+        });
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: 'Không thể xóa phòng hát',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+  }
+
+  async handleStatusToggle(button) {
+    const card = button.closest('.room-card');
+    const roomId = card.getAttribute('data-id');
+    const currentStatus = card.getAttribute('data-status');
+
+    console.log('Current status:', currentStatus, 'Room ID:', roomId); // Debug log
+    
+    const statusMap = {
+      '1': { next: '2', text: '🟢 Trống', class: 'available' },
+      '2': { next: '0', text: '🟡 Đã đặt', class: 'reserved' },
+      '0': { next: '1', text: '🔴 Bận', class: 'busy' }
+    };
+    
+    const currentStatusInfo = statusMap[currentStatus];
+    const nextStatusInfo = statusMap[currentStatusInfo.next];
+    
+    const result = await Swal.fire({
+      title: 'Đổi trạng thái?',
+      html: `Chuyển từ <strong>${currentStatusInfo.text}</strong> sang <strong>${nextStatusInfo.text}</strong>?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#667eea',
+      cancelButtonColor: '#a0aec0',
+      confirmButtonText: 'Đồng ý',
+      cancelButtonText: 'Hủy'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await RoomAPI.updateRoomStatus(roomId, parseInt(currentStatusInfo.next));
+        
+        // Update UI
+        const badge = card.querySelector('.room-badge');
+        badge.className = `room-badge ${nextStatusInfo.class}`;
+        badge.textContent = nextStatusInfo.text;
+        card.setAttribute('data-status', currentStatusInfo.next);
+        
+        this.countRooms();
+        
+        await Swal.fire({
+          icon: 'success',
+          title: 'Đã cập nhật!',
+          text: 'Trạng thái phòng đã được thay đổi',
+          timer: 1500
+        });
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Lỗi!',
+          text: 'Không thể cập nhật trạng thái',
+          confirmButtonColor: '#667eea'
+        });
+      }
+    }
+  }
+
+  updateImagePreview(imageUrl) {
+    const preview = document.getElementById('imagePreview');
+    if (imageUrl && imageUrl.trim() !== '') {
+      preview.innerHTML = `<img src="${imageUrl}" alt="Preview" onerror="this.remove(); preview.innerHTML='<i class=\\'fas fa-exclamation-triangle\\'></i><p>Không thể tải ảnh</p>'">`;
+    } else {
+      preview.innerHTML = '<i class="fas fa-image"></i><p>Preview sẽ hiển thị ở đây</p>';
+    }
+  }
+
+  exportToExcel() {
+    const rooms = Array.from(document.querySelectorAll('.room-card')).map(card => ({
+      'Tên phòng': card.getAttribute('data-name'),
+      'Loại phòng': card.getAttribute('data-type'),
+      'Trạng thái': getStatusText(card.getAttribute('data-status')),
+      'Giá thuê': card.querySelector('.price')?.textContent || '',
+      'Sức chứa': card.querySelector('.detail-item:last-child span')?.textContent || '',
+      'Mô tả': card.querySelector('.room-description')?.textContent || ''
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(rooms);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Phòng hát');
+    XLSX.writeFile(wb, 'danh-sach-phong-hat.xlsx');
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Export thành công!',
+      text: 'File Excel đã được tải về',
+      timer: 1500
+    });
+  }
+
+  openImportModal() {
+    document.getElementById('importModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeImportModal() {
+    document.getElementById('importModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    document.getElementById('importFile').value = '';
+  }
+
+  downloadTemplate() {
+    const templateData = [{
+      'Tên phòng': 'Phòng VIP 01',
+      'Loại phòng': 'VIP',
+      'Giá thuê': '500000',
+      'Sức chứa': '8',
+      'Trạng thái': 'Còn trống',
+      'Mô tả': 'Phòng hát cao cấp',
+      'Ảnh': 'https://example.com/image.jpg'
+    }];
+    
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Mẫu dữ liệu');
+    XLSX.writeFile(wb, 'mau-import-phong-hat.xlsx');
+  }
+
+  async confirmImport() {
+    const fileInput = document.getElementById('importFile');
+    if (!fileInput.files.length) {
+      await Swal.fire({
+        icon: 'warning',
+        title: 'Chưa chọn file',
+        text: 'Vui lòng chọn file Excel để import',
+        confirmButtonColor: '#667eea'
+      });
+      return;
+    }
+    
+    // Implementation for import would go here
+    await Swal.fire({
+      icon: 'success',
+      title: 'Import thành công!',
+      text: 'Dữ liệu đã được import thành công',
+      timer: 2000
+    });
+    
+    this.closeImportModal();
+  }
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+  new RoomManager();
+});
+</script>

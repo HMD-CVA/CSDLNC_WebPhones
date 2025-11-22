@@ -1,0 +1,419 @@
+<!-- Bootstrap 5 Phone Product Card -->
+<div class="card product-card h-100 shadow-sm border-0" data-id="{{this._id}}" data-status="{{this.trang_thai}}">
+  <!-- Image Section -->
+  <div class="position-relative overflow-hidden">
+    <img src="{{this.link_anh}}" alt="{{this.ten_san_pham}}" 
+         class="card-img-top product-image p-3"
+         onerror="this.src='https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=300&fit=crop'">
+    
+    <!-- Badges -->
+    <div class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1">
+      {{#if this.san_pham_noi_bat}}
+      <span class="badge bg-warning text-dark fs-7">
+        <i class="fas fa-crown me-1"></i>Nổi bật
+      </span>
+      {{/if}}
+      
+      <span class="badge bg-light text-dark fs-7 status-badge">
+        <i class="fas fa-{{#if (eq this.trang_thai 1)}}check{{else}}times{{/if}} me-1"></i>
+        {{#if (eq this.trang_thai 1)}}Còn hàng{{else}}Hết hàng{{/if}}
+      </span>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="position-absolute top-0 end-0 m-2 d-flex flex-column gap-1 quick-actions">
+      <button class="btn btn-sm btn-light btn-action quick-view" data-id="{{this._id}}">
+        <i class="fas fa-eye"></i>
+      </button>
+      <button class="btn btn-sm btn-light btn-action add-wishlist" data-id="{{this._id}}">
+        <i class="far fa-heart"></i>
+      </button>
+    </div>
+
+    <!-- Discount Badge -->
+    {{#if this.gia_niem_yet}}
+      {{#gt this.gia_niem_yet this.gia_ban}}
+      <div class="position-absolute bottom-0 end-0 m-2">
+        <span class="badge bg-danger fs-6">
+          -{{calculateDiscount this.gia_niem_yet this.gia_ban}}%
+        </span>
+      </div>
+      {{/gt}}
+    {{/if}}
+  </div>
+
+  <!-- Card Body -->
+  <div class="card-body d-flex flex-column">
+    <!-- Category & Brand -->
+    <div class="d-flex gap-2 mb-2">
+      <span class="badge bg-primary bg-opacity-10 text-primary fs-7">{{this.thuong_hieu_id.ten_thuong_hieu}}</span>
+      <span class="badge bg-secondary bg-opacity-10 text-secondary fs-7">{{this.danh_muc_id.ten_danh_muc}}</span>
+    </div>
+
+    <!-- Product Name -->
+    <h5 class="card-title product-name text-dark mb-2 fs-6 lh-sm" style="min-height: 2.5rem;">
+      {{this.ten_san_pham}}
+    </h5>
+
+    <!-- Short Description -->
+    <p class="card-text text-muted small mb-3" style="min-height: 2.5rem;">
+      {{this.mo_ta_ngan}}
+    </p>
+
+    <!-- Specifications -->
+    <div class="d-flex gap-3 mb-3 pb-2 border-bottom">
+      {{#if this.trong_luong}}
+      <div class="d-flex align-items-center gap-1 text-muted small">
+        <i class="fas fa-weight-hanging text-primary"></i>
+        <span>{{this.trong_luong}}g</span>
+      </div>
+      {{/if}}
+      
+      {{#if this.kich_thuoc}}
+      <div class="d-flex align-items-center gap-1 text-muted small">
+        <i class="fas fa-ruler-combined text-primary"></i>
+        <span>{{this.kich_thuoc}}</span>
+      </div>
+      {{/if}}
+    </div>
+
+    <!-- Pricing -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <span class="h5 text-danger fw-bold mb-0">{{formatNumber this.gia_ban}}₫</span>
+      
+      {{#if this.gia_niem_yet}}
+        {{#gt this.gia_niem_yet this.gia_ban}}
+        <span class="text-muted text-decoration-line-through small">{{formatNumber this.gia_niem_yet}}₫</span>
+        {{/gt}}
+      {{/if}}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex gap-2 mt-auto">
+      <button class="btn btn-primary flex-grow-1 btn-buy-now {{#neq this.trang_thai 1}}disabled{{/neq}}" 
+              data-id="{{this._id}}">
+        <i class="fas fa-shopping-cart me-2"></i>
+        {{#if (eq this.trang_thai 1)}}
+        MUA NGAY
+        {{else}}
+        HẾT HÀNG
+        {{/if}}
+      </button>
+      
+      <button class="btn btn-outline-secondary btn-add-cart {{#neq this.trang_thai 1}}disabled{{/neq}}" 
+              data-id="{{this._id}}">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+      <small class="text-muted">
+        <i class="fas fa-eye me-1"></i>
+        {{this.luot_xem}} lượt xem
+      </small>
+      <small class="text-muted font-monospace">#{{this.ma_sku}}</small>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Custom Styles for Bootstrap Card */
+  .product-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef !important;
+  }
+
+  .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    border-color: #0d6efd !important;
+  }
+
+  .product-image {
+    height: 200px;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  }
+
+  .product-card:hover .product-image {
+    transform: scale(1.05);
+  }
+
+  .quick-actions {
+    opacity: 0;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+  }
+
+  .product-card:hover .quick-actions {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .btn-action {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .btn-action:hover {
+    background: #0d6efd !important;
+    color: white !important;
+    transform: scale(1.1);
+  }
+
+  .product-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .fs-7 {
+    font-size: 0.75rem !important;
+  }
+
+  .status-badge {
+    backdrop-filter: blur(10px);
+  }
+
+  .btn-buy-now {
+    transition: all 0.3s ease;
+  }
+
+  .btn-buy-now:not(.disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  }
+
+  .btn-add-cart {
+    width: 44px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-add-cart:not(.disabled):hover {
+    background: #0d6efd !important;
+    color: white !important;
+    border-color: #0d6efd !important;
+    transform: translateY(-1px);
+  }
+
+  /* Custom badge styles */
+  .bg-opacity-10 {
+    background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .product-image {
+      height: 180px;
+    }
+    
+    .quick-actions {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    
+    .card-body {
+      padding: 1rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .product-card {
+      margin: 0 0.25rem;
+    }
+    
+    .d-flex.gap-2 {
+      gap: 0.5rem !important;
+    }
+  }
+
+  /* Animation for add to cart */
+  @keyframes addToCart {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  .add-to-cart-animation {
+    animation: addToCart 0.5s ease;
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Quick View
+    document.querySelectorAll('.quick-view').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const productId = this.getAttribute('data-id');
+        
+        // Show loading state
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.disabled = true;
+        
+        // Simulate API call
+        setTimeout(() => {
+          // Reset button
+          this.innerHTML = originalHTML;
+          this.disabled = false;
+          
+          // Show quick view modal (you'll need to implement this)
+          showQuickViewModal(productId);
+        }, 1000);
+      });
+    });
+
+    // Add to Wishlist
+    document.querySelectorAll('.add-wishlist').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const productId = this.getAttribute('data-id');
+        const icon = this.querySelector('i');
+        
+        // Toggle heart icon with animation
+        if (icon.classList.contains('far')) {
+          icon.classList.remove('far');
+          icon.classList.add('fas', 'text-danger');
+          this.classList.add('add-to-cart-animation');
+          
+          // Show success message
+          showToast('Đã thêm vào yêu thích!', 'success');
+        } else {
+          icon.classList.remove('fas', 'text-danger');
+          icon.classList.add('far');
+          showToast('Đã xóa khỏi yêu thích!', 'info');
+        }
+        
+        // Remove animation class
+        setTimeout(() => {
+          this.classList.remove('add-to-cart-animation');
+        }, 500);
+      });
+    });
+
+    // Buy Now
+    document.querySelectorAll('.btn-buy-now').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        if (this.classList.contains('disabled')) return;
+        e.preventDefault();
+        
+        const productId = this.getAttribute('data-id');
+        
+        // Add to cart and redirect
+        addToCart(productId, true);
+      });
+    });
+
+    // Add to Cart
+    document.querySelectorAll('.btn-add-cart').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        if (this.classList.contains('disabled')) return;
+        e.preventDefault();
+        
+        const productId = this.getAttribute('data-id');
+        const originalHTML = this.innerHTML;
+        
+        // Show loading state
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.disabled = true;
+        
+        // Add to cart
+        addToCart(productId, false);
+        
+        // Reset button after delay
+        setTimeout(() => {
+          this.innerHTML = originalHTML;
+          this.disabled = false;
+          this.classList.add('add-to-cart-animation');
+          
+          setTimeout(() => {
+            this.classList.remove('add-to-cart-animation');
+          }, 500);
+        }, 1000);
+      });
+    });
+
+    // Helper functions
+    function addToCart(productId, redirectToCart = false) {
+      // Simulate API call to add to cart
+      console.log('Adding to cart:', productId);
+      
+      // Show success message
+      showToast('Đã thêm vào giỏ hàng!', 'success');
+      
+      // Update cart counter (you'll need to implement this)
+      updateCartCounter();
+      
+      if (redirectToCart) {
+        setTimeout(() => {
+          window.location.href = '/cart';
+        }, 1000);
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      // You can use Bootstrap Toasts here
+      const toast = document.createElement('div');
+      toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+      toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+      toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      
+      document.body.appendChild(toast);
+      
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    function showQuickViewModal(productId) {
+      // Implement quick view modal using Bootstrap Modal
+      console.log('Quick view for product:', productId);
+      // You would fetch product details and show in a modal here
+    }
+
+    function updateCartCounter() {
+      // Update cart counter in header
+      const cartCounter = document.querySelector('.cart-counter');
+      if (cartCounter) {
+        const currentCount = parseInt(cartCounter.textContent) || 0;
+        cartCounter.textContent = currentCount + 1;
+        cartCounter.classList.add('animate__bounceIn');
+        
+        setTimeout(() => {
+          cartCounter.classList.remove('animate__bounceIn');
+        }, 1000);
+      }
+    }
+  });
+
+  // Utility functions
+  function formatNumber(num) {
+    return new Intl.NumberFormat('vi-VN').format(num);
+  }
+
+  function calculateDiscount(original, current) {
+    return Math.round(((original - current) / original) * 100);
+  }
+</script>
+
+<!-- Include Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">

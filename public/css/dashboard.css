@@ -1,0 +1,101 @@
+:root {
+    --primary-color: #4361ee;
+    --secondary-color: #3f37c9;
+    --success-color: #4cc9f0;
+    --warning-color: #f72585;
+    --info-color: #4895ef;
+    --dark-color: #2b2d42;
+    --light-color: #f8f9fa;
+}
+
+/* Stats Cards */
+.stat-card {
+    border: none;
+    border-radius: 16px;
+    transition: transform 0.3s ease;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.stat-card-2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.stat-card-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.stat-card-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Charts */
+.chart-container {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: none;
+}
+
+/* Recent Activity */
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+}
+
+.bg-primary-light { background: #e3f2fd; color: #1976d2; }
+.bg-success-light { background: #e8f5e8; color: #388e3c; }
+.bg-warning-light { background: #fff3e0; color: #f57c00; }
+.bg-danger-light { background: #ffebee; color: #d32f2f; }
+
+/* Top Products */
+.product-card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.product-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.chart-placeholder {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}

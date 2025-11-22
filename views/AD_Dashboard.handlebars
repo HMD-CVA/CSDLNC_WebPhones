@@ -1,0 +1,232 @@
+<div class="body-section" style="padding: 20px;">
+    <!-- Header -->
+    <header class="content-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0" id="pageTitle">Dashboard</h4>
+                <small class="text-muted" id="pageSubtitle">Chào mừng trở lại, Admin!</small>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group" style="width: 300px;">
+                    <input type="text" class="form-control modern-input" placeholder="Tìm kiếm...">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <button class="btn btn-primary">
+                    <i class="fas fa-bell me-2"></i>
+                    Thông báo
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card stat-card-1 text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Tổng Doanh Thu</h6>
+                            <h2 class="mb-0">125.4M</h2>
+                            <small>+12.5% so với tháng trước</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card stat-card-2 text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Khách Hàng</h6>
+                            <h2 class="mb-0">2,847</h2>
+                            <small>+8.2% so với tháng trước</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card stat-card-3 text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Đơn Hàng</h6>
+                            <h2 class="mb-0">1,284</h2>
+                            <small>+15.3% so với tháng trước</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card stat-card-4 text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Phòng Hát</h6>
+                            <h2 class="mb-0">24</h2>
+                            <small>18 đang hoạt động</small>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-microphone-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts & Analytics -->
+    <div class="row mb-4">
+        <div class="col-xl-8 mb-4">
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">Doanh Thu Theo Tháng</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm active">Tháng</button>
+                        <button class="btn btn-outline-primary btn-sm">Quý</button>
+                        <button class="btn btn-outline-primary btn-sm">Năm</button>
+                    </div>
+                </div>
+                <div class="chart-placeholder bg-light rounded-3 p-5 text-center">
+                    <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Biểu đồ doanh thu sẽ được hiển thị tại đây</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 mb-4">
+            <div class="chart-container h-100">
+                <h5 class="mb-4">Phân Loại Doanh Thu</h5>
+                <div class="chart-placeholder bg-light rounded-3 p-5 text-center">
+                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Biểu đồ phân loại sẽ được hiển thị tại đây</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity & Top Products -->
+    <div class="row">
+        <div class="col-xl-6 mb-4">
+            <div class="chart-container">
+                <h5 class="mb-4">Hoạt Động Gần Đây</h5>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="activity-icon bg-primary-light">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">Khách hàng mới</h6>
+                            <p class="mb-0 text-muted">Nguyễn Văn A vừa đăng ký tài khoản</p>
+                            <small class="text-muted">5 phút trước</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon bg-success-light">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">Đơn hàng mới</h6>
+                            <p class="mb-0 text-muted">Đơn hàng #2847 đã được đặt</p>
+                            <small class="text-muted">1 giờ trước</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon bg-warning-light">
+                            <i class="fas fa-microphone-alt"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">Đặt phòng hát</h6>
+                            <p class="mb-0 text-muted">Phòng VIP 01 đã được đặt</p>
+                            <small class="text-muted">2 giờ trước</small>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon bg-danger-light">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">Cảnh báo</h6>
+                            <p class="mb-0 text-muted">Hệ thống cần bảo trì định kỳ</p>
+                            <small class="text-muted">4 giờ trước</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 mb-4">
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="mb-0">Sản Phẩm Phổ Biến</h5>
+                    <a href="#" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="card product-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://via.placeholder.com/60x60/4361ee/ffffff?text=P1" class="product-img me-3" alt="Product">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Bia Tiger</h6>
+                                        <p class="mb-0 text-muted">Đồ uống</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="mb-1 text-success">125.000đ</h6>
+                                        <small class="text-muted">Đã bán: 284</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card product-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://via.placeholder.com/60x60/f72585/ffffff?text=P2" class="product-img me-3" alt="Product">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Snack</h6>
+                                        <p class="mb-0 text-muted">Đồ ăn nhẹ</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="mb-1 text-success">25.000đ</h6>
+                                        <small class="text-muted">Đã bán: 542</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card product-card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://via.placeholder.com/60x60/4cc9f0/ffffff?text=P3" class="product-img me-3" alt="Product">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Nước suối</h6>
+                                        <p class="mb-0 text-muted">Đồ uống</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <h6 class="mb-1 text-success">15.000đ</h6>
+                                        <small class="text-muted">Đã bán: 892</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

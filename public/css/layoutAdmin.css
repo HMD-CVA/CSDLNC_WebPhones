@@ -1,0 +1,87 @@
+/* LAYOUT STYLES - Dùng chung cho toàn bộ admin */
+:root {
+    --sidebar-width: 280px;
+    --sidebar-collapsed-width: 80px;
+    --transition-speed: 0.3s;
+    --primary-color: #3498db;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --info-color: #17a2b8;
+    --dark-color: #2c3e50;
+    --light-color: #f8f9fa;
+    --border-color: #ecf0f1;
+    --text-muted: #7f8c8d;
+}
+
+/* Reset & Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body.d-flex {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--light-color);
+    overflow-x: hidden;
+}
+
+/* Main Layout */
+.main-layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Body Section */
+.body-section {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    background-color: var(--light-color);
+    transition: margin-left var(--transition-speed);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Content Header */
+.content-header {
+    background: white;
+    padding: 20px 30px;
+    margin: -20px -20px 20px -20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Khi sidebar collapsed */
+.admin-sidebar.collapsed ~ .body-section {
+    margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .body-section {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+    
+    .main-content {
+        padding: 15px;
+    }
+    
+    .content-header {
+        margin: -15px -15px 15px -15px;
+        padding: 15px 20px;
+    }
+}

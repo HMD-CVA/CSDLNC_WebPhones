@@ -1,0 +1,683 @@
+<!-- Thêm Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- NÚT TOGGLE CHO MOBILE -->
+<button class="mobile-toggle" id="mobileToggle">
+  <i class="fas fa-bars"></i>
+</button>
+
+<div class="admin-sidebar">
+  <!-- Sidebar Header -->
+  <div class="sidebar-header">
+    <!-- NÚT TOGGLE CHO DESKTOP -->
+    <button class="sidebar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- NÚT ĐÓNG CHO MOBILE -->
+    <button class="sidebar-close" id="sidebarClose">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <!-- AVATAR VÀ INFO -->
+    <div class="admin-avatar">
+      <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="Admin Avatar">
+    </div>
+    <div class="admin-info">
+      <h5 class="admin-name">Admin Panel</h5>
+      <span class="admin-role">Quản trị viên</span>
+    </div>
+  </div>
+
+  <!-- Sidebar Menu -->
+  <div class="sidebar-menu">
+    <ul class="nav flex-column">
+      <li class="nav-item">
+        <a href="/admin" class="nav-link" data-page="dashboard">
+          <div class="nav-icon">
+            <i class="fas fa-home"></i>
+          </div>
+          <span class="nav-text">Trang chủ</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/sanpham" class="nav-link" data-page="sanpham">
+          <div class="nav-icon">
+            <i class="fas fa-box"></i>
+          </div>
+          <span class="nav-text">Sản phẩm</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/khachhang" class="nav-link" data-page="khachhang">
+          <div class="nav-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <span class="nav-text">Khách hàng</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/admin/phonghat" class="nav-link" data-page="phonghat">
+          <div class="nav-icon">
+            <i class="fas fa-mobile-alt"></i>
+          </div>
+          <span class="nav-text">Điện thoại</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Sidebar Footer -->
+  <div class="sidebar-footer">
+    <div class="user-menu">
+      <a href="/profile" class="user-menu-item">
+        <i class="fas fa-user-circle"></i>
+        <span>Hồ sơ</span>
+      </a>
+      <a href="/settings" class="user-menu-item">
+        <i class="fas fa-cog"></i>
+        <span>Cài đặt</span>
+      </a>
+      <a href="/logout" class="user-menu-item logout-btn">
+        <i class="fas fa-sign-out-alt"></i>
+        <span>Đăng xuất</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY CHO MOBILE -->
+<div class="mobile-overlay" id="mobileOverlay"></div>
+
+<style>
+  /* Reset và Base Styles */
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Sidebar Styles */
+  .admin-sidebar {
+    width: 280px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+    color: white;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease, width 0.3s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    will-change: transform, width;
+  }
+
+  /* Sidebar Header */
+  .sidebar-header {
+    padding: 70px 20px 20px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    background: rgba(0, 0, 0, 0.2);
+    transition: padding 0.3s ease;
+  }
+
+  /* AVATAR - GIỮ NGUYÊN KÍCH THƯỚC */
+  .admin-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 15px auto;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .admin-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .admin-info {
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .admin-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    color: white;
+    transition: all 0.3s ease;
+  }
+
+  .admin-role {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.3s ease;
+  }
+
+  /* NÚT TOGGLE DESKTOP */
+  .sidebar-toggle {
+    position: absolute;
+    top: 25px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1001;
+  }
+
+  .sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* NÚT TOGGLE MOBILE */
+  .mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: #3498db;
+    border: none;
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1002;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .mobile-toggle:hover {
+    background: #2980b9;
+  }
+
+  /* NÚT ĐÓNG MOBILE */
+  .sidebar-close {
+    display: none;
+    position: absolute;
+    top: 25px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 1001;
+    transition: all 0.3s ease;
+  }
+
+  .sidebar-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Sidebar Menu */
+  .sidebar-menu {
+    flex: 1;
+    padding: 20px 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-menu .nav {
+    gap: 5px;
+  }
+
+  .sidebar-menu .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+    border-left: 3px solid transparent;
+  }
+
+  .sidebar-menu .nav-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left-color: #3498db;
+  }
+
+  .sidebar-menu .nav-link.active {
+    background: linear-gradient(90deg, rgba(52, 152, 219, 0.2) 0%, transparent 100%);
+    color: white;
+    border-left-color: #3498db;
+  }
+
+  .nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 1.1rem;
+    transition: margin 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .nav-text {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+  }
+
+  /* Sidebar Footer */
+  .sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    transition: padding 0.3s ease;
+  }
+
+  .user-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+  }
+
+  .user-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .user-menu-item i {
+    width: 20px;
+    margin-right: 10px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .logout-btn {
+    color: #e74c3c !important;
+    background: rgba(231, 76, 60, 0.1);
+  }
+
+  .logout-btn:hover {
+    background: rgba(231, 76, 60, 0.2) !important;
+  }
+
+  /* ========== COLLAPSED STATE ========== */
+  .admin-sidebar.collapsed {
+    width: 80px;
+  }
+
+  .admin-sidebar.collapsed .sidebar-header {
+    padding: 70px 10px 20px 10px;
+  }
+
+  /* AVATAR GIỮ NGUYÊN KÍCH THƯỚC */
+  .admin-sidebar.collapsed .admin-avatar {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 15px auto;
+  }
+
+  /* ẨN TEXT */
+  .admin-sidebar.collapsed .admin-info,
+  .admin-sidebar.collapsed .nav-text,
+  .admin-sidebar.collapsed .user-menu-item span {
+    display: none !important;
+  }
+
+  /* CĂN GIỮA ICONS */
+  .admin-sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: 12px 10px;
+  }
+
+  .admin-sidebar.collapsed .nav-icon {
+    margin-right: 0;
+  }
+
+  .admin-sidebar.collapsed .user-menu-item {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .admin-sidebar.collapsed .user-menu-item i {
+    margin-right: 0;
+  }
+
+  .admin-sidebar.collapsed .sidebar-footer {
+    padding: 20px 10px;
+  }
+
+  /* ========== RESPONSIVE FIX ========== */
+  
+  /* MOBILE: <= 768px */
+  @media (max-width: 768px) {
+    .admin-sidebar {
+      transform: translateX(-100%);
+      width: 280px !important;
+    }
+
+    .admin-sidebar.mobile-open {
+      transform: translateX(0);
+    }
+
+    .sidebar-toggle {
+      display: none !important;
+    }
+
+    .mobile-toggle {
+      display: flex !important;
+    }
+
+    .admin-sidebar.mobile-open .sidebar-close {
+      display: flex;
+    }
+
+    .admin-sidebar.mobile-open + .mobile-overlay {
+      display: block;
+    }
+
+    /* MAIN CONTENT MOBILE */
+    .main-content {
+      margin-left: 0 !important;
+      width: 100% !important;
+    }
+  }
+
+  /* TABLET: 769px - 1024px - AUTO COLLAPSE */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .admin-sidebar {
+      width: 80px !important;
+    }
+
+    .admin-sidebar .sidebar-header {
+      padding: 70px 10px 20px 10px;
+    }
+
+    .admin-sidebar .admin-info,
+    .admin-sidebar .nav-text,
+    .admin-sidebar .user-menu-item span {
+      display: none !important;
+    }
+
+    .admin-sidebar .nav-link {
+      justify-content: center;
+      padding: 12px 10px;
+    }
+
+    .admin-sidebar .nav-icon {
+      margin-right: 0;
+    }
+
+    .admin-sidebar .user-menu-item {
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .admin-sidebar .user-menu-item i {
+      margin-right: 0;
+    }
+
+    .admin-sidebar .sidebar-footer {
+      padding: 20px 10px;
+    }
+
+    .mobile-toggle {
+      display: none !important;
+    }
+
+    /* MAIN CONTENT TABLET */
+    .main-content {
+      margin-left: 80px !important;
+      width: calc(100% - 80px) !important;
+    }
+  }
+
+  /* DESKTOP: > 1024px */
+  @media (min-width: 1025px) {
+    .admin-sidebar.collapsed {
+      width: 80px !important;
+    }
+
+    .admin-sidebar:not(.collapsed) {
+      width: 280px !important;
+    }
+
+    .mobile-toggle {
+      display: none !important;
+    }
+
+    /* MAIN CONTENT DESKTOP */
+    .admin-sidebar.collapsed + .main-content {
+      margin-left: 80px !important;
+      width: calc(100% - 80px) !important;
+    }
+    
+    .admin-sidebar:not(.collapsed) + .main-content {
+      margin-left: 280px !important;
+      width: calc(100% - 280px) !important;
+    }
+  }
+
+  /* Overlay */
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  /* MAIN CONTENT BASE */
+  .main-content {
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    padding: 20px;
+    box-sizing: border-box;
+    min-height: 100vh;
+  }
+
+  /* FIX LAG - TỐI ƯU HIỆU SUẤT */
+  .admin-sidebar * {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sidebar = document.querySelector('.admin-sidebar');
+    const desktopToggle = document.getElementById('sidebarToggle');
+    const mobileToggle = document.getElementById('mobileToggle');
+    const sidebarClose = document.getElementById('sidebarClose');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    const body = document.body;
+    const navLinks = document.querySelectorAll('.sidebar-menu .nav-link');
+
+    let resizeTimeout;
+    let isInitialized = false;
+
+    // KHỞI TẠO SIDEBAR STATE - ĐƠN GIẢN HÓA
+    function initializeSidebar() {
+        if (isInitialized) return;
+        
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        const width = window.innerWidth;
+
+        // MOBILE
+        if (width <= 768) {
+            sidebar.classList.remove('collapsed');
+            updateMainContentMargin(0);
+        }
+        // TABLET - AUTO COLLAPSE
+        else if (width <= 1024) {
+            sidebar.classList.add('collapsed');
+            localStorage.setItem('sidebarCollapsed', 'true');
+            updateMainContentMargin(80);
+        }
+        // DESKTOP - RESTORE STATE
+        else {
+            if (savedState === 'true') {
+                sidebar.classList.add('collapsed');
+                updateMainContentMargin(80);
+            } else {
+                sidebar.classList.remove('collapsed');
+                updateMainContentMargin(280);
+            }
+        }
+        
+        isInitialized = true;
+    }
+
+    // HÀM CẬP NHẬT MARGIN - TỐI ƯU
+    function updateMainContentMargin(sidebarWidth) {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.style.marginLeft = sidebarWidth + 'px';
+            mainContent.style.width = `calc(100% - ${sidebarWidth}px)`;
+        }
+        document.documentElement.style.setProperty('--sidebar-width', sidebarWidth + 'px');
+    }
+
+    // TOGGLE DESKTOP - ĐƠN GIẢN
+    if (desktopToggle) {
+        desktopToggle.addEventListener('click', function () {
+            if (window.innerWidth > 1024) {
+                sidebar.classList.toggle('collapsed');
+                const isCollapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                updateMainContentMargin(isCollapsed ? 80 : 280);
+            }
+        });
+    }
+
+    // MOBILE FUNCTIONALITY
+    function openMobileSidebar() {
+        sidebar.classList.add('mobile-open');
+        body.classList.add('sidebar-open');
+        if (mobileOverlay) mobileOverlay.style.display = 'block';
+    }
+
+    function closeMobileSidebar() {
+        sidebar.classList.remove('mobile-open');
+        body.classList.remove('sidebar-open');
+        if (mobileOverlay) mobileOverlay.style.display = 'none';
+    }
+
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', openMobileSidebar);
+    }
+
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', closeMobileSidebar);
+    }
+
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', closeMobileSidebar);
+    }
+
+    // ĐÓNG SIDEBAR KHI CLICK MENU ITEM TRÊN MOBILE
+    navLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                closeMobileSidebar();
+            }
+        });
+    });
+
+    // RESIZE HANDLER - TỐI ƯU
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            const width = window.innerWidth;
+            
+            // MOBILE
+            if (width <= 768) {
+                sidebar.classList.remove('collapsed');
+                closeMobileSidebar();
+                updateMainContentMargin(0);
+            }
+            // TABLET
+            else if (width <= 1024) {
+                sidebar.classList.add('collapsed');
+                closeMobileSidebar();
+                updateMainContentMargin(80);
+            }
+            // DESKTOP
+            else {
+                closeMobileSidebar();
+                const savedState = localStorage.getItem('sidebarCollapsed');
+                if (savedState === 'true') {
+                    sidebar.classList.add('collapsed');
+                    updateMainContentMargin(80);
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    updateMainContentMargin(280);
+                }
+            }
+        }, 150);
+    });
+
+    // SET ACTIVE MENU
+    function setActiveMenu() {
+        const currentPath = window.location.pathname;
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            const linkPath = link.getAttribute('href');
+            
+            if (linkPath === currentPath) {
+                link.classList.add('active');
+            }
+            else if (currentPath.includes('/phonghat') && linkPath.includes('/phonghat')) {
+                link.classList.add('active');
+            }
+            else if (currentPath.includes('/sanpham') && linkPath.includes('/sanpham')) {
+                link.classList.add('active');
+            }
+            else if (currentPath.includes('/khachhang') && linkPath.includes('/khachhang')) {
+                link.classList.add('active');
+            }
+        });
+    }
+
+    // KHỞI CHẠY
+    initializeSidebar();
+    setActiveMenu();
+    
+    // ĐẢM BẢO MAIN CONTENT ĐƯỢC CẬP NHẬT
+    setTimeout(() => {
+        initializeSidebar();
+    }, 100);
+});
+</script>
