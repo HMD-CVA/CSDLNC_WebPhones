@@ -3,57 +3,12 @@ import sql from 'mssql';
 
 // ==================== MONGODB MODELS ====================
 
-const UserSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, trim: true },
-  mat_khau: { type: String, required: true },
-  ho_ten: { type: String, trim: true },
-  so_dien_thoai: { type: String, trim: true },
-  anh_dai_dien: { type: String },
-  khu_vuc_mac_dinh: { 
-    type: String, 
-    enum: ['bac', 'trung', 'nam'], 
-  },
-  khu_vuc_dang_ky: { 
-    type: String, 
-    enum: ['bac', 'trung', 'nam'], 
-    required: true 
-  },
-  vai_tro: { 
-    type: String, 
-    enum: ['khach_hang', 'quan_tri', 'nhan_vien'], 
-    default: 'khach_hang' 
-  },
-  trang_thai: { type: Number, default: 1 },
-  ngay_dang_ky: { type: Date, default: Date.now },
-  ngay_cap_nhat: { type: Date, default: Date.now }
-}, {
-  timestamps: { createdAt: 'ngay_dang_ky', updatedAt: 'ngay_cap_nhat' }
-});
-
-const BrandSchema = new mongoose.Schema({
-  ten_thuong_hieu: { type: String, required: true, trim: true },
-  mo_ta: { type: String },
-  logo_url: { type: String },
-  slug: { type: String, unique: true, trim: true },
-  trang_thai: { type: Number, default: 1 },
-  ngay_tao: { type: Date, default: Date.now }
-});
-
-const CategorySchema = new mongoose.Schema({
-  ten_danh_muc: { type: String, required: true, trim: true },
-  mo_ta: { type: String },
-  danh_muc_cha_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
-  slug: { type: String, unique: true, trim: true },
-  anh_url: { type: String },
-  thu_tu: { type: Number, default: 0 },
-  trang_thai: { type: Number, default: 1 },
-  ngay_tao: { type: Date, default: Date.now }
+const productDetailSchema = new mongoose.Schema({
+  sql_product_id: { type: String, unique: true },
 });
 
 // MongoDB Models
-const Data_User_Model = mongoose.model('User', UserSchema);
-const Data_Brand_Model = mongoose.model('Brand', BrandSchema);
-const Data_Category_Model = mongoose.model('Category', CategorySchema);
+const Data_ProductDetail_Model = mongoose.model('ProductDetail', productDetailSchema);
 
 // ==================== SQL SERVER MODELS ====================
 
@@ -186,8 +141,9 @@ class SQLProductModel {
         INNER JOIN categories c ON p.danh_muc_id = c.id
         INNER JOIN brands b ON p.thuong_hieu_id = b.id
         WHERE p.trang_thai = 1
-        ORDER BY p.ngay_tao DESC
+
       `);
+      // ORDER BY p.ngay_tao DESC
       return result.recordset;
     } catch (error) {
       console.error('SQL Product Error:', error);
@@ -269,9 +225,7 @@ class SQLProductModel {
 
 export default {
   // MongoDB Models
-  Data_User_Model,
-  Data_Brand_Model, 
-  Data_Category_Model,
+  Data_ProductDetail_Model,
   
   // SQL Server Models
   SQLBrandModel,
@@ -280,9 +234,7 @@ export default {
   
   // Hoặc export theo nhóm để dễ sử dụng
   Mongo: {
-    User: Data_User_Model,
-    Brand: Data_Brand_Model,
-    Category: Data_Category_Model
+    ProductDetail: Data_ProductDetail_Model,
   },
   
   SQL: {

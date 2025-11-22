@@ -6,7 +6,7 @@
         <div class="header-title">
           <div class="title-icon">📦</div>
           <div>
-            <h1>Quản lý sản phẩm</h1>
+            <h1>QUẢN LÝ SẢN PHẨM</h1>
             <p>Theo dõi và quản lý sản phẩm trong cửa hàng</p>
           </div>
         </div>
@@ -15,48 +15,11 @@
             <i class="fas fa-plus"></i>
             <span>Thêm sản phẩm</span>
           </button>
-          <button class="btn-primary" id="manageCategoriesBtn">
-            <i class="fas fa-folder"></i>
-            <span>Quản lý Danh mục</span>
-          </button>
-          <button class="btn-primary" id="manageBrandsBtn">
-            <i class="fas fa-trademark"></i>
-            <span>Quản lý Thương hiệu</span>
+          <button class="btn-secondary" id="refreshBtn">
+            <i class="fas fa-sync-alt"></i>
+            <span>Làm mới</span>
           </button>
         </div>
-      </div>
-    </div>
-
-    <!-- Search and Filter -->
-    <div class="search-filter-bar">
-      <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm...">
-        <button class="search-btn" id="searchBtn">Tìm kiếm</button>
-      </div>
-      <div class="filter-controls">
-        <select class="filter-select" id="categoryFilter">
-          <option value="">Tất cả danh mục</option>
-          {{#each categories}}
-          <option value="{{this._id}}">{{this.ten_danh_muc}}</option>
-          {{/each}}
-        </select>
-        <select class="filter-select" id="brandFilter">
-          <option value="">Tất cả thương hiệu</option>
-          {{#each brands}}
-          <option value="{{this._id}}">{{this.ten_thuong_hieu}}</option>
-          {{/each}}
-        </select>
-        <select class="filter-select" id="statusFilter">
-          <option value="">Tất cả trạng thái</option>
-          <option value="1">🟢 Đang bán</option>
-          <option value="0">🔴 Ngừng bán</option>
-          <option value="2">👁️ Ẩn</option>
-        </select>
-        <button class="clear-filters" id="clearFilters">
-          <i class="fas fa-times"></i>
-          Xóa lọc
-        </button>
       </div>
     </div>
 
@@ -90,69 +53,132 @@
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon hidden">
-          <i class="fas fa-eye-slash"></i>
+        <div class="stat-icon premium">
+          <i class="fas fa-star"></i>
         </div>
         <div class="stat-info">
-          <h3 id="countHidden">0</h3>
-          <p>Đang ẩn</p>
+          <h3 id="countFeatured">0</h3>
+          <p>Sản phẩm nổi bật</p>
         </div>
+      </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="search-filter-bar">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm theo tên, SKU...">
+        <button class="search-btn" id="searchBtn">Tìm kiếm</button>
+      </div>
+      <div class="filter-controls">
+        <select class="filter-select" id="statusFilter">
+          <option value="">Tất cả trạng thái</option>
+          <option value="1">🟢 Đang bán</option>
+          <option value="0">🔴 Ngừng bán</option>
+        </select>
+        <select class="filter-select" id="categoryFilter">
+          <option value="">Tất cả danh mục</option>
+          {{#each categories}}
+          <option value="{{this.id}}">{{this.ten_danh_muc}}</option>
+          {{/each}}
+        </select>
+        <select class="filter-select" id="brandFilter">
+          <option value="">Tất cả thương hiệu</option>
+          {{#each brands}}
+          <option value="{{this.id}}">{{this.ten_thuong_hieu}}</option>
+          {{/each}}
+        </select>
+        <button class="clear-filters" id="clearFilters">
+          <i class="fas fa-times"></i>
+          Xóa lọc
+        </button>
       </div>
     </div>
 
     <!-- Products Grid -->
     <div class="products-grid" id="productsGrid">
       {{#each sanphams}}
-      <div class="product-card" data-id="{{this._id}}" data-name="{{this.ten_san_pham}}"
-        data-status="{{this.trang_thai}}" data-category="{{this.danh_muc_id._id}}"
-        data-brand="{{this.thuong_hieu_id._id}}">
-        <div class="product-image">
-          <img src="{{this.link_anh}}" alt="{{this.ten_san_pham}}"
-            onerror="this.src='https://images.unsplash.com/photo-1563013546-365b5d5d34ab?w=400&h=250&fit=crop'">
-          <div
-            class="product-badge {{#if (eq this.trang_thai 1)}}active{{else if (eq this.trang_thai 0)}}inactive{{else}}hidden{{/if}}">
-            {{#if (eq this.trang_thai 1)}}🟢 Đang bán{{else if (eq this.trang_thai 0)}}🔴 Ngừng bán{{else}}👁️ Ẩn{{/if}}
+      <div class="product-card" data-id="{{this.id}}" data-status="{{this.trang_thai}}" 
+           data-category="{{this.danh_muc_id}}" data-brand="{{this.thuong_hieu_id}}">
+        
+        <!-- Product Header -->
+        <div class="product-header">
+          <div class="product-badge {{#if (eq this.trang_thai -1)}}inactive{{else}}active{{/if}}">
+            {{#if (eq this.trang_thai true)}}🟢 Đang bán{{else}}🔴 Ngừng bán{{/if}}
           </div>
+          {{#if this.san_pham_noi_bat}}
+          <div class="featured-badge">
+            <i class="fas fa-star"></i>
+            Nổi bật
+          </div>
+          {{/if}}
+        </div>
+
+        <!-- Product Image -->
+        <div class="product-image">
+          <img src="{{this.link_anh}}" alt="{{this.ten_san_pham}}">
           <div class="product-overlay">
             <div class="product-actions">
-              <button class="btn-action edit-btn" data-id="{{this._id}}" title="Chỉnh sửa">
+              <button class="btn-action edit-btn" data-id="{{this.id}}" title="Chỉnh sửa">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn-action delete-btn" data-id="{{this._id}}" data-name="{{this.ten_san_pham}}"
-                title="Xóa">
+              <button class="btn-action delete-btn" data-id="{{this.id}}" 
+                      data-name="{{this.ten_san_pham}}" title="Xóa">
                 <i class="fas fa-trash"></i>
               </button>
-              <button class="btn-action toggle-status-btn" data-id="{{this._id}}" data-status="{{this.trang_thai}}"
-                data-name="{{this.ten_san_pham}}" title="Chuyển trạng thái">
-                <i
-                  class="fas {{#if (eq this.trang_thai 1)}}fa-eye-slash{{else if (eq this.trang_thai 0)}}fa-eye{{else}}fa-eye{{/if}}"></i>
+              <button class="btn-action toggle-status-btn" data-id="{{this.id}}" 
+                      data-status="{{this.trang_thai}}" data-name="{{this.ten_san_pham}}" 
+                      title="Chuyển trạng thái">
+                <i class="fas {{#if (eq this.trang_thai 1)}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+              </button>
+              <button class="btn-action details-btn" data-id="{{this.id}}" 
+                      title="Quản lý chi tiết">
+                <i class="fas fa-cog"></i>
               </button>
             </div>
           </div>
         </div>
+
+        <!-- Product Content -->
         <div class="product-content">
           <h3 class="product-title">{{this.ten_san_pham}}</h3>
-          <p class="product-description">{{this.mo_ta_ngan}}</p>
-          <div class="product-details">
-            <div class="detail-item">
-              <i class="fas fa-money-bill-wave"></i>
-              <span class="price">{{formatNumber this.gia_ban}} VNĐ</span>
-            </div>
-            <div class="detail-item">
+          <p class="product-sku">#{{this.ma_sku}}</p>
+          
+          <div class="price-section">
+            <span class="current-price">{{formatCurrency this.gia_ban}}</span>
+            {{#if this.gia_niem_yet}}
+            <span class="original-price">{{formatCurrency this.gia_niem_yet}}</span>
+            {{/if}}
+          </div>
+
+          <div class="product-meta">
+            <div class="meta-item">
               <i class="fas fa-folder"></i>
-              <span>{{this.danh_muc_id.ten_danh_muc}}</span>
+              <span>{{this.ten_danh_muc}}</span>
             </div>
-            <div class="detail-item">
-              <i class="fas fa-trademark"></i>
-              <span>{{this.thuong_hieu_id.ten_thuong_hieu}}</span>
+            <div class="meta-item">
+              <i class="fas fa-tag"></i>
+              <span>{{this.ten_thuong_hieu}}</span>
             </div>
           </div>
-          <div class="product-footer">
-            <span class="product-sku">#{{this.ma_sku}}</span>
-            <div class="product-status">
-              <span
-                class="status-dot {{#if (eq this.trang_thai 1)}}active{{else if (eq this.trang_thai 0)}}inactive{{else}}hidden{{/if}}"></span>
-              {{#if (eq this.trang_thai 1)}}Đang bán{{else if (eq this.trang_thai 0)}}Ngừng bán{{else}}Đang ẩn{{/if}}
+
+          <!-- MongoDB Details Section -->
+          <div class="details-section">
+            <div class="details-header">
+              <h4>Thông số kỹ thuật</h4>
+              <button class="btn-manage-details" data-id="{{this.id}}">
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+            <div class="key-value-list">
+              {{#each this.chi_tiet}}
+              <div class="key-value-item">
+                <span class="key">{{@key}}:</span>
+                <span class="value">{{this}}</span>
+              </div>
+              {{else}}
+              <div class="no-details">Chưa có thông số kỹ thuật</div>
+              {{/each}}
             </div>
           </div>
         </div>
@@ -161,19 +187,27 @@
     </div>
 
     <!-- Empty State -->
-    <div class="empty-state" id="emptyState"
-      style="{{#if sanphams.length}}display: none;{{else}}display: block;{{/if}}">
+    <div class="empty-state" id="emptyState" 
+         style="{{#if sanphams.length}}display: none;{{else}}display: flex;{{/if}}">
       <div class="empty-icon">📦</div>
-      <h3>Không tìm thấy sản phẩm</h3>
-      <p>Thử thay đổi bộ lọc hoặc thêm sản phẩm mới</p>
-      <button class="btn-primary" id="addProductEmptyBtn">
-        <i class="fas fa-plus"></i>
-        Thêm sản phẩm đầu tiên
-      </button>
+      <div class="empty-content">
+        <h3>Không tìm thấy sản phẩm</h3>
+        <p>Thử thay đổi bộ lọc hoặc thêm sản phẩm mới</p>
+        <button class="btn-primary" id="addProductEmptyBtn">
+          <i class="fas fa-plus"></i>
+          Thêm sản phẩm đầu tiên
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loadingState" style="display: none;">
+      <div class="loading-spinner"></div>
+      <p>Đang tải dữ liệu...</p>
     </div>
   </div>
 
-  <!-- Premium Product Modal -->
+  <!-- Product Modal -->
   <div class="modal fade modal-premium" id="productModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -184,159 +218,145 @@
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-
         <div class="modal-body">
           <form id="productForm">
             <input type="hidden" id="productId">
-
-            <div class="form-grid">
-              <!-- Cột 1: Thông tin cơ bản -->
-              <div class="form-column">
-                <div class="form-group">
-                  <label for="productName" class="form-label">
-                    <i class="fas fa-tag"></i>
-                    Tên sản phẩm *
-                  </label>
-                  <input type="text" class="form-control" id="productName" required placeholder="Nhập tên sản phẩm">
-                </div>
-
-                <div class="form-group">
-                  <label for="productSKU" class="form-label">
-                    <i class="fas fa-barcode"></i>
-                    Mã SKU *
-                  </label>
-                  <input type="text" class="form-control" id="productSKU" required placeholder="Nhập mã SKU">
-                </div>
-
-                <div class="form-group">
-                  <label for="productCategory" class="form-label">
-                    <i class="fas fa-folder"></i>
-                    Danh mục *
-                  </label>
-                  <select class="form-select" id="productCategory" required>
-                    <option value="">Chọn danh mục</option>
-                    {{#each categories}}
-                    <option value="{{this._id}}">{{this.ten_danh_muc}}</option>
-                    {{/each}}
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="productBrand" class="form-label">
-                    <i class="fas fa-trademark"></i>
-                    Thương hiệu *
-                  </label>
-                  <select class="form-select" id="productBrand" required>
-                    <option value="">Chọn thương hiệu</option>
-                    {{#each brands}}
-                    <option value="{{this._id}}">{{this.ten_thuong_hieu}}</option>
-                    {{/each}}
-                  </select>
-                </div>
-              </div>
-
-              <!-- Cột 2: Hình ảnh & Preview -->
-              <div class="form-column">
-                <div class="form-group">
-                  <label for="productImage" class="form-label">
-                    <i class="fas fa-image"></i>
-                    Hình ảnh sản phẩm
-                  </label>
-                  <input type="text" class="form-control" id="productImage" placeholder="https://example.com/image.jpg">
-                  <div class="form-text">Nhập URL hình ảnh sản phẩm</div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">
-                    <i class="fas fa-eye"></i>
-                    Preview hình ảnh
-                  </label>
-                  <div class="image-preview-premium" id="imagePreview">
-                    <div class="preview-placeholder">
-                      <i class="fas fa-image"></i>
-                    </div>
-                    <div class="preview-text">Preview hình ảnh sản phẩm</div>
+            
+            <div class="form-sections">
+              <!-- Basic Information -->
+              <div class="form-section">
+                <h4 class="section-title">
+                  <i class="fas fa-info-circle"></i>
+                  Thông tin cơ bản
+                </h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="productName" class="form-label">Tên sản phẩm *</label>
+                    <input type="text" class="form-control" id="productName" required 
+                           placeholder="Nhập tên sản phẩm">
+                  </div>
+                  <div class="form-group">
+                    <label for="productSKU" class="form-label">Mã SKU *</label>
+                    <input type="text" class="form-control" id="productSKU" required 
+                           placeholder="Nhập mã SKU">
+                  </div>
+                  <div class="form-group">
+                    <label for="productCategory" class="form-label">Danh mục *</label>
+                    <select class="form-select" id="productCategory" required>
+                      <option value="">Chọn danh mục</option>
+                      {{#each categories}}
+                      <option value="{{this.id}}">{{this.ten_danh_muc}}</option>
+                      {{/each}}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="productBrand" class="form-label">Thương hiệu *</label>
+                    <select class="form-select" id="productBrand" required>
+                      <option value="">Chọn thương hiệu</option>
+                      {{#each brands}}
+                      <option value="{{this.id}}">{{this.ten_thuong_hieu}}</option>
+                      {{/each}}
+                    </select>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Thông tin giá và trạng thái -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="productPrice" class="form-label">
+              <!-- Pricing -->
+              <div class="form-section">
+                <h4 class="section-title">
                   <i class="fas fa-money-bill-wave"></i>
-                  Giá bán *
-                </label>
-                <div class="input-group">
-                  <input type="number" class="form-control" id="productPrice" required placeholder="0" min="0">
-                  <span class="input-group-text">VNĐ</span>
+                  Thông tin giá
+                </h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="productPrice" class="form-label">Giá bán *</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="productPrice" required 
+                             placeholder="0" min="0">
+                      <span class="input-group-text">VNĐ</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="productOriginalPrice" class="form-label">Giá niêm yết</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="productOriginalPrice" 
+                             placeholder="0" min="0">
+                      <span class="input-group-text">VNĐ</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="productStatus" class="form-label">
-                  <i class="fas fa-circle"></i>
-                  Trạng thái *
-                </label>
-                <select class="form-select" id="productStatus" required>
-                  <option value="1">🟢 Đang kinh doanh</option>
-                  <option value="0">🔴 Ngừng kinh doanh</option>
-                  <option value="2">👁️ Ẩn</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Mô tả sản phẩm -->
-            <div class="form-group full-width">
-              <label for="productDescription" class="form-label">
-                <i class="fas fa-align-left"></i>
-                Mô tả sản phẩm
-              </label>
-              <textarea class="form-control" id="productDescription" rows="4"
-                placeholder="Mô tả chi tiết về sản phẩm..."></textarea>
-            </div>
-
-            <!-- Thông tin bổ sung -->
-            <div class="form-row">
-              <div class="form-group">
-                <label for="productWeight" class="form-label">
-                  <i class="fas fa-weight-hanging"></i>
-                  Trọng lượng
-                </label>
-                <div class="input-group">
-                  <input type="number" class="form-control" id="productWeight" placeholder="0" min="0">
-                  <span class="input-group-text">gram</span>
+              <!-- Media -->
+              <div class="form-section">
+                <h4 class="section-title">
+                  <i class="fas fa-image"></i>
+                  Hình ảnh
+                </h4>
+                <div class="form-group">
+                  <label for="productImage" class="form-label">URL hình ảnh chính</label>
+                  <input type="text" class="form-control" id="productImage" 
+                         placeholder="https://example.com/image.jpg">
+                </div>
+                <div class="image-preview-container">
+                  <div class="image-preview" id="imagePreview">
+                    <div class="preview-placeholder">
+                      <i class="fas fa-image"></i>
+                      <span>Preview hình ảnh</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="productSize" class="form-label">
-                  <i class="fas fa-ruler-combined"></i>
-                  Kích thước
-                </label>
-                <input type="text" class="form-control" id="productSize" placeholder="Dài x Rộng x Cao">
+              <!-- Status & Features -->
+              <div class="form-section">
+                <h4 class="section-title">
+                  <i class="fas fa-cog"></i>
+                  Trạng thái & Tính năng
+                </h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="productStatus" class="form-label">Trạng thái *</label>
+                    <select class="form-select" id="productStatus" required>
+                      <option value="1">🟢 Đang bán</option>
+                      <option value="0">🔴 Ngừng bán</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Tính năng</label>
+                    <div class="checkbox-group">
+                      <label class="checkbox-label">
+                        <input type="checkbox" id="productFeatured">
+                        <span class="checkmark"></span>
+                        <i class="fas fa-star"></i>
+                        Sản phẩm nổi bật
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <!-- Featured product toggle -->
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="productFeatured">
-              <label class="form-check-label" for="productFeatured">
-                <i class="fas fa-star"></i>
-                Sản phẩm nổi bật
-              </label>
+              <!-- Description -->
+              <div class="form-section">
+                <h4 class="section-title">
+                  <i class="fas fa-align-left"></i>
+                  Mô tả sản phẩm
+                </h4>
+                <div class="form-group">
+                  <textarea class="form-control" id="productDescription" rows="4"
+                            placeholder="Mô tả chi tiết về sản phẩm..."></textarea>
+                </div>
+              </div>
             </div>
           </form>
         </div>
-
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary-premium btn-premium" id="cancelProductBtn">
-            <i class="fas fa-times me-2"></i>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times"></i>
             Hủy bỏ
           </button>
-          <button type="button" class="btn btn-primary-premium btn-premium" id="saveProductBtn">
-            <i class="fas fa-save me-2"></i>
+          <button type="button" class="btn btn-primary" id="saveProductBtn">
+            <i class="fas fa-save"></i>
             <span id="saveButtonText">Thêm sản phẩm</span>
           </button>
         </div>
@@ -344,328 +364,60 @@
     </div>
   </div>
 
-  <!-- Categories Management Modal -->
-  <div class="modal fade modal-premium" id="categoriesModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-folder"></i>
-            <span>Quản lý danh mục</span>
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="management-header">
-            <h6>Danh sách danh mục</h6>
-            <button class="btn btn-primary" id="addCategoryBtn">
-              <i class="fas fa-plus me-2"></i> Thêm danh mục
-            </button>
-          </div>
-
-          <div class="table-container">
-            <table class="management-table" id="categoriesTable">
-              <thead>
-                <tr>
-                  <th width="15%">Tên danh mục</th>
-                  <th width="15%">Hình ảnh</th>
-                  <th width="25%">Mô tả</th>
-                  <th width="15%">Danh mục cha</th>
-                  <th width="5%">Thứ tự</th>
-                  <th width="15%">Trạng thái</th>
-                  <th width="10%">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody id="categoriesTableBody">
-                {{#each categories}}
-                <tr data-id="{{this._id}}">
-                  <td class="name-cell">
-                    <strong>{{this.ten_danh_muc}}</strong>
-                  </td>
-                  <td class="image-cell">
-                    {{#if this.anh_url}}
-                    <img src="{{this.anh_url}}" alt="{{this.ten_danh_muc}}" class="table-image"
-                      onerror="this.style.display='none'">
-                    {{else}}
-                    <div class="no-image">No image</div>
-                    {{/if}}
-                  </td>
-                  <td class="description-cell">{{this.mo_ta}}</td>
-
-                  <td class="parent-cell">
-                    {{#if this.danh_muc_cha_id}}
-                      {{#if this.danh_muc_cha_id.ten_danh_muc}}
-                        {{this.danh_muc_cha_id.ten_danh_muc}}
-                      {{else}}
-                        {{getCategoryNameById this.danh_muc_cha_id ../categories}}
-                      {{/if}}
-                    {{else}}
-                      <span class="text-muted">Không có</span>
-                    {{/if}}
-                  </td>
-
-                  <td class="order-cell">{{this.thu_tu}}</td>
-                  <td class="status-cell">
-                    <span class="status-badge {{#if (eq this.trang_thai 1)}}active{{else}}inactive{{/if}}">
-                      {{#if (eq this.trang_thai 1)}}🟢 Hoạt động{{else}}🔴 Ngừng HĐ{{/if}}
-                    </span>
-                  </td>
-                  <td class="actions-cell">
-                    <div class="action-buttons">
-                      <button class="btn-action edit edit-category-btn" data-id="{{this._id}}" title="Chỉnh sửa">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn-action delete delete-category-btn" data-id="{{this._id}}"
-                        data-name="{{this.ten_danh_muc}}" title="Xóa">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {{/each}}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary-premium btn-premium" id="closeCategoriesBtn">
-            <i class="fas fa-times me-2"></i>
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Category Form Modal -->
-  <div class="modal fade modal-premium" id="categoryModal" tabindex="-1" aria-hidden="true">
+  <!-- Product Details Modal (MongoDB Key-Value Management) -->
+  <div class="modal fade modal-premium" id="detailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <i class="fas fa-folder"></i>
-            <span id="categoryModalTitle">Thêm danh mục mới</span>
+            <i class="fas fa-cogs"></i>
+            <span>Quản lý thông số kỹ thuật</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="categoryForm">
-            <input type="hidden" id="categoryId">
-
-            <div class="form-grid">
-              <div class="form-column">
-                <div class="form-group">
-                  <label for="categoryName" class="form-label">Tên danh mục *</label>
-                  <input type="text" class="form-control" id="categoryName" required>
-                </div>
-
-                <div class="form-group">
-                  <label for="categoryParent" class="form-label">Danh mục cha</label>
-                  <select class="form-select" id="categoryParent" name="danh_muc_cha_id">
-                    <option value="">Không có</option>
-                    {{#each categories}}
-                    <option value="{{this._id}}">{{this.ten_danh_muc}}</option>
-                    {{/each}}
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="categoryOrder" class="form-label">Thứ tự hiển thị</label>
-                  <input type="number" class="form-control" id="categoryOrder" min="0" value="0">
-                </div>
-
-                <div class="form-group">
-                  <label for="categoryStatus" class="form-label">Trạng thái</label>
-                  <select class="form-select" id="categoryStatus">
-                    <option value="1">🟢 Hoạt động</option>
-                    <option value="0">🔴 Ngừng hoạt động</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-column">
-                <div class="form-group">
-                  <label for="categoryImage" class="form-label">Hình ảnh danh mục</label>
-                  <input type="text" class="form-control" id="categoryImage"
-                    placeholder="https://example.com/image.jpg">
-                  <div class="form-text">Nhập URL hình ảnh danh mục</div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Preview hình ảnh</label>
-                  <div class="image-preview-premium" id="categoryImagePreview">
-                    <div class="preview-placeholder">
-                      <i class="fas fa-image"></i>
-                    </div>
-                    <div class="preview-text">Preview hình ảnh danh mục</div>
-                  </div>
-                </div>
+          <div class="details-management">
+            <div class="management-header">
+              <h6 id="detailsProductName">Thông số cho: </h6>
+              <button class="btn btn-primary" id="addDetailBtn">
+                <i class="fas fa-plus"></i>
+                Thêm thông số
+              </button>
+            </div>
+            
+            <div class="key-value-editor">
+              <div class="key-value-list-editor" id="keyValueListEditor">
+                <!-- Dynamic key-value rows will be added here -->
               </div>
             </div>
 
-            <div class="form-group full-width">
-              <label for="categoryDescription" class="form-label">Mô tả danh mục</label>
-              <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+            <div class="quick-templates">
+              <h6>Mẫu thông số nhanh:</h6>
+              <div class="template-buttons">
+                <button class="template-btn" data-template="electronics">
+                  <i class="fas fa-laptop"></i>
+                  Điện tử
+                </button>
+                <button class="template-btn" data-template="fashion">
+                  <i class="fas fa-tshirt"></i>
+                  Thời trang
+                </button>
+                <button class="template-btn" data-template="home">
+                  <i class="fas fa-home"></i>
+                  Gia dụng
+                </button>
+              </div>
             </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary-premium btn-premium" id="cancelCategoryBtn">
-            <i class="fas fa-times me-2"></i>
-            Hủy
-          </button>
-          <button type="button" class="btn btn-primary-premium btn-premium" id="saveCategoryBtn">
-            <i class="fas fa-save me-2"></i>
-            <span id="saveCategoryButtonText">Lưu danh mục</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Brands Management Modal -->
-  <div class="modal fade modal-premium" id="brandsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-trademark"></i>
-            <span>Quản lý thương hiệu</span>
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="management-header">
-            <h6>Danh sách thương hiệu</h6>
-            <button class="btn btn-primary" id="addBrandBtn">
-              <i class="fas fa-plus me-2"></i> Thêm thương hiệu
-            </button>
-          </div>
-
-          <div class="table-container">
-            <table class="management-table" id="brandsTable">
-              <thead>
-                <tr>
-                  <th width="15%">Tên thương hiệu</th>
-                  <th width="15%">Logo</th>
-                  <th width="40%">Mô tả</th>
-                  <th width="15%">Trạng thái</th>
-                  <th width="10%">Ngày tạo</th>
-                  <th width="10%">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody id="brandsTableBody">
-                {{#each brands}}
-                <tr data-id="{{this._id}}">
-                  <td class="name-cell">
-                    <strong>{{this.ten_thuong_hieu}}</strong>
-                  </td>
-                  <td class="image-cell">
-                    {{#if this.logo_url}}
-                    <img src="{{this.logo_url}}" alt="{{this.ten_thuong_hieu}}" class="table-image"
-                      onerror="this.style.display='none'">
-                    {{else}}
-                    <div class="no-image">No logo</div>
-                    {{/if}}
-                  </td>
-                  <td class="description-cell">{{this.mo_ta}}</td>
-                  <td class="status-cell">
-                    <span class="status-badge {{#if (eq this.trang_thai 1)}}active{{else}}inactive{{/if}}">
-                      {{#if (eq this.trang_thai 1)}}🟢 Hoạt động{{else}}🔴 Ngừng HĐ{{/if}}
-                    </span>
-                  </td>
-                  <td class="date-cell">{{formatDate this.ngay_tao}}</td>
-                  <td class="actions-cell">
-                    <div class="action-buttons">
-                      <button class="btn-action edit edit-brand-btn" data-id="{{this._id}}" title="Chỉnh sửa">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn-action delete delete-brand-btn" data-id="{{this._id}}"
-                        data-name="{{this.ten_thuong_hieu}}" title="Xóa">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {{/each}}
-              </tbody>
-            </table>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary-premium btn-premium" id="closeBrandsBtn">
-            <i class="fas fa-times me-2"></i>
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Brand Form Modal -->
-  <div class="modal fade modal-premium" id="brandModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-trademark"></i>
-            <span id="brandModalTitle">Thêm thương hiệu mới</span>
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="brandForm">
-            <input type="hidden" id="brandId">
-
-            <div class="form-grid">
-              <div class="form-column">
-                <div class="form-group">
-                  <label for="brandName" class="form-label">Tên thương hiệu *</label>
-                  <input type="text" class="form-control" id="brandName" required>
-                </div>
-
-                <div class="form-group">
-                  <label for="brandStatus" class="form-label">Trạng thái</label>
-                  <select class="form-select" id="brandStatus">
-                    <option value="1">🟢 Hoạt động</option>
-                    <option value="0">🔴 Ngừng hoạt động</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-column">
-                <div class="form-group">
-                  <label for="brandLogo" class="form-label">Logo thương hiệu</label>
-                  <input type="text" class="form-control" id="brandLogo" placeholder="https://example.com/logo.jpg">
-                  <div class="form-text">Nhập URL logo thương hiệu</div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Preview logo</label>
-                  <div class="image-preview-premium" id="brandLogoPreview">
-                    <div class="preview-placeholder">
-                      <i class="fas fa-image"></i>
-                    </div>
-                    <div class="preview-text">Preview logo thương hiệu</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group full-width">
-              <label for="brandDescription" class="form-label">Mô tả thương hiệu</label>
-              <textarea class="form-control" id="brandDescription" rows="3"></textarea>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary-premium btn-premium" id="cancelBrandBtn">
-            <i class="fas fa-times me-2"></i>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times"></i>
             Hủy
           </button>
-          <button type="button" class="btn btn-primary-premium btn-premium" id="saveBrandBtn">
-            <i class="fas fa-save me-2"></i>
-            <span id="saveBrandButtonText">Lưu thương hiệu</span>
+          <button type="button" class="btn btn-primary" id="saveDetailsBtn">
+            <i class="fas fa-save"></i>
+            Lưu thông số
           </button>
         </div>
       </div>
@@ -674,38 +426,57 @@
 </div>
 
 <style>
-  /* Reset & Base */
+  /* Modern CSS Reset and Base Styles */
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  :root {
+    --primary: #667eea;
+    --primary-dark: #5a6fd8;
+    --secondary: #764ba2;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --dark: #1f2937;
+    --light: #f8fafc;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --border-radius: 12px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --transition: all 0.3s ease;
   }
 
   body {
-    background: #f8fafc;
-    color: #2d3748;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--light);
+    color: var(--gray-800);
     line-height: 1.6;
-    overflow-x: hidden;
   }
 
-  /* Main Layout */
   .main-content {
     min-height: 100vh;
-    padding: 20px;
-    background: #f8fafc;
+    padding: 24px;
     max-width: 100%;
-    overflow-x: hidden;
   }
 
-  /* Header */
+  /* Header Styles */
   .dashboard-header {
     background: white;
-    border-radius: 16px;
-    padding: 24px 28px;
+    border-radius: var(--border-radius);
+    padding: 28px 32px;
     margin-bottom: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
   }
 
   .header-content {
@@ -713,7 +484,7 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 20px;
   }
 
   .header-title {
@@ -723,8 +494,8 @@
   }
 
   .title-icon {
-    font-size: 2.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-size: 2.75rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -732,14 +503,14 @@
 
   .header-title h1 {
     margin: 0;
-    color: #2d3748;
-    font-size: 1.75rem;
+    font-size: 1.875rem;
     font-weight: 700;
+    color: var(--gray-800);
   }
 
   .header-title p {
     margin: 4px 0 0 0;
-    color: #718096;
+    color: var(--gray-500);
     font-size: 1rem;
   }
 
@@ -750,12 +521,12 @@
     flex-wrap: wrap;
   }
 
-  /* Buttons */
+  /* Button Styles */
   .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border: none;
-    padding: 12px 20px;
+    padding: 12px 24px;
     border-radius: 10px;
     cursor: pointer;
     display: flex;
@@ -763,71 +534,139 @@
     gap: 8px;
     font-weight: 600;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.2);
-    white-space: nowrap;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+    text-decoration: none;
   }
 
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: var(--shadow-lg);
   }
 
   .btn-secondary {
     background: white;
-    color: #4a5568;
-    border: 2px solid #e2e8f0;
-    padding: 10px 16px;
+    color: var(--gray-700);
+    border: 2px solid var(--gray-300);
+    padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-weight: 500;
     font-size: 0.9rem;
-    transition: all 0.3s ease;
+    transition: var(--transition);
   }
 
   .btn-secondary:hover {
-    background: #f7fafc;
-    border-color: #cbd5e0;
+    background: var(--gray-100);
+    border-color: var(--gray-400);
     transform: translateY(-1px);
   }
 
-  /* Search & Filter */
+  /* Stats Overview */
+  .stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .stat-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+  }
+
+  .stat-icon.total {
+    background: linear-gradient(135deg, #fed7d7, #feb2b2);
+    color: #e53e3e;
+  }
+
+  .stat-icon.available {
+    background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+    color: #38a169;
+  }
+
+  .stat-icon.busy {
+    background: linear-gradient(135deg, #fef5e7, #fbd38d);
+    color: #ed8936;
+  }
+
+  .stat-icon.premium {
+    background: linear-gradient(135deg, #e9d8fd, #d6bcfa);
+    color: #805ad5;
+  }
+
+  .stat-info h3 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--gray-800);
+    font-weight: 700;
+  }
+
+  .stat-info p {
+    margin: 4px 0 0 0;
+    color: var(--gray-500);
+    font-weight: 500;
+  }
+
+  /* Search and Filter */
   .search-filter-bar {
     background: white;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: var(--border-radius);
+    padding: 24px;
     margin-bottom: 24px;
     display: flex;
-    gap: 16px;
+    gap: 20px;
     align-items: center;
     flex-wrap: wrap;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
   }
 
   .search-box {
     display: flex;
     align-items: center;
-    background: #f7fafc;
+    background: var(--gray-100);
     border-radius: 10px;
-    padding: 10px 16px;
+    padding: 12px 20px;
     flex: 1;
-    min-width: 300px;
-    border: 2px solid #e2e8f0;
-    transition: all 0.3s ease;
+    min-width: 400px;
+    border: 2px solid var(--gray-200);
+    transition: var(--transition);
   }
 
   .search-box:focus-within {
-    border-color: #667eea;
+    border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
 
   .search-box i {
-    color: #a0aec0;
-    margin-right: 10px;
+    color: var(--gray-400);
+    margin-right: 12px;
   }
 
   .search-box input {
@@ -835,21 +674,21 @@
     background: none;
     outline: none;
     flex: 1;
-    padding: 6px 0;
+    padding: 4px 0;
     font-size: 0.95rem;
-    color: #2d3748;
+    color: var(--gray-800);
   }
 
   .search-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 10px 24px;
     border-radius: 8px;
     cursor: pointer;
-    margin-left: 10px;
+    margin-left: 12px;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: var(--transition);
   }
 
   .search-btn:hover {
@@ -864,135 +703,108 @@
   }
 
   .filter-select {
-    padding: 10px 14px;
-    border: 2px solid #e2e8f0;
+    padding: 10px 16px;
+    border: 2px solid var(--gray-200);
     border-radius: 8px;
     background: white;
-    color: #4a5568;
-    min-width: 150px;
+    color: var(--gray-700);
+    min-width: 160px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     font-size: 0.9rem;
   }
 
   .filter-select:focus {
-    border-color: #667eea;
+    border-color: var(--primary);
     outline: none;
   }
 
   .clear-filters {
     background: none;
-    border: 2px solid #e2e8f0;
-    color: #718096;
+    border: 2px solid var(--gray-200);
+    color: var(--gray-600);
     padding: 10px 16px;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
-    transition: all 0.3s ease;
+    transition: var(--transition);
   }
 
   .clear-filters:hover {
-    background: #f7fafc;
-    border-color: #cbd5e0;
-  }
-
-  /* Stats */
-  .stats-overview {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-
-  .stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-  }
-
-  .stat-icon.total {
-    background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-    color: #e53e3e;
-  }
-
-  .stat-icon.available {
-    background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
-    color: #38a169;
-  }
-
-  .stat-icon.busy {
-    background: linear-gradient(135deg, #fef5e7 0%, #fbd38d 100%);
-    color: #ed8936;
-  }
-
-  .stat-icon.hidden {
-    background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
-    color: #805ad5;
-  }
-
-  .stat-info h3 {
-    margin: 0;
-    font-size: 1.75rem;
-    color: #2d3748;
-    font-weight: 700;
-  }
-
-  .stat-info p {
-    margin: 4px 0 0 0;
-    color: #718096;
+    background: var(--gray-100);
+    border-color: var(--gray-300);
   }
 
   /* Products Grid */
   .products-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
   }
 
   .product-card {
     background: white;
-    border-radius: 12px;
+    border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
     display: flex;
     flex-direction: column;
-    height: 420px;
-    border: 1px solid #e2e8f0;
+    height: 520px;
+    border: 1px solid var(--gray-200);
     position: relative;
   }
 
   .product-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .product-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+  }
+
+  .product-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+  }
+
+  .product-badge.active {
+    background: var(--success);
+  }
+
+  .product-badge.inactive {
+    background: var(--danger);
+  }
+
+  .featured-badge {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .product-image {
     position: relative;
-    height: 180px;
+    height: 200px;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -1008,30 +820,6 @@
     transform: scale(1.05);
   }
 
-  .product-badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: white;
-    z-index: 2;
-  }
-
-  .product-badge.active {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-  }
-
-  .product-badge.inactive {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-  }
-
-  .product-badge.hidden {
-    background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%);
-  }
-
   .product-overlay {
     position: absolute;
     top: 0;
@@ -1043,7 +831,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: var(--transition);
     z-index: 1;
   }
 
@@ -1057,15 +845,15 @@
   }
 
   .btn-action {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     color: white;
     font-size: 1rem;
   }
@@ -1075,172 +863,241 @@
   }
 
   .btn-action.edit-btn:hover {
-    background: #667eea;
+    background: var(--primary);
     transform: scale(1.1);
   }
 
   .btn-action.delete-btn {
-    background: rgba(245, 101, 101, 0.9);
+    background: rgba(239, 68, 68, 0.9);
   }
 
   .btn-action.delete-btn:hover {
-    background: #e53e3e;
+    background: var(--danger);
     transform: scale(1.1);
   }
 
   .btn-action.toggle-status-btn {
-    background: rgba(237, 137, 54, 0.9);
+    background: rgba(245, 158, 11, 0.9);
   }
 
   .btn-action.toggle-status-btn:hover {
-    background: #ed8936;
+    background: var(--warning);
+    transform: scale(1.1);
+  }
+
+  .btn-action.details-btn {
+    background: rgba(139, 92, 246, 0.9);
+  }
+
+  .btn-action.details-btn:hover {
+    background: #8b5cf6;
     transform: scale(1.1);
   }
 
   .product-content {
-    padding: 16px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+    gap: 12px;
   }
 
   .product-title {
-    margin: 0 0 8px 0;
-    color: #2d3748;
-    font-size: 1.1rem;
+    margin: 0;
+    color: var(--gray-800);
+    font-size: 1.2rem;
     font-weight: 600;
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    min-height: 2.8em;
-  }
-
-  .product-description {
-    margin: 0 0 16px 0;
-    color: #718096;
-    line-height: 1.4;
-    font-size: 0.9rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    min-height: 2.8em;
-  }
-
-  .product-details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
-    flex-grow: 1;
-  }
-
-  .detail-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #4a5568;
-    font-size: 0.9rem;
-  }
-
-  .detail-item i {
-    color: #667eea;
-    width: 16px;
-  }
-
-  .price {
-    font-weight: 600;
-    color: #2d3748;
-  }
-
-  .product-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px solid #e2e8f0;
-    margin-top: auto;
   }
 
   .product-sku {
-    color: #a0aec0;
+    color: var(--gray-500);
     font-size: 0.85rem;
+    font-weight: 500;
   }
 
-  .product-status {
+  .price-section {
     display: flex;
     align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+  }
+
+  .current-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .original-price {
+    font-size: 1rem;
+    color: var(--gray-400);
+    text-decoration: line-through;
+  }
+
+  .product-meta {
+    display: flex;
+    flex-direction: column;
     gap: 6px;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--gray-600);
+    font-size: 0.9rem;
+  }
+
+  .meta-item i {
+    color: var(--primary);
+    width: 16px;
+  }
+
+  /* Details Section */
+  .details-section {
+    margin-top: auto;
+    border-top: 1px solid var(--gray-200);
+    padding-top: 16px;
+  }
+
+  .details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .details-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--gray-700);
+    font-weight: 600;
+  }
+
+  .btn-manage-details {
+    background: none;
+    border: 1px solid var(--gray-300);
+    color: var(--gray-600);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 0.8rem;
+  }
+
+  .btn-manage-details:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+  }
+
+  .key-value-list {
+    max-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .key-value-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--gray-100);
+    border-radius: 6px;
     font-size: 0.85rem;
-    color: #718096;
   }
 
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+  .key {
+    font-weight: 600;
+    color: var(--gray-700);
   }
 
-  .status-dot.active {
-    background: #38a169;
+  .value {
+    color: var(--gray-600);
   }
 
-  .status-dot.inactive {
-    background: #e53e3e;
-  }
-
-  .status-dot.hidden {
-    background: #805ad5;
+  .no-details {
+    text-align: center;
+    color: var(--gray-400);
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 12px;
   }
 
   /* Empty State */
   .empty-state {
-    text-align: center;
-    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    text-align: center;
   }
 
   .empty-icon {
     font-size: 4rem;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     opacity: 0.7;
   }
 
-  .empty-state h3 {
+  .empty-content h3 {
     margin: 0 0 8px 0;
-    color: #2d3748;
+    color: var(--gray-800);
     font-size: 1.5rem;
   }
 
-  .empty-state p {
+  .empty-content p {
     margin: 0 0 24px 0;
-    color: #718096;
+    color: var(--gray-500);
   }
 
-  /* Custom Modal Styles */
-  .modal-premium {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* Loading State */
+  .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
   }
 
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--gray-200);
+    border-left: 4px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Modal Styles */
   .modal-premium .modal-content {
     border: none;
     border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
-    background: #f8fafc;
   }
 
   .modal-premium .modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     color: white;
     border-bottom: none;
-    padding: 20px 24px;
-    position: relative;
+    padding: 24px 28px;
   }
 
   .modal-premium .modal-title {
@@ -1251,90 +1108,83 @@
     gap: 10px;
   }
 
-  .modal-premium .modal-title i {
-    font-size: 1.5rem;
-  }
-
-  .modal-premium .btn-close {
-    filter: invert(1);
-    opacity: 0.8;
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
-
   .modal-premium .modal-body {
-    padding: 24px;
-    background: #f8fafc;
+    padding: 28px;
     max-height: 70vh;
     overflow-y: auto;
   }
 
-  /* Form Layouts */
+  .modal-premium .modal-footer {
+    border-top: 1px solid var(--gray-200);
+    padding: 20px 28px;
+    background: white;
+  }
+
+  /* Form Styles */
+  .form-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .form-section {
+    background: var(--gray-50);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    color: var(--gray-700);
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .section-title i {
+    color: var(--primary);
+  }
+
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-
-  .form-column {
-    display: flex;
-    flex-direction: column;
     gap: 16px;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
   }
 
   .form-group {
     margin-bottom: 0;
   }
 
-  .form-group.full-width {
-    grid-column: 1 / -1;
-  }
-
   .form-label {
     font-weight: 600;
-    color: #2d3748;
+    color: var(--gray-700);
     margin-bottom: 8px;
     font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .form-label i {
-    color: #667eea;
-    width: 16px;
+    display: block;
   }
 
   .form-control,
   .form-select {
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--gray-200);
     border-radius: 8px;
     padding: 12px;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     background: white;
+    width: 100%;
   }
 
   .form-control:focus,
   .form-select:focus {
-    border-color: #667eea;
+    border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
   }
 
   .input-group {
+    display: flex;
     border-radius: 8px;
     overflow: hidden;
   }
@@ -1344,276 +1194,206 @@
   }
 
   .input-group .input-group-text {
-    background: #f7fafc;
-    border: 2px solid #e2e8f0;
+    background: var(--gray-100);
+    border: 2px solid var(--gray-200);
     border-left: none;
-    color: #718096;
+    color: var(--gray-600);
+    padding: 12px;
     border-radius: 0 8px 8px 0;
   }
 
-  .form-text {
-    color: #a0aec0;
-    font-size: 0.85rem;
-    margin-top: 4px;
+  .image-preview-container {
+    margin-top: 12px;
   }
 
-  /* Image Preview */
-  .image-preview-premium {
-    border: 2px dashed #cbd5e0;
+  .image-preview {
+    border: 2px dashed var(--gray-300);
     border-radius: 12px;
-    padding: 24px;
+    padding: 40px;
     text-align: center;
-    color: #718096;
+    color: var(--gray-500);
     background: white;
-    transition: all 0.3s ease;
-    min-height: 160px;
+    transition: var(--transition);
+    min-height: 200px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
 
-  .image-preview-premium.has-image {
-    border-color: #667eea;
-    background: #f7fafc;
-    padding: 16px;
+  .image-preview.has-image {
+    border-color: var(--primary);
+    background: var(--gray-50);
+    padding: 20px;
   }
 
-  .image-preview-premium img {
+  .image-preview img {
     max-width: 100%;
-    max-height: 140px;
+    max-height: 160px;
     border-radius: 8px;
   }
 
-  .image-preview-premium .preview-placeholder {
+  .preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .preview-placeholder i {
     font-size: 3rem;
-    margin-bottom: 12px;
-    color: #cbd5e0;
+    color: var(--gray-300);
   }
 
-  .image-preview-premium .preview-text {
-    font-size: 1rem;
+  .checkbox-group {
+    margin-top: 8px;
   }
 
-  /* Modal Footer */
-  .modal-premium .modal-footer {
-    border-top: 1px solid #e2e8f0;
-    padding: 20px 24px;
-    background: white;
-  }
-
-  .modal-premium .btn-premium {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.3s ease;
-    border: none;
+  .checkbox-label {
     display: flex;
     align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--gray-700);
   }
 
-  .modal-premium .btn-primary-premium {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+  .checkbox-label input[type="checkbox"] {
+    display: none;
   }
 
-  .modal-premium .btn-primary-premium:hover {
-    transform: translateY(-2px);
-  }
-
-  .modal-premium .btn-secondary-premium {
-    background: white;
-    color: #4a5568;
-    border: 2px solid #e2e8f0;
-  }
-
-  .modal-premium .btn-secondary-premium:hover {
-    background: #f7fafc;
-    border-color: #cbd5e0;
-  }
-
-  /* Status Badges */
-  .status-badge {
-    display: inline-flex;
+  .checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--gray-300);
+    border-radius: 4px;
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    justify-content: center;
+    transition: var(--transition);
   }
 
-  .status-badge.active {
-    background: rgba(72, 187, 120, 0.1);
-    color: #38a169;
+  .checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary);
+    border-color: var(--primary);
   }
 
-  .status-badge.inactive {
-    background: rgba(245, 101, 101, 0.1);
-    color: #e53e3e;
+  .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
   }
 
-  .status-badge.hidden {
-    background: rgba(128, 90, 213, 0.1);
-    color: #805ad5;
+  /* Details Management Styles */
+  .details-management {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
 
-  /* Management Tables */
   .management-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
   }
 
   .management-header h6 {
     margin: 0;
-    color: #2d3748;
-    font-size: 1.2rem;
+    color: var(--gray-700);
+    font-size: 1.1rem;
     font-weight: 600;
   }
 
-  .table-container {
-    background: white;
-    border-radius: 12px;
+  .key-value-editor {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
-    max-height: 60vh;
+  }
+
+  .key-value-list-editor {
+    max-height: 300px;
     overflow-y: auto;
   }
 
-  .management-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0;
-    table-layout: fixed;
+  .key-value-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--gray-200);
+    align-items: center;
   }
 
-  .management-table th {
-    background: #f7fafc;
-    padding: 10px;
-    text-align: center;
-    vertical-align: middle;
-    font-weight: 600;
-    color: #2d3748;
-    font-size: 0.9rem;
-    border-bottom: 2px solid #e2e8f0;
-    position: sticky;
-    top: 0;
-    background: #f7fafc;
-    z-index: 10;
-  }
-
-  .management-table td {
-    padding: 14px 12px;
-    border-bottom: 1px solid #e2e8f0;
-    vertical-align: middle;
-    color: #4a5568;
-    font-size: 0.9rem;
-    word-wrap: break-word;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .management-table tr:last-child td {
+  .key-value-row:last-child {
     border-bottom: none;
   }
 
-  .management-table tr:hover {
-    background: #f7fafc;
+  .key-value-row input {
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
   }
 
-  /* Table Cell Styles */
-  .name-cell {
-    font-weight: 600;
-    color: #2d3748;
+  .key-value-row input:focus {
+    border-color: var(--primary);
+    outline: none;
   }
 
-  .image-cell {
-    text-align: center;
-    padding: 0;
-  }
-
-  .table-image {
-    max-width: 60px;
-    max-height: 45px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-
-  }
-
-  .no-image {
-    color: #a0aec0;
-    font-style: italic;
-    font-size: 0.85rem;
-  }
-
-  .description-cell {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .parent-cell,
-  .order-cell,
-  .date-cell {
-    text-align: center;
-  }
-
-  .status-cell {
-    text-align: center;
-  }
-
-  .actions-cell {
-    text-align: center;
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-  }
-
-  .btn-action {
-    width: 36px;
-    height: 36px;
+  .remove-row-btn {
+    background: var(--danger);
+    color: white;
     border: none;
     border-radius: 6px;
+    padding: 8px 12px;
     cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .remove-row-btn:hover {
+    background: #dc2626;
+  }
+
+  .quick-templates {
+    border-top: 1px solid var(--gray-200);
+    padding-top: 16px;
+  }
+
+  .quick-templates h6 {
+    margin-bottom: 12px;
+    color: var(--gray-700);
+    font-weight: 600;
+  }
+
+  .template-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .template-btn {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    color: var(--gray-700);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
+    gap: 6px;
+    font-size: 0.9rem;
   }
 
-  .btn-action.edit {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
+  .template-btn:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
   }
 
-  .btn-action.edit:hover {
-    background: #667eea;
-    color: white;
-  }
-
-  .btn-action.delete {
-    background: rgba(245, 101, 101, 0.1);
-    color: #e53e3e;
-  }
-
-  .btn-action.delete:hover {
-    background: #e53e3e;
-    color: white;
-  }
-
-  /* Responsive */
+  /* Responsive Design */
   @media (max-width: 1200px) {
-    .form-grid {
-      grid-template-columns: 1fr;
+    .products-grid {
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     }
   }
 
@@ -1655,18 +1435,12 @@
       grid-template-columns: 1fr;
     }
 
-    .management-header {
-      flex-direction: column;
-      gap: 12px;
+    .form-grid {
+      grid-template-columns: 1fr;
     }
 
-    .table-container {
-      overflow-x: auto;
-    }
-
-    .management-table {
-      table-layout: auto;
-      min-width: 800px;
+    .stats-overview {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -1676,17 +1450,15 @@
       width: 100%;
     }
 
-    .btn-primary {
+    .btn-primary,
+    .btn-secondary {
       width: 100%;
       justify-content: center;
     }
 
-    .stats-overview {
-      grid-template-columns: 1fr;
-    }
-
-    .form-row {
-      grid-template-columns: 1fr;
+    .product-card {
+      height: auto;
+      min-height: 500px;
     }
 
     .modal-premium .modal-footer {
@@ -1694,7 +1466,7 @@
       gap: 8px;
     }
 
-    .modal-premium .btn-premium {
+    .modal-premium .btn {
       width: 100%;
       justify-content: center;
     }
@@ -1705,192 +1477,72 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-  // Utility functions
-  function getStatusText(status) {
-    switch (status) {
-      case 1: return '🟢 Đang bán';
-      case 0: return '🔴 Ngừng bán';
-      case 2: return '👁️ Ẩn';
-      default: return 'N/A';
-    }
-  }
+  // Utility Functions
+  const Utils = {
+    formatCurrency(amount) {
+      return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+      }).format(amount || 0);
+    },
 
-  function getStatusClass(status) {
-    switch (status) {
-      case 1: return 'active';
-      case 0: return 'inactive';
-      case 2: return 'hidden';
-      default: return 'inactive';
-    }
-  }
-
-  function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN');
-  }
-
-  // State Management
-  class AppState {
-    constructor() {
-      this.currentView = 'products';
-      this.lastActiveModal = null;
-      this.autoOpenModal = null;
-      this.loadState();
-    }
-
-    saveState() {
-      const state = {
-        currentView: this.currentView,
-        lastActiveModal: this.lastActiveModal,
-        autoOpenModal: this.autoOpenModal
+    debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
       };
-      localStorage.setItem('productManagerState', JSON.stringify(state));
-    }
+    },
 
-    loadState() {
-      try {
-        const saved = localStorage.getItem('productManagerState');
-        if (saved) {
-          const state = JSON.parse(saved);
-          this.currentView = state.currentView || 'products';
-          this.lastActiveModal = state.lastActiveModal;
-          this.autoOpenModal = state.autoOpenModal;
+    generateSlug(text) {
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[đĐ]/g, 'd')
+        .replace(/[^a-z0-9 -]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+    },
+
+    validateImageUrl(url) {
+      return new Promise((resolve) => {
+        if (!url) {
+          resolve(false);
+          return;
         }
-      } catch (e) {
-        console.log('No saved state found');
-      }
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+      });
     }
+  };
 
-    setCurrentView(view) {
-      this.currentView = view;
-      this.saveState();
-    }
-
-    setLastActiveModal(modalId) {
-      this.lastActiveModal = modalId;
-      this.saveState();
-    }
-
-    getLastActiveModal() {
-      return this.lastActiveModal;
-    }
-
-    setAutoOpenModal(modalId) {
-      this.autoOpenModal = modalId;
-      this.saveState();
-    }
-
-    getAutoOpenModal() {
-      return this.autoOpenModal;
-    }
-
-    clearAutoOpenModal() {
-      this.autoOpenModal = null;
-      this.saveState();
-    }
-  }
-
-  // Modal Manager
-  class ModalManager {
-    constructor(appState) {
-      this.modalStack = [];
-      this.appState = appState;
-    }
-
-    openModal(modalId) {
-      const modalElement = document.getElementById(modalId);
-      if (!modalElement) return;
-
-      // Lưu modal hiện tại vào state
-      this.appState.setLastActiveModal(modalId);
-
-      // Đóng modal hiện tại nếu có
-      if (this.modalStack.length > 0) {
-        const currentModal = bootstrap.Modal.getInstance(document.getElementById(this.modalStack[this.modalStack.length - 1]));
-        if (currentModal) {
-          currentModal.hide();
+  // API Service
+  class ProductAPIService {
+    static async getProducts() {
+        try {
+            const response = await fetch('/api/sanpham');  // ✅ Sửa thành API endpoint
+            if (!response.ok) throw new Error('Lỗi khi lấy dữ liệu sản phẩm');
+            const data = await response.json();
+            return data.sanphams;  // Chỉ trả về mảng sản phẩm
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
         }
-      }
-
-      // Mở modal mới
-      const modal = new bootstrap.Modal(modalElement);
-      modal.show();
-
-      // Thêm vào stack
-      this.modalStack.push(modalId);
-    }
-
-    closeCurrentModal() {
-      if (this.modalStack.length === 0) return;
-
-      const currentModalId = this.modalStack.pop();
-      const currentModal = bootstrap.Modal.getInstance(document.getElementById(currentModalId));
-      if (currentModal) {
-        currentModal.hide();
-      }
-    }
-
-    goBackToPreviousModal() {
-      if (this.modalStack.length <= 1) return;
-
-      // Đóng modal hiện tại
-      this.closeCurrentModal();
-
-      // Mở modal trước đó
-      if (this.modalStack.length > 0) {
-        const previousModalId = this.modalStack[this.modalStack.length - 1];
-        const previousModal = new bootstrap.Modal(document.getElementById(previousModalId));
-        previousModal.show();
-      }
-    }
-
-    getCurrentModal() {
-      if (this.modalStack.length === 0) return null;
-      return this.modalStack[this.modalStack.length - 1];
-    }
-
-    clearStack() {
-      this.modalStack = [];
-    }
-
-    // Khôi phục modal cuối cùng từ state
-    restoreLastModal() {
-      const lastModalId = this.appState.getLastActiveModal();
-      const autoOpenModal = this.appState.getAutoOpenModal();
-
-      // Ưu tiên mở modal autoOpenModal nếu có
-      if (autoOpenModal && document.getElementById(autoOpenModal)) {
-        this.openModal(autoOpenModal);
-        this.appState.clearAutoOpenModal();
-      } else if (lastModalId && document.getElementById(lastModalId)) {
-        this.openModal(lastModalId);
-      }
-    }
-  }
-
-  // API Class
-  class ProductAPI {
-    static async getAllProducts() {
-      try {
-        const response = await fetch('/api/sanpham');
-        if (!response.ok) throw new Error('Lỗi khi lấy dữ liệu sản phẩm');
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
     }
 
     static async createProduct(productData) {
       try {
-        const response = await fetch('/api/sanpham', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(productData)
+        const response = await fetch('/api/sanpham', {  // ✅ Sửa endpoint
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
         });
 
         if (!response.ok) {
@@ -1907,13 +1559,10 @@
 
     static async updateProduct(id, productData) {
       try {
-        const response = await fetch(`/api/sanpham/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(productData)
+        const response = await fetch(`/api/sanpham/${id}`, {  // ✅ Sửa endpoint
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
         });
 
         if (!response.ok) {
@@ -1930,8 +1579,8 @@
 
     static async deleteProduct(id) {
       try {
-        const response = await fetch(`/api/sanpham/${id}`, {
-          method: 'DELETE'
+        const response = await fetch(`/api/sanpham/${id}`, {  // ✅ Sửa endpoint
+            method: 'DELETE'
         });
 
         if (!response.ok) {
@@ -1948,16 +1597,8 @@
 
     static async toggleProductStatus(id, currentStatus) {
       try {
-        // Logic chuyển đổi trạng thái: 1 -> 2 -> 0 -> 1
-        let newStatus;
-
-        newStatus = 2;
-        if (currentStatus == 2) {
-          newStatus = 1;
-        }
-
-        // Sử dụng PUT để cập nhật trạng thái sản phẩm
-        const response = await fetch(`/api/sanpham/${id}`, {
+        const newStatus = currentStatus === 1 ? 0 : 1;
+        const response = await fetch(`/admin/sanpham/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1977,11 +1618,11 @@
       }
     }
 
-    // Category APIs
-    static async getAllCategories() {
+    // MongoDB Details APIs
+    static async getProductDetails(productId) {
       try {
-        const response = await fetch('/api/danhmuc');
-        if (!response.ok) throw new Error('Lỗi khi lấy danh mục');
+        const response = await fetch(`/admin/sanpham/${productId}/chitiet`);
+        if (!response.ok) throw new Error('Lỗi khi lấy chi tiết sản phẩm');
         return await response.json();
       } catch (error) {
         console.error('API Error:', error);
@@ -1989,464 +1630,73 @@
       }
     }
 
-    static async createCategory(categoryData) {
+    static async updateProductDetails(productId, details) {
       try {
-        const response = await fetch('/api/danhmuc', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(categoryData)
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi thêm danh mục');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
-    }
-
-    static async updateCategory(id, categoryData) {
-      try {
-        const response = await fetch(`/api/danhmuc/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(categoryData)
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi cập nhật danh mục');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
-    }
-
-    static async deleteCategory(id) {
-      try {
-        const response = await fetch(`/api/danhmuc/${id}`, {
-          method: 'DELETE'
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi xóa danh mục');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
-    }
-    static async toggleCategoryStatus(id, currentStatus) {
-      try {
-        console.log('🔄 toggleCategoryStatus called:', { id, currentStatus });
-
-        // Logic chuyển đổi trạng thái danh mục: 1 <-> 0
-        const newStatus = currentStatus === 1 ? 0 : 1;
-
-        const categoryData = {
-          trang_thai: newStatus
-        };
-
-        console.log('📦 Sending data:', categoryData);
-
-        const response = await fetch(`/api/danhmuc/${id}`, {
+        const response = await fetch(`/admin/sanpham/${productId}/chitiet`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(categoryData)
-        });
-
-        console.log('📡 Response status:', response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi chuyển trạng thái danh mục');
-        }
-
-        const result = await response.json();
-        console.log('✅ Result:', result);
-        return result;
-
-      } catch (error) {
-        console.error('❌ API Error:', error);
-        throw error;
-      }
-    }
-    // Brand APIs
-    static async getAllBrands() {
-      try {
-        const response = await fetch('/api/thuonghieu');
-        if (!response.ok) throw new Error('Lỗi khi lấy thương hiệu');
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
-    }
-
-    static async createBrand(brandData) {
-      try {
-        const response = await fetch('/api/thuonghieu', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(brandData)
+          body: JSON.stringify(details)
         });
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi thêm thương hiệu');
+          throw new Error(errorText || 'Lỗi khi cập nhật chi tiết sản phẩm');
         }
 
         return await response.json();
       } catch (error) {
         console.error('API Error:', error);
-        throw error;
-      }
-    }
-
-    static async updateBrand(id, brandData) {
-      try {
-        const response = await fetch(`/api/thuonghieu/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(brandData)
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi cập nhật thương hiệu');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
-    }
-
-    static async deleteBrand(id) {
-      try {
-        const response = await fetch(`/api/thuonghieu/${id}`, {
-          method: 'DELETE'
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi xóa thương hiệu');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-      }
-    }
-    static async toggleBrandStatus(id, currentStatus) {
-      try {
-        console.log('🔄 toggleBrandStatus called:', { id, currentStatus });
-
-        // Logic chuyển đổi trạng thái thương hiệu: 1 <-> 0
-        const newStatus = currentStatus === 1 ? 0 : 1;
-
-        const brandData = {
-          trang_thai: newStatus
-        };
-
-        console.log('📦 Sending data:', brandData);
-
-        const response = await fetch(`/api/thuonghieu/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(brandData)
-        });
-
-        console.log('📡 Response status:', response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Lỗi khi chuyển trạng thái thương hiệu');
-        }
-
-        const result = await response.json();
-        console.log('✅ Result:', result);
-        return result;
-
-      } catch (error) {
-        console.error('❌ API Error:', error);
         throw error;
       }
     }
   }
 
-  // Main Application
+  // Product Manager Class
   class ProductManager {
     constructor() {
-      this.currentEditId = null;
       this.products = [];
-      this.categories = [];
-      this.brands = [];
-      this.appState = new AppState();
-      this.modalManager = new ModalManager(this.appState);
+      this.currentEditId = null;
+      this.currentDetailsProductId = null;
+      this.detailsData = {};
       this.init();
     }
 
     async init() {
-      console.log('🚀 Khởi tạo ProductManager...');
-      await this.loadInitialData();
+      await this.loadProducts();
       this.bindEvents();
-      this.setupImagePreviews();
+      this.setupImagePreview();
       this.updateStats();
-
-      // Chỉ restore modal nếu không phải là form thêm sản phẩm
-      const autoOpenModal = this.appState.getAutoOpenModal();
-      if (autoOpenModal && autoOpenModal !== 'productModal') {
-        setTimeout(() => {
-          this.modalManager.restoreLastModal();
-        }, 500);
-      }
-    }
-
-    async loadInitialData() {
-      try {
-        console.log('🔄 Đang tải dữ liệu ban đầu...');
-        await Promise.all([
-          this.loadProducts(),
-          this.loadCategories(),
-          this.loadBrands()
-        ]);
-        console.log('✅ Tải dữ liệu thành công');
-      } catch (error) {
-        console.error('❌ Lỗi tải dữ liệu:', error);
-        this.showError('Không thể tải dữ liệu: ' + error.message);
-      }
-    }
-
-    setupImagePreviews() {
-      // Product image preview
-      const productImageInput = document.getElementById('productImage');
-      if (productImageInput) {
-        productImageInput.addEventListener('input', (e) => {
-          this.updateImagePreview(e.target.value, 'imagePreview');
-        });
-      }
-
-      // Category image preview
-      const categoryImageInput = document.getElementById('categoryImage');
-      if (categoryImageInput) {
-        categoryImageInput.addEventListener('input', (e) => {
-          this.updateImagePreview(e.target.value, 'categoryImagePreview');
-        });
-      }
-
-      // Brand logo preview
-      const brandLogoInput = document.getElementById('brandLogo');
-      if (brandLogoInput) {
-        brandLogoInput.addEventListener('input', (e) => {
-          this.updateImagePreview(e.target.value, 'brandLogoPreview');
-        });
-      }
-    }
-
-    updateImagePreview(imageUrl, previewId) {
-      const preview = document.getElementById(previewId);
-      if (!preview) return;
-
-      // Clear previous content
-      preview.innerHTML = '';
-      preview.classList.remove('has-image');
-
-      if (imageUrl && imageUrl.trim() !== '') {
-        // Hiển thị loading
-        preview.innerHTML = `
-          <div class="preview-placeholder preview-loading">
-            <i class="fas fa-spinner fa-spin"></i>
-          </div>
-          <div class="preview-text">Đang tải ảnh...</div>
-        `;
-
-        // Tạo image element mới
-        const img = new Image();
-        img.src = imageUrl;
-        img.alt = 'Preview';
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '140px';
-        img.style.borderRadius = '8px';
-        img.style.display = 'none';
-
-        // Xử lý khi ảnh load thành công
-        img.onload = () => {
-          console.log('✅ Image loaded successfully');
-          preview.innerHTML = '';
-          preview.appendChild(img);
-          preview.classList.add('has-image');
-          img.style.display = 'block';
-        };
-
-        // Xử lý khi ảnh lỗi
-        img.onerror = () => {
-          console.error('❌ Failed to load image');
-          preview.innerHTML = `
-            <div class="preview-placeholder preview-error">
-              <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="preview-text">Không thể tải ảnh</div>
-          `;
-          preview.classList.remove('has-image');
-        };
-
-        // Thêm image vào DOM để bắt đầu load
-        preview.appendChild(img);
-
-      } else {
-        // Không có URL, hiển thị placeholder
-        preview.innerHTML = `
-          <div class="preview-placeholder">
-            <i class="fas fa-image"></i>
-          </div>
-          <div class="preview-text">Preview hình ảnh</div>
-        `;
-        preview.classList.remove('has-image');
-      }
     }
 
     async loadProducts() {
       try {
-        console.log('🔄 Đang tải sản phẩm...');
-        this.products = await ProductAPI.getAllProducts();
-        console.log('✅ Tải thành công:', this.products.length, 'sản phẩm');
+        this.showLoading(true);
+        this.products = await ProductAPIService.getProducts();
+        this.showLoading(false);
         this.updateStats();
       } catch (error) {
-        console.error('❌ Lỗi tải sản phẩm:', error);
+        this.showLoading(false);
         this.showError('Không thể tải danh sách sản phẩm: ' + error.message);
       }
     }
 
-    async loadCategories() {
-      try {
-        console.log('🔄 Đang tải danh mục...');
-        this.categories = await ProductAPI.getAllCategories();
-        console.log('✅ Tải thành công:', this.categories.length, 'danh mục');
-      } catch (error) {
-        console.error('❌ Lỗi tải danh mục:', error);
-        this.showError('Không thể tải danh sách danh mục: ' + error.message);
-      }
-    }
-
-    async loadBrands() {
-      try {
-        console.log('🔄 Đang tải thương hiệu...');
-        this.brands = await ProductAPI.getAllBrands();
-        console.log('✅ Tải thành công:', this.brands.length, 'thương hiệu');
-      } catch (error) {
-        console.error('❌ Lỗi tải thương hiệu:', error);
-        this.showError('Không thể tải danh sách thương hiệu: ' + error.message);
-      }
-    }
-
-    updateStats() {
-      const total = this.products.length;
-      const active = this.products.filter(p => p.trang_thai === 1).length;
-      const inactive = this.products.filter(p => p.trang_thai === 0).length;
-      const hidden = this.products.filter(p => p.trang_thai === 2).length;
-
-      const totalEl = document.getElementById('totalProducts');
-      const activeEl = document.getElementById('countActive');
-      const inactiveEl = document.getElementById('countInactive');
-      const hiddenEl = document.getElementById('countHidden');
-
-      if (totalEl) totalEl.textContent = total;
-      if (activeEl) activeEl.textContent = active;
-      if (inactiveEl) inactiveEl.textContent = inactive;
-      if (hiddenEl) hiddenEl.textContent = hidden;
-    }
-
     bindEvents() {
-      console.log('🔗 Đang bind events...');
+      // Product Management
+      document.getElementById('addProductBtn')?.addEventListener('click', () => this.openProductModal());
+      document.getElementById('addProductEmptyBtn')?.addEventListener('click', () => this.openProductModal());
+      document.getElementById('saveProductBtn')?.addEventListener('click', () => this.saveProduct());
+      document.getElementById('refreshBtn')?.addEventListener('click', () => this.loadProducts());
 
-      // Thêm sản phẩm
-      const addProductBtn = document.getElementById('addProductBtn');
-      const addProductEmptyBtn = document.getElementById('addProductEmptyBtn');
+      // Search and Filter
+      document.getElementById('searchBtn')?.addEventListener('click', () => this.filterProducts());
+      document.getElementById('clearFilters')?.addEventListener('click', () => this.clearFilters());
+      document.getElementById('searchInput')?.addEventListener('input', 
+        Utils.debounce(() => this.filterProducts(), 300)
+      );
 
-      if (addProductBtn) {
-        addProductBtn.addEventListener('click', () => {
-          console.log('🎯 Click thêm sản phẩm');
-          this.openProductModal();
-        });
-      }
-
-      if (addProductEmptyBtn) {
-        addProductEmptyBtn.addEventListener('click', () => {
-          console.log('🎯 Click thêm sản phẩm từ empty state');
-          this.openProductModal();
-        });
-      }
-
-      // Lưu sản phẩm
-      const saveProductBtn = document.getElementById('saveProductBtn');
-      if (saveProductBtn) {
-        saveProductBtn.addEventListener('click', (e) => {
-          console.log('💾 Click lưu sản phẩm');
-          e.preventDefault();
-          this.saveProduct();
-        });
-      }
-
-      // Hủy sản phẩm
-      const cancelProductBtn = document.getElementById('cancelProductBtn');
-      if (cancelProductBtn) {
-        cancelProductBtn.addEventListener('click', () => {
-          console.log('❌ Click hủy sản phẩm');
-          this.modalManager.closeCurrentModal();
-        });
-      }
-
-      // Tìm kiếm & lọc
-      const searchBtn = document.getElementById('searchBtn');
-      const clearFiltersBtn = document.getElementById('clearFilters');
-      const searchInput = document.getElementById('searchInput');
-
-      if (searchBtn) {
-        searchBtn.addEventListener('click', () => this.filterProducts());
-      }
-
-      if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', () => this.clearFilters());
-      }
-
-      if (searchInput) {
-        searchInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            this.filterProducts();
-          }
-        });
-      }
-
-      // Edit và Delete buttons cho sản phẩm
+      // Event Delegation for Product Cards
       document.addEventListener('click', (e) => {
         if (e.target.closest('.edit-btn')) {
           this.handleEditProduct(e.target.closest('.edit-btn'));
@@ -2457,118 +1707,88 @@
         if (e.target.closest('.toggle-status-btn')) {
           this.handleToggleStatus(e.target.closest('.toggle-status-btn'));
         }
-        if (e.target.closest('.toggle-category-status-btn')) {
-          this.handleToggleCategoryStatus(e.target.closest('.toggle-category-status-btn'));
+        if (e.target.closest('.btn-manage-details')) {
+          this.handleManageDetails(e.target.closest('.btn-manage-details'));
         }
-        if (e.target.closest('.toggle-brand-status-btn')) {
-          this.handleToggleBrandStatus(e.target.closest('.toggle-brand-status-btn'));
-        }
-      });
-
-      // Quản lý danh mục và thương hiệu
-      const manageCategoriesBtn = document.getElementById('manageCategoriesBtn');
-      const manageBrandsBtn = document.getElementById('manageBrandsBtn');
-
-      if (manageCategoriesBtn) {
-        manageCategoriesBtn.addEventListener('click', () => {
-          this.openCategoriesModal();
-        });
-      }
-
-      if (manageBrandsBtn) {
-        manageBrandsBtn.addEventListener('click', () => {
-          this.openBrandsModal();
-        });
-      }
-
-      // Category events
-      const addCategoryBtn = document.getElementById('addCategoryBtn');
-      const saveCategoryBtn = document.getElementById('saveCategoryBtn');
-      const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
-      const closeCategoriesBtn = document.getElementById('closeCategoriesBtn');
-
-      if (addCategoryBtn) {
-        addCategoryBtn.addEventListener('click', () => {
-          this.openCategoryModal();
-        });
-      }
-
-      if (saveCategoryBtn) {
-        saveCategoryBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          this.saveCategory();
-        });
-      }
-
-      if (cancelCategoryBtn) {
-        cancelCategoryBtn.addEventListener('click', () => {
-          console.log('❌ Click hủy danh mục');
-          this.modalManager.goBackToPreviousModal();
-        });
-      }
-
-      if (closeCategoriesBtn) {
-        closeCategoriesBtn.addEventListener('click', () => {
-          this.modalManager.closeCurrentModal();
-        });
-      }
-
-      // Brand events
-      const addBrandBtn = document.getElementById('addBrandBtn');
-      const saveBrandBtn = document.getElementById('saveBrandBtn');
-      const cancelBrandBtn = document.getElementById('cancelBrandBtn');
-      const closeBrandsBtn = document.getElementById('closeBrandsBtn');
-
-      if (addBrandBtn) {
-        addBrandBtn.addEventListener('click', () => {
-          this.openBrandModal();
-        });
-      }
-
-      if (saveBrandBtn) {
-        saveBrandBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          this.saveBrand();
-        });
-      }
-
-      if (cancelBrandBtn) {
-        cancelBrandBtn.addEventListener('click', () => {
-          console.log('❌ Click hủy thương hiệu');
-          this.modalManager.goBackToPreviousModal();
-        });
-      }
-
-      if (closeBrandsBtn) {
-        closeBrandsBtn.addEventListener('click', () => {
-          this.modalManager.closeCurrentModal();
-        });
-      }
-
-      // Edit và Delete category/brand buttons
-      document.addEventListener('click', (e) => {
-        if (e.target.closest('.edit-category-btn')) {
-          this.handleEditCategory(e.target.closest('.edit-category-btn'));
-        }
-        if (e.target.closest('.delete-category-btn')) {
-          this.handleDeleteCategory(e.target.closest('.delete-category-btn'));
-        }
-        if (e.target.closest('.edit-brand-btn')) {
-          this.handleEditBrand(e.target.closest('.edit-brand-btn'));
-        }
-        if (e.target.closest('.delete-brand-btn')) {
-          this.handleDeleteBrand(e.target.closest('.delete-brand-btn'));
+        if (e.target.closest('.details-btn')) {
+          this.handleManageDetails(e.target.closest('.details-btn'));
         }
       });
 
-      // Xử lý sự kiện đóng modal bằng btn-close
-      document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-close')) {
-          this.modalManager.closeCurrentModal();
-        }
-      });
+      // Details Management
+      document.getElementById('addDetailBtn')?.addEventListener('click', () => this.addDetailRow());
+      document.getElementById('saveDetailsBtn')?.addEventListener('click', () => this.saveProductDetails());
 
-      console.log('✅ Bind events thành công');
+      // Quick Templates
+      document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          this.applyTemplate(e.target.closest('.template-btn').dataset.template);
+        });
+      });
+    }
+
+    setupImagePreview() {
+      const imageInput = document.getElementById('productImage');
+      if (imageInput) {
+        imageInput.addEventListener('input', Utils.debounce((e) => {
+          this.updateImagePreview(e.target.value);
+        }, 500));
+      }
+    }
+
+    updateImagePreview(imageUrl) {
+      const preview = document.getElementById('imagePreview');
+      if (!preview) return;
+
+      preview.innerHTML = '';
+      
+      if (imageUrl && imageUrl.trim() !== '') {
+        Utils.validateImageUrl(imageUrl).then(isValid => {
+          if (isValid) {
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Product Preview';
+            preview.appendChild(img);
+            preview.classList.add('has-image');
+          } else {
+            this.showImageError(preview);
+          }
+        });
+      } else {
+        this.showImagePlaceholder(preview);
+      }
+    }
+
+    showImagePlaceholder(preview) {
+      preview.innerHTML = `
+        <div class="preview-placeholder">
+          <i class="fas fa-image"></i>
+          <span>Preview hình ảnh</span>
+        </div>
+      `;
+      preview.classList.remove('has-image');
+    }
+
+    showImageError(preview) {
+      preview.innerHTML = `
+        <div class="preview-placeholder">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Không thể tải ảnh</span>
+        </div>
+      `;
+      preview.classList.remove('has-image');
+    }
+
+    updateStats() {
+      const total = this.products.length;
+      const active = this.products.filter(p => p.trang_thai === 1).length;
+      const inactive = this.products.filter(p => p.trang_thai === 0).length;
+      const featured = this.products.filter(p => p.san_pham_noi_bat).length;
+
+      document.getElementById('totalProducts').textContent = total;
+      document.getElementById('countActive').textContent = active;
+      document.getElementById('countInactive').textContent = inactive;
+      document.getElementById('countFeatured').textContent = featured;
     }
 
     filterProducts() {
@@ -2581,12 +1801,13 @@
       let visibleCount = 0;
 
       cards.forEach(card => {
-        const name = card.getAttribute('data-name')?.toLowerCase() || '';
+        const name = card.querySelector('.product-title')?.textContent.toLowerCase() || '';
+        const sku = card.querySelector('.product-sku')?.textContent.toLowerCase() || '';
         const status = card.getAttribute('data-status') || '';
         const category = card.getAttribute('data-category') || '';
         const brand = card.getAttribute('data-brand') || '';
 
-        const matchesSearch = name.includes(searchTerm);
+        const matchesSearch = name.includes(searchTerm) || sku.includes(searchTerm);
         const matchesStatus = !statusFilter || status === statusFilter;
         const matchesCategory = !categoryFilter || category === categoryFilter;
         const matchesBrand = !brandFilter || brand === brandFilter;
@@ -2602,196 +1823,129 @@
       this.toggleEmptyState(visibleCount === 0);
     }
 
-    toggleEmptyState(show) {
-      const emptyState = document.getElementById('emptyState');
-      const productsGrid = document.getElementById('productsGrid');
-
-      if (emptyState && productsGrid) {
-        if (show) {
-          productsGrid.style.display = 'none';
-          emptyState.style.display = 'block';
-        } else {
-          productsGrid.style.display = 'grid';
-          emptyState.style.display = 'none';
-        }
-      }
-    }
-
     clearFilters() {
-      const searchInput = document.getElementById('searchInput');
-      const statusFilter = document.getElementById('statusFilter');
-      const categoryFilter = document.getElementById('categoryFilter');
-      const brandFilter = document.getElementById('brandFilter');
-
-      if (searchInput) searchInput.value = '';
-      if (statusFilter) statusFilter.value = '';
-      if (categoryFilter) categoryFilter.value = '';
-      if (brandFilter) brandFilter.value = '';
-
+      document.getElementById('searchInput').value = '';
+      document.getElementById('statusFilter').value = '';
+      document.getElementById('categoryFilter').value = '';
+      document.getElementById('brandFilter').value = '';
       this.filterProducts();
     }
 
-    openProductModal(product = null) {
-      try {
-        this.currentEditId = product ? product._id : null;
-
-        const title = document.getElementById('modalTitle');
-        const saveText = document.getElementById('saveButtonText');
-
-        if (product) {
-          if (title) title.textContent = 'Chỉnh sửa sản phẩm';
-          if (saveText) saveText.textContent = 'Cập nhật sản phẩm';
-          this.fillProductForm(product);
-        } else {
-          if (title) title.textContent = 'Thêm sản phẩm mới';
-          if (saveText) saveText.textContent = 'Thêm sản phẩm';
-          this.resetProductForm();
-        }
-
-        this.modalManager.openModal('productModal');
-        console.log('✅ Product modal opened successfully');
-
-      } catch (error) {
-        console.error('❌ Lỗi mở product modal:', error);
+    toggleEmptyState(show) {
+      const emptyState = document.getElementById('emptyState');
+      const productsGrid = document.getElementById('productsGrid');
+      
+      if (emptyState && productsGrid) {
+        emptyState.style.display = show ? 'flex' : 'none';
+        productsGrid.style.display = show ? 'none' : 'grid';
       }
+    }
+
+    showLoading(show) {
+      const loadingState = document.getElementById('loadingState');
+      const productsGrid = document.getElementById('productsGrid');
+      
+      if (loadingState && productsGrid) {
+        loadingState.style.display = show ? 'flex' : 'none';
+        productsGrid.style.display = show ? 'none' : 'grid';
+      }
+    }
+
+    // Product Modal Methods
+    openProductModal(product = null) {
+      this.currentEditId = product ? product.id : null;
+
+      const modal = new bootstrap.Modal(document.getElementById('productModal'));
+      const title = document.getElementById('modalTitle');
+      const saveText = document.getElementById('saveButtonText');
+
+      if (product) {
+        title.textContent = 'Chỉnh sửa sản phẩm';
+        saveText.textContent = 'Cập nhật sản phẩm';
+        this.fillProductForm(product);
+      } else {
+        title.textContent = 'Thêm sản phẩm mới';
+        saveText.textContent = 'Thêm sản phẩm';
+        this.resetProductForm();
+      }
+
+      modal.show();
     }
 
     fillProductForm(product) {
-      console.log('📝 Đang fill product form với dữ liệu:', product);
+      document.getElementById('productId').value = product.id;
+      document.getElementById('productName').value = product.ten_san_pham || '';
+      document.getElementById('productSKU').value = product.ma_sku || '';
+      document.getElementById('productPrice').value = product.gia_ban || '';
+      document.getElementById('productOriginalPrice').value = product.gia_niem_yet || '';
+      document.getElementById('productCategory').value = product.danh_muc_id || '';
+      document.getElementById('productBrand').value = product.thuong_hieu_id || '';
+      document.getElementById('productStatus').value = product.trang_thai || '1';
+      document.getElementById('productImage').value = product.link_anh || '';
+      document.getElementById('productDescription').value = product.mo_ta || '';
+      document.getElementById('productFeatured').checked = product.san_pham_noi_bat || false;
 
-      // Set values với null checks
-      this.setElementValue('productId', product._id);
-      this.setElementValue('productName', product.ten_san_pham);
-      this.setElementValue('productSKU', product.ma_sku);
-      this.setElementValue('productPrice', product.gia_ban);
-      this.setElementValue('productStatus', product.trang_thai);
-      this.setElementValue('productImage', product.link_anh);
-      this.setElementValue('productDescription', product.mo_ta);
-      this.setElementValue('productWeight', product.trong_luong);
-      this.setElementValue('productSize', product.kich_thuoc);
-      this.setElementValue('productCategory', product.danh_muc_id?._id || product.danh_muc_id);
-      this.setElementValue('productBrand', product.thuong_hieu_id?._id || product.thuong_hieu_id);
-
-      // Set checkbox
-      const featuredCheckbox = document.getElementById('productFeatured');
-      if (featuredCheckbox) {
-        featuredCheckbox.checked = product.san_pham_noi_bat || false;
-      }
-
-      // Cập nhật preview ảnh
-      this.updateImagePreview(product.link_anh || '', 'imagePreview');
-    }
-
-    setElementValue(elementId, value) {
-      const element = document.getElementById(elementId);
-      if (element) {
-        // FIXED: Xử lý tất cả các trường hợp bao gồm giá trị 0
-        if (value === 0 || value === '0') {
-          element.value = '0';
-        } else if (value === false) {
-          element.value = 'false';
-        } else if (value === true) {
-          element.value = 'true';
-        } else {
-          element.value = value || '';
-        }
-      }
+      this.updateImagePreview(product.link_anh);
     }
 
     resetProductForm() {
-      const form = document.getElementById('productForm');
-      if (form) {
-        form.reset();
-      }
-
-      this.setElementValue('productStatus', '1');
-
-      const featuredCheckbox = document.getElementById('productFeatured');
-      if (featuredCheckbox) {
-        featuredCheckbox.checked = false;
-      }
-
-      // Reset preview ảnh
-      this.updateImagePreview('', 'imagePreview');
+      document.getElementById('productForm').reset();
+      document.getElementById('productStatus').value = '1';
+      this.updateImagePreview('');
     }
 
     async saveProduct() {
       try {
-        console.log('🔄 Bắt đầu lưu sản phẩm...');
-
-        const productName = document.getElementById('productName')?.value.trim() || '';
-        const productSKU = document.getElementById('productSKU')?.value.trim() || '';
-
-        // Tạo slug unique bằng cách kết hợp tên sản phẩm + SKU
-        const baseSlug = productName.toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[đĐ]/g, 'd')
-          .replace(/[^a-z0-9 -]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-');
-
-        const slug = `${baseSlug}-${productSKU.toLowerCase()}`;
-
-        // Lấy giá trị từ form
-        const formData = {
-          ten_san_pham: productName,
-          ma_sku: productSKU,
-          gia_ban: parseInt(document.getElementById('productPrice')?.value) || 0,
-          gia_niem_yet: parseInt(document.getElementById('productPrice')?.value) || 0,
-          trang_thai: Number(document.getElementById('productStatus')?.value),
-          link_anh: document.getElementById('productImage')?.value.trim() || '',
-          mo_ta: document.getElementById('productDescription')?.value.trim() || '',
-          trong_luong: document.getElementById('productWeight')?.value ? parseInt(document.getElementById('productWeight').value) : null,
-          kich_thuoc: document.getElementById('productSize')?.value.trim() || '',
-          san_pham_noi_bat: document.getElementById('productFeatured')?.checked || false,
-          mo_ta_ngan: (document.getElementById('productDescription')?.value.trim() || '').substring(0, 100),
-          slug: slug,
-          luot_xem: 0,
-          danh_muc_id: document.getElementById('productCategory')?.value || '',
-          thuong_hieu_id: document.getElementById('productBrand')?.value || ''
-        };
-
-        console.log('📦 Dữ liệu product form:', formData);
-
-        // Validate form
+        const formData = this.getProductFormData();
+        
         if (!this.validateProductForm(formData)) {
-          console.log('❌ Validate product form thất bại');
           return;
         }
 
         let result;
         if (this.currentEditId) {
-          console.log('✏️ Đang cập nhật sản phẩm:', this.currentEditId);
-          result = await ProductAPI.updateProduct(this.currentEditId, formData);
+          result = await ProductAPIService.updateProduct(this.currentEditId, formData);
           this.showSuccess('Cập nhật sản phẩm thành công');
         } else {
-          console.log('➕ Đang thêm sản phẩm mới');
-          result = await ProductAPI.createProduct(formData);
+          result = await ProductAPIService.createProduct(formData);
           this.showSuccess('Thêm sản phẩm thành công');
         }
 
-        console.log('✅ Kết quả:', result);
-
-        this.modalManager.closeCurrentModal();
-        // Reload trang để cập nhật dữ liệu mới
-        this.reloadPage();
+        bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+        await this.loadProducts();
 
       } catch (error) {
-        console.error('💥 Lỗi khi lưu sản phẩm:', error);
         this.showError('Không thể lưu sản phẩm: ' + error.message);
       }
     }
 
-    validateProductForm(formData) {
-      console.log('🔍 Đang validate product form...');
+    getProductFormData() {
+      const productName = document.getElementById('productName').value.trim();
+      const productSKU = document.getElementById('productSKU').value.trim();
+      
+      return {
+        ten_san_pham: productName,
+        ma_sku: productSKU,
+        gia_ban: parseInt(document.getElementById('productPrice').value) || 0,
+        gia_niem_yet: parseInt(document.getElementById('productOriginalPrice').value) || 0,
+        danh_muc_id: document.getElementById('productCategory').value,
+        thuong_hieu_id: document.getElementById('productBrand').value,
+        trang_thai: parseInt(document.getElementById('productStatus').value),
+        link_anh: document.getElementById('productImage').value.trim(),
+        mo_ta: document.getElementById('productDescription').value.trim(),
+        san_pham_noi_bat: document.getElementById('productFeatured').checked,
+        slug: Utils.generateSlug(productName + '-' + productSKU),
+        mo_ta_ngan: (document.getElementById('productDescription').value.trim() || '').substring(0, 100)
+      };
+    }
 
+    validateProductForm(formData) {
       const errors = [];
 
-      if (!formData.ten_san_pham.trim()) {
+      if (!formData.ten_san_pham) {
         errors.push('Vui lòng nhập tên sản phẩm');
       }
-      if (!formData.ma_sku.trim()) {
+      if (!formData.ma_sku) {
         errors.push('Vui lòng nhập mã SKU');
       }
       if (!formData.gia_ban || formData.gia_ban <= 0) {
@@ -2809,79 +1963,28 @@
         return false;
       }
 
-      console.log('✅ Validate product form thành công');
       return true;
     }
 
+    // Product Actions
     handleEditProduct(button) {
-      const productId = button?.getAttribute('data-id');
-      if (productId) {
-        const product = this.products.find(p => p._id === productId);
-        if (product) {
-          this.openProductModal(product);
-        }
-      }
-    }
-
-    async handleToggleStatus(button) {
-      const productId = button?.getAttribute('data-id');
-      const currentStatus = parseInt(button?.getAttribute('data-status'));
-      const productName = button?.getAttribute('data-name');
-
-      if (!productId || currentStatus === undefined) {
-        console.error('❌ Thiếu thông tin sản phẩm để chuyển trạng thái');
-        return;
-      }
-
-      let newStatus, actionText;
-      if (currentStatus === 2) {
-        newStatus = 1;
-        actionText = 'hiện';
-      } else {
-        newStatus = 2;
-        actionText = 'ẩn';
-      }
-
-
-      const result = await Swal.fire({
-        title: 'Xác nhận chuyển trạng thái?',
-        html: `Bạn có chắc muốn ${actionText} sản phẩm <strong>${productName}</strong>?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#ed8936',
-        cancelButtonColor: '#667eea',
-        confirmButtonText: `Đồng ý ${actionText}`,
-        cancelButtonText: 'Hủy'
-      });
-
-      if (result.isConfirmed) {
-        try {
-          await ProductAPI.toggleProductStatus(productId, currentStatus);
-          this.showSuccess(`Đã ${actionText} sản phẩm thành công`);
-          // Reload trang để cập nhật dữ liệu mới
-          this.reloadPage();
-        } catch (error) {
-          console.error('❌ Lỗi chuyển trạng thái sản phẩm:', error);
-          this.showError('Không thể chuyển trạng thái sản phẩm: ' + error.message);
-        }
+      const productId = button.getAttribute('data-id');
+      const product = this.products.find(p => p.id === productId);
+      if (product) {
+        this.openProductModal(product);
       }
     }
 
     async handleDeleteProduct(button) {
-      const productId = button?.getAttribute('data-id');
-      const productName = button?.getAttribute('data-name');
-
-      if (!productId || !productName) {
-        console.error('❌ Thiếu thông tin sản phẩm để xóa');
-        return;
-      }
+      const productId = button.getAttribute('data-id');
+      const productName = button.getAttribute('data-name');
 
       const result = await Swal.fire({
         title: 'Xác nhận xóa?',
         html: `Bạn có chắc muốn xóa <strong>${productName}</strong>?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#e53e3e',
+        confirmButtonColor: '#ef4444',
         cancelButtonColor: '#667eea',
         confirmButtonText: 'Xóa',
         cancelButtonText: 'Hủy'
@@ -2889,200 +1992,28 @@
 
       if (result.isConfirmed) {
         try {
-          await ProductAPI.deleteProduct(productId);
+          await ProductAPIService.deleteProduct(productId);
           this.showSuccess('Xóa sản phẩm thành công');
-          // Reload trang để cập nhật dữ liệu mới
-          this.reloadPage();
+          await this.loadProducts();
         } catch (error) {
-          console.error('❌ Lỗi xóa sản phẩm:', error);
           this.showError('Không thể xóa sản phẩm: ' + error.message);
         }
       }
     }
 
-    // Category Management
-    openCategoriesModal() {
-      try {
-        this.modalManager.openModal('categoriesModal');
-        console.log('✅ Categories modal opened');
-      } catch (error) {
-        console.error('❌ Lỗi mở categories modal:', error);
-      }
-    }
+    async handleToggleStatus(button) {
+      const productId = button.getAttribute('data-id');
+      const currentStatus = parseInt(button.getAttribute('data-status'));
+      const productName = button.getAttribute('data-name');
 
-    openCategoryModal(category = null) {
-      try {
-        this.currentEditId = category ? category._id : null;
-
-        const title = document.getElementById('categoryModalTitle');
-        const saveText = document.getElementById('saveCategoryButtonText');
-
-        if (category) {
-          if (title) title.textContent = 'Chỉnh sửa danh mục';
-          if (saveText) saveText.textContent = 'Cập nhật danh mục';
-          this.fillCategoryForm(category);
-        } else {
-          if (title) title.textContent = 'Thêm danh mục mới';
-          if (saveText) saveText.textContent = 'Thêm danh mục';
-          this.resetCategoryForm();
-        }
-
-        this.modalManager.openModal('categoryModal');
-        console.log('✅ Category modal opened');
-
-      } catch (error) {
-        console.error('❌ Lỗi mở category modal:', error);
-      }
-    }
-
-    fillCategoryForm(category) {
-      console.log('📝 Đang fill category form với dữ liệu:', category);
-
-      this.setElementValue('categoryId', category._id);
-      this.setElementValue('categoryName', category.ten_danh_muc);
-      this.setElementValue('categoryDescription', category.mo_ta);
+      const actionText = currentStatus === 1 ? 'ngừng bán' : 'bán';
       
-      this.setElementValue('categoryOrder', category.thu_tu || 0);
-      this.setElementValue('categoryStatus', String(category.trang_thai));
-      this.setElementValue('categoryImage', category.anh_url || '');
-
-      const categoryParentSelect = document.getElementById('categoryParent');
-      if (categoryParentSelect) {
-        let parentIdValue = '';
-        
-        if (category.danh_muc_cha_id) {
-          // Xử lý cả Object và string
-          if (typeof category.danh_muc_cha_id === 'object') {
-            parentIdValue = category.danh_muc_cha_id._id || category.danh_muc_cha_id.toString();
-          } else {
-            parentIdValue = category.danh_muc_cha_id.toString();
-          }
-        }
-        
-        console.log('🔍 Setting category parent value:', parentIdValue);
-        categoryParentSelect.value = parentIdValue;
-        
-        // Debug sau khi set
-        console.log('🔍 After setting - Selected value:', categoryParentSelect.value);
-      }
-
-      // Cập nhật preview ảnh
-      this.updateImagePreview(category.anh_url || '', 'categoryImagePreview');
-    }
-
-    resetCategoryForm() {
-      const form = document.getElementById('categoryForm');
-      if (form) {
-        form.reset();
-      }
-      this.setElementValue('categoryStatus', '1');
-      this.setElementValue('categoryOrder', '0');
-      this.setElementValue('categoryImage', '');
-
-      // Reset preview ảnh
-      this.updateImagePreview('', 'categoryImagePreview');
-    }
-
-    async saveCategory() {
-      try {
-        console.log('🔄 Bắt đầu lưu danh mục...');
-        
-        const categoryParentSelect = document.getElementById('categoryParent');
-        const categoryParentValue = categoryParentSelect ? categoryParentSelect.value : '';
-
-        const categoryName = document.getElementById('categoryName')?.value.trim() || '';
-
-        // Tạo slug từ tên danh mục
-        const slug = categoryName.toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[đĐ]/g, 'd')
-          .replace(/[^a-z0-9 -]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-');
-
-        let danhMucChaId = null;
-        if (categoryParentValue && categoryParentValue.trim() !== '') {
-          danhMucChaId = categoryParentValue;
-          console.log('✅ Danh mục cha được chọn:', danhMucChaId);
-        } else {
-          console.log('❌ Không có danh mục cha được chọn');
-        }
-
-        // Lấy giá trị từ form
-        const formData = {
-          ten_danh_muc: categoryName,
-          mo_ta: document.getElementById('categoryDescription')?.value.trim() || '',
-          danh_muc_cha_id: danhMucChaId,
-          thu_tu: parseInt(document.getElementById('categoryOrder')?.value),
-          trang_thai: Number(document.getElementById('categoryStatus')?.value),
-          anh_url: document.getElementById('categoryImage')?.value.trim() || '',
-          slug: slug
-        };
-
-        console.log('📦 Dữ liệu category form:', formData);
-
-        // Validate form
-        if (!categoryName.trim()) {
-          this.showError('Vui lòng nhập tên danh mục');
-          return;
-        }
-
-        let result;
-        if (this.currentEditId) {
-          console.log('✏️ Đang cập nhật danh mục:', this.currentEditId);
-          result = await ProductAPI.updateCategory(this.currentEditId, formData);
-          this.showSuccess('Cập nhật danh mục thành công');
-        } else {
-          console.log('➕ Đang thêm danh mục mới');
-          result = await ProductAPI.createCategory(formData);
-          this.showSuccess('Thêm danh mục thành công');
-        }
-
-        console.log('✅ Kết quả:', result);
-
-        // Đặt auto open modal để sau khi reload sẽ mở lại form danh mục
-        this.appState.setAutoOpenModal('categoriesModal');
-
-        // Reload trang để cập nhật dữ liệu mới
-        this.reloadPage();
-
-      } catch (error) {
-        console.error('💥 Lỗi khi lưu danh mục:', error);
-        this.showError('Không thể lưu danh mục: ' + error.message);
-      }
-    }
-
-    handleEditCategory(button) {
-      const categoryId = button?.getAttribute('data-id');
-      if (categoryId) {
-        const category = this.categories.find(c => c._id === categoryId);
-        if (category) {
-          this.openCategoryModal(category);
-        }
-      }
-    }
-    async handleToggleCategoryStatus(button) {
-      const categoryId = button?.getAttribute('data-id');
-      const currentStatus = Number(button?.getAttribute('data-status'));
-      const categoryName = button?.getAttribute('data-name');
-
-      console.log('🔍 Toggle Category:', { categoryId, currentStatus, categoryName });
-
-      if (!categoryId || currentStatus === undefined) {
-        console.error('❌ Thiếu thông tin danh mục');
-        return;
-      }
-
-      const newStatus = currentStatus === 1 ? 0 : 1;
-      const actionText = newStatus === 1 ? 'kích hoạt' : 'ngừng kích hoạt';
-
       const result = await Swal.fire({
         title: 'Xác nhận chuyển trạng thái?',
-        html: `Bạn có chắc muốn ${actionText} danh mục <strong>${categoryName}</strong>?`,
+        html: `Bạn có chắc muốn ${actionText} sản phẩm <strong>${productName}</strong>?`,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonColor: '#ed8936',
+        confirmButtonColor: '#f59e0b',
         cancelButtonColor: '#667eea',
         confirmButtonText: `Đồng ý ${actionText}`,
         cancelButtonText: 'Hủy'
@@ -3090,270 +2021,137 @@
 
       if (result.isConfirmed) {
         try {
-          await ProductAPI.toggleCategoryStatus(categoryId, currentStatus);
-          this.showSuccess(`Đã ${actionText} danh mục thành công`);
-          this.appState.setAutoOpenModal('categoriesModal');
-          this.reloadPage();
+          await ProductAPIService.toggleProductStatus(productId, currentStatus);
+          this.showSuccess(`Đã ${actionText} sản phẩm thành công`);
+          await this.loadProducts();
         } catch (error) {
-          console.error('❌ Lỗi toggle category:', error);
-          this.showError('Không thể chuyển trạng thái: ' + error.message);
-        }
-      }
-    }
-    async handleDeleteCategory(button) {
-      const categoryId = button?.getAttribute('data-id');
-      const categoryName = button?.getAttribute('data-name');
-
-      if (!categoryId || !categoryName) {
-        console.error('❌ Thiếu thông tin danh mục để xóa');
-        return;
-      }
-
-      const result = await Swal.fire({
-        title: 'Xác nhận xóa?',
-        html: `Bạn có chắc muốn xóa <strong>${categoryName}</strong>?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e53e3e',
-        cancelButtonColor: '#667eea',
-        confirmButtonText: 'Xóa',
-        cancelButtonText: 'Hủy'
-      });
-
-      if (result.isConfirmed) {
-        try {
-          await ProductAPI.deleteCategory(categoryId);
-          this.showSuccess('Xóa danh mục thành công');
-
-          // Đặt auto open modal để sau khi reload sẽ mở lại form danh mục
-          this.appState.setAutoOpenModal('categoriesModal');
-
-          // Reload trang để cập nhật dữ liệu mới
-          this.reloadPage();
-
-        } catch (error) {
-          console.error('❌ Lỗi xóa danh mục:', error);
-          let errorMessage = error.message;
-          errorMessage = errorMessage.replace(/[{}"']/g, '');
-          this.showError(error.message);
+          this.showError('Không thể chuyển trạng thái sản phẩm: ' + error.message);
         }
       }
     }
 
-    // Brand Management
-    openBrandsModal() {
+    // MongoDB Details Management
+    async handleManageDetails(button) {
+      const productId = button.getAttribute('data-id');
+      this.currentDetailsProductId = productId;
+
       try {
-        this.modalManager.openModal('brandsModal');
-        console.log('✅ Brands modal opened');
+        this.detailsData = await ProductAPIService.getProductDetails(productId);
+        this.openDetailsModal();
       } catch (error) {
-        console.error('❌ Lỗi mở brands modal:', error);
+        this.showError('Không thể tải chi tiết sản phẩm: ' + error.message);
       }
     }
 
-    openBrandModal(brand = null) {
+    openDetailsModal() {
+      const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+      const product = this.products.find(p => p.id === this.currentDetailsProductId);
+      
+      if (product) {
+        document.getElementById('detailsProductName').textContent = 
+          `Thông số cho: ${product.ten_san_pham}`;
+      }
+
+      this.renderDetailsEditor();
+      modal.show();
+    }
+
+    renderDetailsEditor() {
+      const container = document.getElementById('keyValueListEditor');
+      container.innerHTML = '';
+
+      // Remove system fields
+      const { _id, __v, sql_product_id, ...displayDetails } = this.detailsData;
+
+      for (const [key, value] of Object.entries(displayDetails)) {
+        this.addDetailRow(key, value);
+      }
+    }
+
+    addDetailRow(key = '', value = '') {
+      const container = document.getElementById('keyValueListEditor');
+      const row = document.createElement('div');
+      row.className = 'key-value-row';
+      row.innerHTML = `
+        <input type="text" class="detail-key" placeholder="Tên thông số" value="${key}">
+        <input type="text" class="detail-value" placeholder="Giá trị" value="${value}">
+        <button type="button" class="remove-row-btn">
+          <i class="fas fa-trash"></i>
+        </button>
+      `;
+      
+      row.querySelector('.remove-row-btn').addEventListener('click', () => row.remove());
+      container.appendChild(row);
+    }
+
+    applyTemplate(templateType) {
+      const templates = {
+        electronics: {
+          'Màn hình': '15.6 inch',
+          'CPU': 'Intel Core i5',
+          'RAM': '8GB',
+          'Ổ cứng': '256GB SSD',
+          'Card đồ họa': 'Intel UHD Graphics'
+        },
+        fashion: {
+          'Chất liệu': 'Cotton 100%',
+          'Kích thước': 'M, L, XL',
+          'Màu sắc': 'Đen, Trắng, Xanh',
+          'Xuất xứ': 'Việt Nam',
+          'Bảo hành': '6 tháng'
+        },
+        home: {
+          'Chất liệu': 'Nhựa ABS',
+          'Kích thước': '30x40x50 cm',
+          'Trọng lượng': '2.5 kg',
+          'Màu sắc': 'Trắng, Đen',
+          'Bảo hành': '12 tháng'
+        }
+      };
+
+      const template = templates[templateType];
+      if (!template) return;
+
+      const container = document.getElementById('keyValueListEditor');
+      container.innerHTML = '';
+
+      for (const [key, value] of Object.entries(template)) {
+        this.addDetailRow(key, value);
+      }
+    }
+
+    async saveProductDetails() {
       try {
-        this.currentEditId = brand ? brand._id : null;
-
-        const title = document.getElementById('brandModalTitle');
-        const saveText = document.getElementById('saveBrandButtonText');
-
-        if (brand) {
-          if (title) title.textContent = 'Chỉnh sửa thương hiệu';
-          if (saveText) saveText.textContent = 'Cập nhật thương hiệu';
-          this.fillBrandForm(brand);
-        } else {
-          if (title) title.textContent = 'Thêm thương hiệu mới';
-          if (saveText) saveText.textContent = 'Thêm thương hiệu';
-          this.resetBrandForm();
-        }
-
-        this.modalManager.openModal('brandModal');
-        console.log('✅ Brand modal opened');
-
-      } catch (error) {
-        console.error('❌ Lỗi mở brand modal:', error);
-      }
-    }
-
-    fillBrandForm(brand) {
-      console.log('📝 Đang fill brand form với dữ liệu:', brand);
-
-      this.setElementValue('brandId', brand._id);
-      this.setElementValue('brandName', brand.ten_thuong_hieu);
-      this.setElementValue('brandDescription', brand.mo_ta);
-      this.setElementValue('brandLogo', brand.logo_url || '');
-      this.setElementValue('brandStatus', String(brand.trang_thai));
-
-      // Cập nhật preview logo
-      this.updateImagePreview(brand.logo_url || '', 'brandLogoPreview');
-    }
-
-    resetBrandForm() {
-      const form = document.getElementById('brandForm');
-      if (form) {
-        form.reset();
-      }
-      this.setElementValue('brandStatus', '1');
-      this.setElementValue('brandLogo', '');
-
-      // Reset preview logo
-      this.updateImagePreview('', 'brandLogoPreview');
-    }
-
-    async saveBrand() {
-      try {
-        console.log('🔄 Bắt đầu lưu thương hiệu...');
-
-        const brandName = document.getElementById('brandName')?.value.trim() || '';
-
-        // Tạo slug từ tên thương hiệu
-        const slug = brandName.toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[đĐ]/g, 'd')
-          .replace(/[^a-z0-9 -]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-');
-
-        // Lấy giá trị từ form
-        const formData = {
-          ten_thuong_hieu: brandName,
-          mo_ta: document.getElementById('brandDescription')?.value.trim() || '',
-          logo_url: document.getElementById('brandLogo')?.value.trim() || '',
-          trang_thai: Number(document.getElementById('brandStatus')?.value),
-          slug: slug
-        };
-
-        console.log('📦 Dữ liệu brand form:', formData);
-
-        // Validate form
-        if (!brandName.trim()) {
-          this.showError('Vui lòng nhập tên thương hiệu');
-          return;
-        }
-
-        let result;
-        if (this.currentEditId) {
-          console.log('✏️ Đang cập nhật thương hiệu:', this.currentEditId);
-          result = await ProductAPI.updateBrand(this.currentEditId, formData);
-          this.showSuccess('Cập nhật thương hiệu thành công');
-        } else {
-          console.log('➕ Đang thêm thương hiệu mới');
-          result = await ProductAPI.createBrand(formData);
-          this.showSuccess('Thêm thương hiệu thành công');
-        }
-
-        console.log('✅ Kết quả:', result);
-
-        // Đặt auto open modal để sau khi reload sẽ mở lại form thương hiệu
-        this.appState.setAutoOpenModal('brandsModal');
-
-        // Reload trang để cập nhật dữ liệu mới
-        this.reloadPage();
+        const details = this.getDetailsData();
+        
+        await ProductAPIService.updateProductDetails(this.currentDetailsProductId, details);
+        this.showSuccess('Cập nhật thông số thành công');
+        
+        bootstrap.Modal.getInstance(document.getElementById('detailsModal')).hide();
+        await this.loadProducts(); // Reload to update the display
 
       } catch (error) {
-        console.error('💥 Lỗi khi lưu thương hiệu:', error);
-        this.showError('Không thể lưu thương hiệu: ' + error.message);
+        this.showError('Không thể lưu thông số: ' + error.message);
       }
     }
 
-    handleEditBrand(button) {
-      const brandId = button?.getAttribute('data-id');
-      if (brandId) {
-        const brand = this.brands.find(b => b._id === brandId);
-        if (brand) {
-          this.openBrandModal(brand);
+    getDetailsData() {
+      const rows = document.querySelectorAll('#keyValueListEditor .key-value-row');
+      const details = {};
+
+      rows.forEach(row => {
+        const key = row.querySelector('.detail-key').value.trim();
+        const value = row.querySelector('.detail-value').value.trim();
+        
+        if (key && value) {
+          details[key] = value;
         }
-      }
-    }
-    async handleToggleBrandStatus(button) {
-      const brandId = button?.getAttribute('data-id');
-      const currentStatus = Number(button?.getAttribute('data-status'));
-      const brandName = button?.getAttribute('data-name');
-
-      console.log('🔍 Toggle Brand:', { brandId, currentStatus, brandName });
-
-      if (!brandId || currentStatus === undefined) {
-        console.error('❌ Thiếu thông tin thương hiệu');
-        return;
-      }
-
-      const newStatus = currentStatus === 1 ? 0 : 1;
-      const actionText = newStatus === 1 ? 'kích hoạt' : 'ngừng kích hoạt';
-
-      const result = await Swal.fire({
-        title: 'Xác nhận chuyển trạng thái?',
-        html: `Bạn có chắc muốn ${actionText} thương hiệu <strong>${brandName}</strong>?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#ed8936',
-        cancelButtonColor: '#667eea',
-        confirmButtonText: `Đồng ý ${actionText}`,
-        cancelButtonText: 'Hủy'
       });
 
-      if (result.isConfirmed) {
-        try {
-          await ProductAPI.toggleBrandStatus(brandId, currentStatus);
-          this.showSuccess(`Đã ${actionText} thương hiệu thành công`);
-          this.appState.setAutoOpenModal('brandsModal');
-          this.reloadPage();
-        } catch (error) {
-          console.error('❌ Lỗi toggle brand:', error);
-          this.showError('Không thể chuyển trạng thái: ' + error.message);
-        }
-      }
-    }
-    async handleDeleteBrand(button) {
-      const brandId = button?.getAttribute('data-id');
-      const brandName = button?.getAttribute('data-name');
-
-      if (!brandId || !brandName) {
-        console.error('❌ Thiếu thông tin thương hiệu để xóa');
-        return;
-      }
-
-      const result = await Swal.fire({
-        title: 'Xác nhận xóa?',
-        html: `Bạn có chắc muốn xóa <strong>${brandName}</strong>?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e53e3e',
-        cancelButtonColor: '#667eea',
-        confirmButtonText: 'Xóa',
-        cancelButtonText: 'Hủy'
-      });
-
-      if (result.isConfirmed) {
-        try {
-          await ProductAPI.deleteBrand(brandId);
-          this.showSuccess('Xóa thương hiệu thành công');
-
-          // Đặt auto open modal để sau khi reload sẽ mở lại form thương hiệu
-          this.appState.setAutoOpenModal('brandsModal');
-
-          // Reload trang để cập nhật dữ liệu mới
-          this.reloadPage();
-
-        } catch (error) {
-          console.error('❌ Lỗi xóa thương hiệu:', error);
-          let errorMessage = error.message;
-          errorMessage = errorMessage.replace(/[{}"']/g, '');
-          this.showError(errorMessage);
-        }
-      }
+      return details;
     }
 
-    reloadPage() {
-      // Lưu state trước khi reload
-      this.appState.saveState();
-
-      // Reload trang sau 1 giây
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
-
+    // Notification Methods
     showSuccess(message) {
       Swal.fire({
         icon: 'success',
@@ -3374,14 +2172,8 @@
     }
   }
 
-  // Khởi động ứng dụng khi DOM ready
-  document.addEventListener('DOMContentLoaded', function () {
-    console.log('🚀 DOM ready, khởi động ProductManager...');
-    try {
-      new ProductManager();
-      console.log('✅ ProductManager khởi động thành công');
-    } catch (error) {
-      console.error('❌ Lỗi khởi động ProductManager:', error);
-    }
+  // Initialize the application
+  document.addEventListener('DOMContentLoaded', function() {
+    new ProductManager();
   });
 </script>

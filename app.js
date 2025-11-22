@@ -28,9 +28,18 @@ app.engine('handlebars', engine({
             return date.toLocaleDateString('vi-VN');
         },
         getCategoryNameById: (categoryId, categories) => {
-        const category = categories.find(cat => cat._id.toString() === categoryId.toString());
-        return category ? category.ten_danh_muc : 'Không tìm thấy';
-        }
+            const category = categories.find(cat => cat._id.toString() === categoryId.toString());
+            return category ? category.ten_danh_muc : 'Không tìm thấy';
+        },
+        formatCurrency: (amount) => {
+          if (typeof amount !== 'number') {
+            amount = parseFloat(amount) || 0;
+          }
+          return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+          }).format(amount);
+        },
     }
 }));
 app.set('view engine', 'handlebars');
@@ -90,43 +99,224 @@ app.get('/', async (req, res) => {
   }
 });
 
-// // Trang admin dashboard
-// app.get('/admin', (req, res) => {
-//     try {
-//         res.render('AD_Dashboard', { layout: 'AdminMain' , dashboardPage: true});
-//     } catch (err) {
-//         res.status(500).send('Lỗi server!');
-//     }
-// });
+// Trang admin dashboard
+app.get('/admin', (req, res) => {
+    try {
+        res.render('AD_Dashboard', { layout: 'AdminMain' , dashboardPage: true});
+    } catch (err) {
+        res.status(500).send('Lỗi server!');
+    }
+});
 
-// // Admin logout
-// app.get('/logout', (req, res) => {
-//     res.redirect('/');
-// });
+// Admin logout
+app.get('/logout', (req, res) => {
+    res.redirect('/');
+});
 
-// // Quản lý sản phẩm - VIEW
-// app.get('/admin/sanpham', async (req, res) => {
-//     try {
-//         const sanphams = await DataModel.Data_SanPham_Model.find({})
-//             .populate('danh_muc_id')
-//             .populate('thuong_hieu_id')
-//             .lean();
-//         const categories = await DataModel.Data_Category_Model.find({}).lean();
-//         const brands = await DataModel.Data_Brand_Model.find({}).lean();
+// Hàm đệ quy để xử lý nested objects
+function extractKeyValuePairs(obj, parentKey = '') {
+  const result = {};
+  const excludeFields = ['_id', '__v', 'sql_product_id'];
+  
+  function recurse(currentObj, currentPath) {
+    for (const [key, value] of Object.entries(currentObj)) {
+      if (excludeFields.includes(key)) continue;
+      
+      const newPath = currentPath ? `${currentPath}.${key}` : key;
+      
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Nested object - tiếp tục đệ quy
+        recurse(value, newPath);
+      } else if (Array.isArray(value)) {
+        // Array - xử lý từng phần tử
+        value.forEach((item, index) => {
+          if (item && typeof item === 'object') {
+            recurse(item, `${newPath}[${index}]`);
+          } else {
+            result[`${newPath}[${index}]`] = item;
+          }
+        });
+      } else {
+        // Primitive value
+        result[newPath] = value;
+      }
+    }
+  }
+  
+  recurse(obj, parentKey);
+  return result;
+}
+
+// Route GET /admin/sanpham
+app.get('/admin/sanpham', async (req, res) => {
+    try {
+        const [sanphams, categories, brands, productDetails] = await Promise.all([
+            DataModel.SQL.Product.findAll(),
+            DataModel.SQL.Category.findAll(),
+            DataModel.SQL.Brand.findAll(),
+            DataModel.Mongo.ProductDetail.find({}).lean()
+        ]);
         
-//         res.render('sanpham', { 
-//             layout: 'AdminMain', 
-//             title: 'Quản lý sản phẩm', 
-//             sanphams, 
-//             categories, 
-//             brands 
-//         });
-//     } catch (err) {
-//         console.error('Lỗi:', err);
-//         res.status(500).send('Lỗi server!');
-//     }
-// });
+        console.log('📦 SQL Products count:', sanphams.length);
+        console.log('🗂️ MongoDB Details count:', productDetails.length);
 
+        // Xử lý dữ liệu giống như route hiện tại
+        const lowercaseIds = sanphams.map(sp => String(sp.id).toLowerCase());
+        const sqlProductIds = new Set(lowercaseIds);
+        console.log('🆔 SQL Product IDs:', sqlProductIds);
+
+        const detailMap = new Map();
+        
+        // Sử dụng hàm extractKeyValuePairs để xử lý nested objects
+        productDetails.forEach(detail => {
+            const detailId = String(detail.sql_product_id).toLowerCase();
+            if (sqlProductIds.has(detailId)) {
+                console.log('🔍 Processing detail for product:', detailId);
+                
+                const keyValueData = extractKeyValuePairs(detail);
+                console.log('✅ Extracted key-value pairs:', Object.keys(keyValueData).length);
+                
+                detailMap.set(detailId, keyValueData);
+            }
+        });
+
+        const combinedSanphams = sanphams.map(sp => {
+            const productId = String(sp.id).toLowerCase();
+            const chiTiet = detailMap.get(productId) || {};
+            
+            console.log(`📊 Product ${productId}: ${Object.keys(chiTiet).length} key-value pairs`);
+            
+            return {
+                id: productId,
+                ma_sku: sp.ma_sku,
+                ten_san_pham: sp.ten_san_pham,
+                danh_muc_id: sp.danh_muc_id,
+                thuong_hieu_id: sp.thuong_hieu_id,
+                ten_danh_muc: sp.ten_danh_muc,
+                ten_thuong_hieu: sp.ten_thuong_hieu,
+                gia_niem_yet: sp.gia_niem_yet,
+                gia_ban: sp.gia_ban,
+                giam_gia: sp.giam_gia,
+                trang_thai: sp.trang_thai,
+                ngay_tao: sp.ngay_tao,
+                chi_tiet: chiTiet
+            };
+        });
+
+        // Thống kê
+        const totalExtractedPairs = combinedSanphams.reduce((sum, sp) => sum + Object.keys(sp.chi_tiet).length, 0);
+        console.log(`🎯 Total extracted key-value pairs: ${totalExtractedPairs}`);
+
+        // Render template
+        res.render('sanpham', { 
+            layout: 'AdminMain', 
+            title: 'Quản lý sản phẩm', 
+            sanphams: combinedSanphams, 
+            categories, 
+            brands 
+        });
+    } catch (err) {
+        console.error('❌ Lỗi trong route /admin/sanpham:', err);
+        res.status(500).render('error', {
+            layout: 'AdminMain',
+            title: 'Lỗi',
+            message: 'Đã xảy ra lỗi khi tải trang quản lý sản phẩm'
+        });
+    }
+});
+
+// API để frontend gọi (trả về JSON)
+app.get('/api/sanpham', async (req, res) => {
+    try {
+        const [sanphams, categories, brands, productDetails] = await Promise.all([
+            DataModel.SQL.Product.findAll(),
+            DataModel.SQL.Category.findAll(),
+            DataModel.SQL.Brand.findAll(),
+            DataModel.Mongo.ProductDetail.find({}).lean()
+        ]);
+
+        // Xử lý dữ liệu tương tự
+        const lowercaseIds = sanphams.map(sp => String(sp.id).toLowerCase());
+        const sqlProductIds = new Set(lowercaseIds);
+
+        const detailMap = new Map();
+        
+        // Sử dụng hàm extractKeyValuePairs để xử lý nested objects
+        productDetails.forEach(detail => {
+            const detailId = String(detail.sql_product_id).toLowerCase();
+            if (sqlProductIds.has(detailId)) {
+                const keyValueData = extractKeyValuePairs(detail);
+                detailMap.set(detailId, keyValueData);
+            }
+        });
+
+        const combinedSanphams = sanphams.map(sp => {
+            const productId = String(sp.id).toLowerCase();
+            return {
+                id: productId,
+                ma_sku: sp.ma_sku,
+                ten_san_pham: sp.ten_san_pham,
+                danh_muc_id: sp.danh_muc_id,
+                thuong_hieu_id: sp.thuong_hieu_id,
+                ten_danh_muc: sp.ten_danh_muc,
+                ten_thuong_hieu: sp.ten_thuong_hieu,
+                gia_niem_yet: sp.gia_niem_yet,
+                gia_ban: sp.gia_ban,
+                giam_gia: sp.giam_gia,
+                trang_thai: sp.trang_thai,
+                ngay_tao: sp.ngay_tao,
+                chi_tiet: detailMap.get(productId) || {}
+            };
+        });
+
+        // Trả về JSON cho API
+        res.json({
+            success: true,
+            sanphams: combinedSanphams,
+            categories: categories,
+            brands: brands
+        });
+    } catch (err) {
+        console.error('❌ Lỗi trong API /api/sanpham:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Đã xảy ra lỗi khi lấy dữ liệu sản phẩm'
+        });
+    }
+});
+
+// Thêm các API endpoints khác
+app.post('/api/sanpham', async (req, res) => {
+    try {
+        const productData = req.body;
+        // Logic thêm sản phẩm
+        const newProduct = await DataModel.SQL.Product.create(productData);
+        res.json({ success: true, product: newProduct });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.put('/api/sanpham/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const updateData = req.body;
+        await DataModel.SQL.Product.update(updateData, { where: { id: productId } });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.delete('/api/sanpham/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        await DataModel.SQL.Product.destroy({ where: { id: productId } });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 // // API lấy sản phẩm
 // app.get('/api/sanpham', async (req, res) => {
 //     try {
