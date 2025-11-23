@@ -520,9 +520,9 @@
                 <table class="products-table" id="productsTable">
                     <thead>
                         <tr>
-                            <th class="col-checkbox">
+                            {{!-- <th class="col-checkbox">
                                 <input type="checkbox" id="selectAll">
-                            </th>
+                            </th> --}}
                             <th class="col-image">Hình ảnh</th>
                             <th class="col-name">Tên sản phẩm</th>
                             <th class="col-sku">SKU</th>
@@ -530,7 +530,7 @@
                             <th class="col-category">Danh mục</th>
                             <th class="col-brand">Thương hiệu</th>
                             <th class="col-status">Trạng thái</th>
-                            <th class="col-featured">Nổi bật</th>
+                            {{!-- <th class="col-featured">Nổi bật</th> --}}
                             <th class="col-specs">Thông số</th>
                             <th class="col-actions">Thao tác</th>
                         </tr>
@@ -539,9 +539,9 @@
                         {{#each sanphams}}
                         <tr data-id="{{this.id}}" data-status="{{this.trang_thai}}" data-category="{{this.danh_muc_id}}"
                             data-brand="{{this.thuong_hieu_id}}">
-                            <td class="col-checkbox">
+                            {{!-- <td class="col-checkbox">
                                 <input type="checkbox" class="row-checkbox" value="{{this.id}}">
-                            </td>
+                            </td> --}}
                             <td class="col-image">
                                 <div class="product-table-image">
                                     <img src="{{this.link_anh}}" alt="{{this.ten_san_pham}}">
@@ -568,21 +568,21 @@
                                 <span class="brand-badge">{{this.ten_thuong_hieu}}</span>
                             </td>
                             <td class="col-status">
-                                <span class="status-badge {{#if (eq this.trang_thai 1)}}active{{else}}inactive{{/if}}">
-                                    {{#if (eq this.trang_thai 1)}}🟢 Đang bán{{else}}🔴 Ngừng bán{{/if}}
+                                <span class="status-badge {{#if (eq this.trang_thai true)}}active{{else}}inactive{{/if}}">
+                                    {{#if (eq this.trang_thai true)}}🟢 Đang bán{{else}}🔴 Ngừng bán{{/if}}
                                 </span>
                             </td>
-                            <td class="col-featured">
+                            {{!-- <td class="col-featured">
                                 {{#if this.san_pham_noi_bat}}
                                 <i class="fas fa-star featured-icon"></i>
                                 {{else}}
                                 <i class="far fa-star"></i>
                                 {{/if}}
-                            </td>
+                            </td> --}}
                             <td class="col-specs">
                                 <button class="btn-view-specs" data-id="{{this.id}}" data-name="{{this.ten_san_pham}}">
-                                    <i class="fas fa-list"></i>
-                                    Xem thông số
+                                    <i class="fa fa-info-circle"></i>
+                                    {{!-- Xem thông số --}}
                                 </button>
                             </td>
                             <td class="col-actions">
@@ -1352,10 +1352,10 @@
     }
 
     /* Table Column Styles */
-    .col-checkbox {
+    {{!-- .col-checkbox {
         width: 40px;
         text-align: center;
-    }
+    } --}}
 
     .col-image {
         width: 80px;
@@ -1379,20 +1379,20 @@
     }
 
     .col-status {
-        width: 120px;
-    }
-
-    .col-featured {
-        width: 80px;
-        text-align: center;
-    }
-
-    .col-specs {
         width: 140px;
     }
 
+    {{!-- .col-featured {
+        width: 80px;
+        text-align: center;
+    } --}}
+
+    .col-specs {
+        width: 0px;
+    }
+
     .col-actions {
-        width: 120px;
+        width: 100px;
     }
 
     /* Table Content Styles */
@@ -2738,7 +2738,7 @@
     }
 
     /* Custom Checkbox Alignment */
-    .col-checkbox {
+    {{!-- .col-checkbox {
         width: 40px;
         text-align: center;
         vertical-align: middle;
@@ -2748,7 +2748,7 @@
         width: 16px;
         height: 16px;
         cursor: pointer;
-    }
+    } --}}
 
     /* Image Cell Styles */
     .col-image {
@@ -3030,18 +3030,18 @@
     }
 
     /* Căn giữa cho checkbox */
-    .col-checkbox {
+    {{!-- .col-checkbox {
         display: flex;
         justify-content: center;
         align-items: center;
-    }
+    } --}}
 
     /* Căn giữa cho featured icon */
-    .col-featured {
+    {{!-- .col-featured {
         display: flex;
         justify-content: center;
         align-items: center;
-    }
+    } --}}
 
     /* Căn giữa cho nút xem thông số */
     .btn-view-specs {
@@ -3074,6 +3074,8 @@
             text-align: center;
         }
     }
+    
+    
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

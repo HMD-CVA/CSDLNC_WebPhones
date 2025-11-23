@@ -554,9 +554,10 @@ class SQLProductModel {
         FROM products p
         INNER JOIN categories c ON p.danh_muc_id = c.id
         INNER JOIN brands b ON p.thuong_hieu_id = b.id
-        WHERE p.trang_thai = 1
+        
 
       `);
+      // WHERE p.trang_thai = 1
       // ORDER BY p.ngay_tao DESC
       return result.recordset;
     } catch (error) {
