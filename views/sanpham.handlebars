@@ -138,8 +138,7 @@
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="brandName" required
                                                             placeholder="Nhập tên thương hiệu (tối đa 100 ký tự)">
-                                                        <div class="form-text">Tên thương hiệu là bắt buộc và phải duy
-                                                            nhất</div>
+                                                        <div class="form-text">Tên thương hiệu là bắt buộc và phải duy nhất</div>
                                                     </div>
 
                                                     <div class="form-group">
@@ -154,34 +153,45 @@
                                                     </div>
                                                 </div>
 
+                                                <!-- Thay thế URL Logo bằng File Upload -->
                                                 <div class="form-group">
-                                                    <label for="brandLogo" class="form-label">
+                                                    <label class="form-label">
                                                         <i class="fas fa-image"></i>
-                                                        URL Logo
+                                                        Logo thương hiệu
                                                     </label>
-                                                    <div class="input-group">
-                                                        <input type="text" class="form-control form-control-lg"
-                                                            id="brandLogo" placeholder="https://example.com/logo.png">
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                            id="previewLogoBtn">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    </div>
-                                                    <div class="form-text">Đường dẫn đến hình ảnh logo thương hiệu</div>
-                                                </div>
+                                                    <div class="file-upload-container brand-file-upload">
+                                                        <input type="file" class="form-control" id="brandLogoInput" accept="image/*" style="display: none;">
+                                                        <div class="file-upload-area" id="brandLogoUploadArea">
+                                                            <div class="upload-placeholder">
+                                                                    <button type="button" class="btn btn-secondary" id="chooseBrandLogoBtn">
+                                                                        <i class="fas fa-upload"></i>
+                                                                        &nbsp;Chọn logo
+                                                                    </button>
+                                                                    <div class="form-text mt-2">Định dạng: JPG, PNG, GIF (Tối đa 5MB)</div>
+                                                                </div>
+                                                            <div class="upload-preview" id="brandLogoPreview" style="display: none;">
+                                                                <img id="brandLogoPreviewImg" src="" alt="Preview">
+                                                                <button type="button" class="btn-change-image" id="changeBrandLogoBtn">
+                                                                    <i class="fas fa-sync-alt"></i> Thay đổi
+                                                                </button>
+                                                            </div>
+                                                        </div>
 
-                                                <!-- Logo Preview -->
-                                                <div class="image-preview-section mt-3">
-                                                    <label class="form-label">Preview Logo</label>
-                                                    <div class="logo-preview-container">
-                                                        <div class="logo-preview" id="logoPreview">
-                                                            <div class="preview-placeholder">
-                                                                <i class="fas fa-image fa-3x"></i>
-                                                                <span>Logo sẽ hiển thị tại đây</span>
+                                                        <!-- Logo preview container (shows existing logo in edit mode) -->
+                                                        <div class="logo-preview-container">
+                                                            <div class="logo-preview" id="logoPreview">
+                                                                <div class="preview-placeholder">
+                                                                    <i class="fas fa-image fa-2x"></i>
+                                                                    <span>Logo sẽ hiển thị tại đây</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
+
+                                                    <input type="hidden" id="brandLogo" name="brandLogo">
                                                 </div>
+
+                                                
 
                                                 <div class="form-group mt-3">
                                                     <label for="brandDescription" class="form-label">
@@ -198,7 +208,7 @@
                                             </form>
                                         </div>
 
-                                        <!-- Action Buttons -->
+                                        <!-- Action Buttons (Giữ nguyên) -->
                                         <div class="form-actions mt-4">
                                             <button type="button" class="btn btn-secondary btn-lg me-2"
                                                 id="resetBrandForm">
@@ -365,33 +375,39 @@
                                                     </div>
                                                 </div>
 
+                                                <!-- Thay thế URL Ảnh bằng File Upload -->
                                                 <div class="form-group">
-                                                    <label for="categoryImage" class="form-label">
+                                                    <label class="form-label">
                                                         <i class="fas fa-image"></i>
-                                                        URL Ảnh
+                                                        Ảnh danh mục
                                                     </label>
-                                                    <div class="input-group">
-                                                        <input type="text" class="form-control form-control-lg"
-                                                            id="categoryImage" placeholder="https://example.com/image.png">
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                            id="previewCategoryImageBtn">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    </div>
-                                                    <div class="form-text">Đường dẫn đến hình ảnh danh mục</div>
-                                                </div>
-
-                                                <!-- Image Preview -->
-                                                <div class="image-preview-section mt-3">
-                                                    <label class="form-label">Preview Ảnh</label>
-                                                    <div class="logo-preview-container">
-                                                        <div class="logo-preview" id="categoryImagePreview">
-                                                            <div class="preview-placeholder">
-                                                                <i class="fas fa-image fa-3x"></i>
-                                                                <span>Ảnh sẽ hiển thị tại đây</span>
+                                                    <div class="file-upload-container">
+                                                        <input type="file" class="form-control" id="categoryImageInput" accept="image/*" style="display: none;">
+                                                        <div class="file-upload-area" id="categoryImageUploadArea">
+                                                            <div class="upload-placeholder">
+                                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                                <span>Chọn ảnh từ máy tính</span>
+                                                                <small>Định dạng: JPG, PNG, GIF (Tối đa 5MB)</small>
                                                             </div>
-                                                        </div>
+                                                                <div class="upload-preview" id="categoryImagePreview" style="display: none;">
+                                                                    <img id="categoryImagePreviewImg" src="" alt="Preview">
+                                                                    <button type="button" class="btn-change-image" id="changeCategoryImageBtn">
+                                                                        <i class="fas fa-sync-alt"></i> Thay đổi
+                                                                    </button>
+                                                                </div>
+
+                                                                <!-- Image preview container (shows existing image in edit mode) -->
+                                                                <div class="logo-preview-container">
+                                                                    <div class="logo-preview" id="categoryImagePreviewContainer">
+                                                                        <div class="preview-placeholder">
+                                                                            <i class="fas fa-image fa-2x"></i>
+                                                                            <span>Ảnh sẽ hiển thị tại đây</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                     </div>
+                                                    <input type="hidden" id="categoryImage" name="categoryImage">
                                                 </div>
 
                                                 <div class="form-group mt-3">
@@ -409,7 +425,7 @@
                                             </form>
                                         </div>
 
-                                        <!-- Action Buttons -->
+                                        <!-- Action Buttons (Giữ nguyên) -->
                                         <div class="form-actions mt-4">
                                             <button type="button" class="btn btn-secondary btn-lg me-2"
                                                 id="resetCategoryForm">
@@ -731,20 +747,63 @@
                             <div class="form-section">
                                 <h4 class="section-title">
                                     <i class="fas fa-image"></i>
-                                    Hình ảnh
+                                    Hình ảnh & Video
                                 </h4>
+                                
+                                <!-- Main Image -->
                                 <div class="form-group">
-                                    <label for="productImage" class="form-label">URL hình ảnh chính</label>
-                                    <input type="text" class="form-control" id="productImage"
-                                        placeholder="https://example.com/image.jpg">
-                                </div>
-                                <div class="image-preview-container">
-                                    <div class="image-preview" id="imagePreview">
-                                        <div class="preview-placeholder">
-                                            <i class="fas fa-image"></i>
-                                            <span>Preview hình ảnh</span>
+                                    <label class="form-label">Hình ảnh chính *</label>
+                                    <div class="file-upload-container">
+                                        <input type="file" class="form-control" id="productMainImage" accept="image/*" style="display: none;">
+                                        <div class="file-upload-area" id="mainImageUploadArea">
+                                            <div class="upload-placeholder">
+                                                <i class="fas fa-cloud-upload-alt"></i>
+                                                <span>Chọn hình ảnh chính từ máy tính</span>
+                                                <small>Định dạng: JPG, PNG, GIF (Tối đa 5MB)</small>
+                                            </div>
+                                            <div class="upload-preview" id="mainImagePreview" style="display: none;">
+                                                <img id="mainImagePreviewImg" src="" alt="Preview">
+                                                <button type="button" class="btn-change-image" id="changeMainImageBtn">
+                                                    <i class="fas fa-sync-alt"></i> Thay đổi
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
+                                    <input type="hidden" id="productImage" name="productImage">
+                                </div>
+
+                                <!-- Additional Images -->
+                                <div class="form-group">
+                                    <label class="form-label">Thêm hình ảnh phụ</label>
+                                    <div class="file-upload-container">
+                                        <input type="file" class="form-control" id="productAdditionalImages" accept="image/*" multiple style="display: none;">
+                                        <div class="file-upload-area" id="additionalImagesUploadArea">
+                                            <div class="upload-placeholder">
+                                                <i class="fas fa-images"></i>
+                                                <span>Chọn thêm hình ảnh từ máy tính</span>
+                                                <small>Có thể chọn nhiều ảnh (Tối đa 10 ảnh, mỗi ảnh 5MB)</small>
+                                            </div>
+                                            <div class="additional-images-preview" id="additionalImagesPreview" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="productAdditionalImagesData" name="productAdditionalImages">
+                                </div>
+
+                                <!-- Videos -->
+                                <div class="form-group">
+                                    <label class="form-label">Thêm video</label>
+                                    <div class="file-upload-container">
+                                        <input type="file" class="form-control" id="productVideos" accept="video/*" multiple style="display: none;">
+                                        <div class="file-upload-area" id="videosUploadArea">
+                                            <div class="upload-placeholder">
+                                                <i class="fas fa-video"></i>
+                                                <span>Chọn video từ máy tính</span>
+                                                <small>Định dạng: MP4, MOV, AVI (Tối đa 50MB)</small>
+                                            </div>
+                                            <div class="videos-preview" id="videosPreview" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="productVideosData" name="productVideos">
                                 </div>
                             </div>
 
@@ -908,2175 +967,7 @@
     </div>
 </div>
 
-<style>
-    /* Modern CSS Reset and Base Styles */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
 
-    :root {
-        --primary: #667eea;
-        --primary-dark: #5a6fd8;
-        --secondary: #764ba2;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --dark: #1f2937;
-        --light: #f8fafc;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-400: #9ca3af;
-        --gray-500: #6b7280;
-        --gray-600: #4b5563;
-        --gray-700: #374151;
-        --gray-800: #1f2937;
-        --border-radius: 12px;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        --transition: all 0.3s ease;
-    }
-
-    body {
-        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: var(--light);
-        color: var(--gray-800);
-        line-height: 1.6;
-    }
-
-    .main-content {
-        min-height: 100vh;
-        padding: 24px;
-        max-width: 100%;
-    }
-
-    /* Header Styles */
-    .dashboard-header {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 28px 32px;
-        margin-bottom: 24px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-    }
-
-    .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-
-    .header-title {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
-
-    .title-icon {
-        font-size: 2.75rem;
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .header-title h1 {
-        margin: 0;
-        font-size: 1.875rem;
-        font-weight: 700;
-        color: var(--gray-800);
-    }
-
-    .header-title p {
-        margin: 4px 0 0 0;
-        color: var(--gray-500);
-        font-size: 1rem;
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    /* Button Styles */
-    .btn-primary {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: var(--transition);
-        box-shadow: var(--shadow);
-        text-decoration: none;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-primary::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        transition: left 0.5s;
-    }
-
-    .btn-primary:hover::before {
-        left: 100%;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-    }
-
-    .btn-secondary {
-        background: white;
-        color: var(--gray-700);
-        border: 2px solid var(--gray-300);
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: var(--transition);
-    }
-
-    .btn-secondary:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-        transform: translateY(-1px);
-    }
-
-    /* Stats Overview */
-    .stats-overview {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 24px;
-    }
-
-    .stat-card {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 24px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-        transition: var(--transition);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(to bottom, var(--primary), var(--secondary));
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-    }
-
-    .stat-icon {
-        width: 70px;
-        height: 70px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.75rem;
-        box-shadow: var(--shadow);
-    }
-
-    .stat-icon.total {
-        background: linear-gradient(135deg, #fed7d7, #feb2b2);
-        color: #e53e3e;
-    }
-
-    .stat-icon.available {
-        background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-        color: #38a169;
-    }
-
-    .stat-icon.busy {
-        background: linear-gradient(135deg, #fef5e7, #fbd38d);
-        color: #ed8936;
-    }
-
-    .stat-icon.premium {
-        background: linear-gradient(135deg, #e9d8fd, #d6bcfa);
-        color: #805ad5;
-    }
-
-    .stat-info h3 {
-        margin: 0;
-        font-size: 2rem;
-        color: var(--gray-800);
-        font-weight: 700;
-    }
-
-    .stat-info p {
-        margin: 4px 0 0 0;
-        color: var(--gray-500);
-        font-weight: 500;
-    }
-
-    /* Search and Filter */
-    .search-filter-bar {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 24px;
-        margin-bottom: 24px;
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        flex-wrap: wrap;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-    }
-
-    .search-box {
-        display: flex;
-        align-items: center;
-        background: var(--gray-100);
-        border-radius: 10px;
-        padding: 12px 20px;
-        flex: 1;
-        min-width: 400px;
-        border: 2px solid var(--gray-200);
-        transition: var(--transition);
-    }
-
-    .search-box:focus-within {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .search-box i {
-        color: var(--gray-400);
-        margin-right: 12px;
-    }
-
-    .search-box input {
-        border: none;
-        background: none;
-        outline: none;
-        flex: 1;
-        padding: 4px 0;
-        font-size: 0.95rem;
-        color: var(--gray-800);
-    }
-
-    .search-btn {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 8px;
-        cursor: pointer;
-        margin-left: 12px;
-        font-weight: 600;
-        transition: var(--transition);
-    }
-
-    .search-btn:hover {
-        transform: translateY(-1px);
-    }
-
-    .filter-controls {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .filter-select {
-        padding: 10px 16px;
-        border: 2px solid var(--gray-200);
-        border-radius: 8px;
-        background: white;
-        color: var(--gray-700);
-        min-width: 160px;
-        cursor: pointer;
-        transition: var(--transition);
-        font-size: 0.9rem;
-    }
-
-    .filter-select:focus {
-        border-color: var(--primary);
-        outline: none;
-    }
-
-    .clear-filters {
-        background: none;
-        border: 2px solid var(--gray-200);
-        color: var(--gray-600);
-        padding: 10px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: var(--transition);
-    }
-
-    .clear-filters:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-300);
-    }
-
-    /* Table Styles */
-    .table-container {
-        background: white;
-        border-radius: var(--border-radius);
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        margin-bottom: 5px;
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 24px;
-        border-bottom: 1px solid var(--gray-200);
-        background: var(--gray-50);
-    }
-
-    .table-header h3 {
-        margin: 0;
-        color: var(--gray-800);
-        font-size: 1.25rem;
-        font-weight: 600;
-    }
-
-    .table-actions {
-        display: flex;
-        gap: 12px;
-    }
-
-    .btn-export {
-        background: white;
-        color: var(--gray-700);
-        border: 2px solid var(--gray-300);
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: var(--transition);
-    }
-
-    .btn-export:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-    }
-
-    .table-responsive {
-        overflow-x: auto;
-    }
-
-    .products-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .products-table th {
-        background: var(--gray-50);
-        padding: 16px 12px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 1px solid var(--gray-200);
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-
-    .products-table td {
-        padding: 16px 12px;
-        border-bottom: 1px solid var(--gray-200);
-        vertical-align: middle;
-    }
-
-    .products-table tbody tr {
-        transition: var(--transition);
-    }
-
-    .products-table tbody tr:hover {
-        background: var(--gray-50);
-    }
-
-    .products-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    /* Table Column Styles */
-    {{!-- .col-checkbox {
-        width: 40px;
-        text-align: center;
-    } --}}
-
-    .col-image {
-        width: 80px;
-    }
-
-    .col-name {
-        min-width: 200px;
-    }
-
-    .col-sku {
-        width: 120px;
-    }
-
-    .col-price {
-        width: 120px;
-    }
-
-    .col-category,
-    .col-brand {
-        width: 120px;
-    }
-
-    .col-status {
-        width: 140px;
-    }
-
-    {{!-- .col-featured {
-        width: 80px;
-        text-align: center;
-    } --}}
-
-    .col-specs {
-        width: 0px;
-    }
-
-    .col-actions {
-        width: 100px;
-    }
-
-    /* Table Content Styles */
-    .product-table-image {
-        width: 50px;
-        height: 50px;
-        border-radius: 8px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--gray-100);
-    }
-
-    .product-table-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .product-name {
-        font-weight: 600;
-        color: var(--gray-800);
-        margin-bottom: 4px;
-    }
-
-    .price-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .current-price {
-        font-weight: 600;
-        color: var(--primary);
-        font-size: 0.95rem;
-    }
-
-    .original-price {
-        font-size: 0.85rem;
-        color: var(--gray-400);
-        text-decoration: line-through;
-    }
-
-    .category-badge,
-    .brand-badge {
-        background: var(--gray-100);
-        color: var(--gray-700);
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .status-badge {
-        padding: 6px 10px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-
-    .status-badge.active {
-        background: rgba(16, 185, 129, 0.1);
-        color: var(--success);
-    }
-
-    .status-badge.inactive {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--danger);
-    }
-
-    .featured-icon {
-        color: var(--warning);
-    }
-
-    .btn-view-specs {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.85rem;
-        transition: var(--transition);
-        width: 100%;
-        justify-content: center;
-    }
-
-    .btn-view-specs:hover {
-        background: var(--primary-dark);
-        transform: translateY(-1px);
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 6px;
-        justify-content: center;
-    }
-
-    .btn-action {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: white;
-        font-size: 0.9rem;
-    }
-
-    .btn-edit {
-        background: var(--primary);
-    }
-
-    .btn-edit:hover {
-        background: var(--primary-dark);
-        transform: scale(1.1);
-    }
-
-    .btn-toggle-status {
-        background: var(--warning);
-    }
-
-    .btn-toggle-status:hover {
-        background: #e58e0b;
-        transform: scale(1.1);
-    }
-
-    .btn-delete {
-        background: var(--danger);
-    }
-
-    .btn-delete:hover {
-        background: #dc2626;
-        transform: scale(1.1);
-    }
-
-    /* Table Footer */
-    .table-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 24px;
-        border-top: 1px solid var(--gray-200);
-        background: var(--gray-50);
-    }
-
-    .table-info {
-        color: var(--gray-600);
-        font-size: 0.9rem;
-    }
-
-    .table-pagination {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .pagination-btn {
-        width: 32px;
-        height: 32px;
-        border: 1px solid var(--gray-300);
-        background: white;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: var(--gray-600);
-    }
-
-    .pagination-btn:hover:not(:disabled) {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-    }
-
-    .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pagination-info {
-        font-size: 0.9rem;
-        color: var(--gray-600);
-    }
-
-    /* Empty State */
-    .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 80px 40px;
-        background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-        text-align: center;
-    }
-
-    .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 20px;
-        opacity: 0.7;
-    }
-
-    .empty-content h3 {
-        margin: 0 0 8px 0;
-        color: var(--gray-800);
-        font-size: 1.5rem;
-    }
-
-    .empty-content p {
-        margin: 0 0 24px 0;
-        color: var(--gray-500);
-    }
-
-    /* Loading State */
-    .loading-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 60px 20px;
-    }
-
-    .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid var(--gray-200);
-        border-left: 4px solid var(--primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 16px;
-    }
-
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* Modal Styles */
-    .modal-premium .modal-content {
-        border: none;
-        border-radius: 16px;
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
-    }
-
-    .modal-premium .modal-header {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border-bottom: none;
-        padding: 24px 28px;
-    }
-
-    .modal-premium .modal-title {
-        font-weight: 700;
-        font-size: 1.4rem;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .modal-premium .modal-body {
-        padding: 0;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-
-    .modal-premium .modal-footer {
-        border-top: 1px solid var(--gray-200);
-        padding: 5px 28px;
-        background: white;
-    }
-
-    /* Technical Specifications Modal Styles */
-    .specs-modal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .specs-product-info h6 {
-        margin: 0 0 4px 0;
-        color: var(--gray-800);
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    .specs-product-sku {
-        margin: 0;
-        color: var(--gray-500);
-        font-size: 0.9rem;
-    }
-
-    .specs-list-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-
-    .specs-list-title {
-        margin: 0;
-        color: var(--gray-700);
-        font-size: 1rem;
-        font-weight: 600;
-    }
-
-    .specs-table-container {
-        border: 1px solid var(--gray-200);
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .specs-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .specs-table th {
-        background: var(--gray-50);
-        padding: 12px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 1px solid var(--gray-200);
-        font-size: 0.9rem;
-    }
-
-    .specs-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--gray-200);
-    }
-
-    .specs-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .specs-table tr:hover {
-        background: var(--gray-50);
-    }
-
-    .spec-actions {
-        display: flex;
-        gap: 6px;
-        justify-content: center;
-    }
-
-    .btn-spec-action {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: white;
-        font-size: 0.8rem;
-    }
-
-    .btn-edit-spec {
-        background: var(--warning);
-    }
-
-    .btn-edit-spec:hover {
-        background: #e58e0b;
-        transform: scale(1.1);
-    }
-
-    .btn-delete-spec {
-        background: var(--danger);
-    }
-
-    .btn-delete-spec:hover {
-        background: #dc2626;
-        transform: scale(1.1);
-    }
-
-    .no-specs-message {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--gray-500);
-    }
-
-    .no-specs-icon {
-        font-size: 3rem;
-        margin-bottom: 16px;
-        color: var(--gray-300);
-    }
-
-    /* Form Styles */
-    .form-sections {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .form-section {
-        background: var(--gray-50);
-        border-radius: 12px;
-        padding: 0 20px;
-    }
-
-    .section-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-        color: var(--gray-700);
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    .section-title i {
-        color: var(--primary);
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .form-group {
-        margin-bottom: 0;
-    }
-
-    .form-label {
-        font-weight: 600;
-        color: var(--gray-700);
-        margin-bottom: 8px;
-        font-size: 0.95rem;
-        display: block;
-    }
-
-    .form-control,
-    .form-select {
-        border: 2px solid var(--gray-200);
-        border-radius: 8px;
-        padding: 12px;
-        font-size: 0.95rem;
-        transition: var(--transition);
-        background: white;
-        width: 100%;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        outline: none;
-    }
-
-    .input-group {
-        display: flex;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .input-group .form-control {
-        border-radius: 8px 0 0 8px;
-    }
-
-    .input-group .input-group-text {
-        background: var(--gray-100);
-        border: 2px solid var(--gray-200);
-        border-left: none;
-        color: var(--gray-600);
-        padding: 12px;
-        border-radius: 0 8px 8px 0;
-    }
-
-    .image-preview-container {
-        margin-top: 12px;
-    }
-
-    .image-preview {
-        border: 2px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 40px;
-        text-align: center;
-        color: var(--gray-500);
-        background: white;
-        transition: var(--transition);
-        min-height: 200px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .image-preview.has-image {
-        border-color: var(--primary);
-        background: var(--gray-50);
-        padding: 20px;
-    }
-
-    .image-preview img {
-        max-width: 100%;
-        max-height: 160px;
-        border-radius: 8px;
-    }
-
-    .preview-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .preview-placeholder i {
-        font-size: 3rem;
-        color: var(--gray-300);
-    }
-
-    .checkbox-group {
-        margin-top: 8px;
-    }
-
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        font-weight: 500;
-        color: var(--gray-700);
-    }
-
-    .checkbox-label input[type="checkbox"] {
-        display: none;
-    }
-
-    .checkmark {
-        width: 20px;
-        height: 20px;
-        border: 2px solid var(--gray-300);
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-    }
-
-    .checkbox-label input[type="checkbox"]:checked+.checkmark {
-        background: var(--primary);
-        border-color: var(--primary);
-    }
-
-    .checkbox-label input[type="checkbox"]:checked+.checkmark::after {
-        content: '✓';
-        color: white;
-        font-size: 12px;
-        font-weight: bold;
-    }
-
-    /* Spec Edit Modal Styles */
-    #specEditModal .modal-content {
-        border-radius: 12px;
-        box-shadow: var(--shadow-lg);
-    }
-
-    #specEditModal .modal-header {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border-bottom: none;
-    }
-
-    #specEditModal .modal-title {
-        font-weight: 600;
-    }
-
-    #specEditModal .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1200px) {
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        .products-table {
-            min-width: 1000px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 16px;
-        }
-
-        .header-content {
-            flex-direction: column;
-            text-align: center;
-        }
-
-        .header-actions {
-            justify-content: center;
-            width: 100%;
-        }
-
-        .search-filter-bar {
-            flex-direction: column;
-        }
-
-        .search-box {
-            min-width: auto;
-            width: 100%;
-        }
-
-        .filter-controls {
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .filter-select {
-            flex: 1;
-            min-width: auto;
-        }
-
-        .table-header {
-            flex-direction: column;
-            gap: 16px;
-            align-items: flex-start;
-        }
-
-        .table-footer {
-            flex-direction: column;
-            gap: 16px;
-            align-items: flex-start;
-        }
-
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-overview {
-            grid-template-columns: 1fr;
-        }
-
-        .specs-list-header {
-            flex-direction: column;
-            gap: 12px;
-            align-items: flex-start;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .header-actions {
-            flex-direction: column;
-            width: 100%;
-        }
-
-        .btn-primary,
-        .btn-secondary {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .modal-premium .modal-footer {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .modal-premium .btn {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-
-    /* Additional styles for management modals */
-    .management-modal .modal-content {
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-
-    .management-modal .table-container {
-        margin-top: 20px;
-    }
-
-    .management-modal .form-section {
-        background: var(--gray-50);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-
-    .management-modal .section-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-        color: var(--gray-700);
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    /* THÊM VÀO CUỐI FILE CSS */
-    .modal-premium .modal-dialog {
-        max-width: none;
-        margin: 1.75rem auto;
-    }
-
-    .modal-premium .modal-xl {
-        max-width: 1140px;
-    }
-
-    .modal-premium .modal-xxl {
-        max-width: 1400px;
-    }
-
-    .modal-premium .modal-lg {
-        max-width: 800px;
-    }
-
-    /* Đảm bảo modal content không bị ảnh hưởng bởi các style khác */
-    .modal-premium .modal-content {
-        border: none !important;
-        box-shadow: var(--shadow-lg) !important;
-    }
-
-    .modal-premium .btn-close {
-        filter: invert(1) grayscale(100%) brightness(200%);
-    }
-
-    @media (max-width: 1400px) {
-        .modal-premium .modal-xxl {
-            max-width: 95%;
-            margin: 1rem auto;
-        }
-    }
-
-    @media (max-width: 1200px) {
-        .modal-premium .modal-xl {
-            max-width: 95%;
-        }
-    }
-
-    .form-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    @media (max-width: 768px) {
-        .form-grid-2 {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* Đảm bảo form controls trong modal không bị ảnh hưởng */
-    .modal-premium .form-control,
-    .modal-premium .form-select {
-        border: 2px solid var(--gray-200);
-        border-radius: 8px;
-        padding: 12px;
-        font-size: 0.95rem;
-        background: white;
-    }
-
-    .modal-premium .form-control:focus,
-    .modal-premium .form-select:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        outline: none;
-    }
-
-    .modal-premium .table-responsive {
-        border: 1px solid var(--gray-200);
-        border-radius: 8px;
-    }
-
-    .modal-premium .products-table {
-        margin-bottom: 0;
-    }
-
-    .modal-premium .products-table th {
-        background: var(--gray-50);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    .logo-preview-container {
-        border: 2px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 20px;
-        background: white;
-        transition: var(--transition);
-    }
-
-    .logo-preview-container.has-logo {
-        border-color: var(--primary);
-        background: var(--gray-50);
-    }
-
-    .logo-preview {
-        text-align: center;
-        min-height: 120px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .logo-preview img {
-        max-width: 100%;
-        max-height: 100px;
-        border-radius: 8px;
-    }
-
-    .preview-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        color: var(--gray-500);
-    }
-
-    .preview-placeholder i {
-        font-size: 2rem;
-        color: var(--gray-300);
-    }
-
-    .form-text {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.85rem;
-        color: var(--gray-500);
-    }
-
-    .char-count-warning {
-        color: var(--warning);
-    }
-
-    .char-count-error {
-        color: var(--danger);
-    }
-
-    /* ===== BRAND MANAGEMENT MODAL STYLES ===== */
-    .modal-premium .modal-xxl {
-        max-width: 1400px;
-    }
-
-    .modal-premium .modal-xl {
-        max-width: 1140px;
-    }
-
-    .modal-premium .modal-lg {
-        max-width: 800px;
-    }
-
-    @media (max-width: 1400px) {
-        .modal-premium .modal-xxl {
-            max-width: 95%;
-            margin: 1rem auto;
-        }
-    }
-
-    @media (max-width: 1200px) {
-        .modal-premium .modal-xl {
-            max-width: 95%;
-        }
-    }
-
-    /* Form Grid System */
-    .form-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .form-grid-3 {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 16px;
-    }
-
-    @media (max-width: 768px) {
-
-        .form-grid-2,
-        .form-grid-3 {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* Form Section Containers */
-    .form-section-container {
-        background: var(--gray-50);
-        border-radius: 12px;
-        padding: 0;
-        height: fit-content;
-        position: sticky;
-        top: 0;
-    }
-
-    .table-section-container {
-        background: white;
-        border-radius: 12px;
-        padding: 0;
-        border: 1px solid var(--gray-200);
-        overflow: hidden;
-    }
-
-    .table-section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 14px;
-        border-bottom: 1px solid var(--gray-200);
-        background: var(--gray-50);
-    }
-
-    .table-section-header .section-title {
-        margin: 0;
-        font-size: 1.1rem;
-    }
-
-    .table-controls {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .search-box-sm {
-        display: flex;
-        align-items: center;
-        background: white;
-        border: 1px solid var(--gray-300);
-        border-radius: 6px;
-        padding: 8px 12px;
-        min-width: 200px;
-    }
-
-    .search-box-sm i {
-        color: var(--gray-400);
-        margin-right: 8px;
-        font-size: 0.9rem;
-    }
-
-    .search-box-sm input {
-        border: none;
-        background: none;
-        outline: none;
-        flex: 1;
-        font-size: 0.85rem;
-        color: var(--gray-800);
-    }
-
-    /* Logo Preview Styles */
-    .logo-preview-container {
-        border: 2px dashed var(--gray-300);
-        border-radius: 12px;
-        padding: 20px;
-        background: white;
-        transition: var(--transition);
-        margin-top: 8px;
-    }
-
-    .logo-preview-container.has-logo {
-        border-color: var(--primary);
-        background: var(--gray-50);
-    }
-
-    .logo-preview {
-        text-align: center;
-        min-height: 120px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-    }
-
-    .logo-preview img {
-        max-width: 100%;
-        max-height: 100px;
-        border-radius: 8px;
-        object-fit: contain;
-    }
-
-    .preview-placeholder {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        color: var(--gray-500);
-    }
-
-    .preview-placeholder i {
-        font-size: 2rem;
-        color: var(--gray-300);
-    }
-
-    .preview-placeholder span {
-        font-size: 0.9rem;
-    }
-
-    /* Character Counter */
-    .char-counter {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.85rem;
-        color: var(--gray-500);
-        margin-top: 4px;
-    }
-
-    .char-count-warning {
-        color: var(--warning);
-    }
-
-    .char-count-error {
-        color: var(--danger);
-    }
-
-    /* Form Actions */
-    .form-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        padding-top: 16px;
-        border-top: 1px solid var(--gray-200);
-    }
-
-    .form-actions .btn {
-        min-width: 140px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    /* Empty State Styles */
-    .empty-state-sm {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-        text-align: center;
-        color: var(--gray-500);
-    }
-
-    .empty-state-sm .empty-icon {
-        font-size: 3rem;
-        margin-bottom: 16px;
-        opacity: 0.7;
-    }
-
-    .empty-state-sm .empty-content h5 {
-        margin: 0 0 8px 0;
-        color: var(--gray-600);
-        font-size: 1.1rem;
-    }
-
-    .empty-state-sm .empty-content p {
-        margin: 0;
-        font-size: 0.9rem;
-    }
-
-    /* Hide empty state when there's data */
-    .table-container:has(tbody tr:first-child)+.empty-state-sm,
-    .table-section-container:has(.table-responsive table tbody tr:first-child) .empty-state-sm {
-        display: none !important;
-    }
-
-    /* Show empty state when no data */
-    .table-container:not(:has(tbody tr:first-child))+.empty-state-sm,
-    .table-section-container:not(:has(.table-responsive table tbody tr:first-child)) .empty-state-sm {
-        display: flex !important;
-    }
-
-    /* Modal Footer Info */
-    .modal-footer-info {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--gray-500);
-        font-size: 0.9rem;
-    }
-
-    .modal-footer-info i {
-        color: var(--primary);
-    }
-
-    /* Enhanced Table Styles for Management Modals */
-    .management-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .management-table th {
-        background: var(--gray-50);
-        padding: 12px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 1px solid var(--gray-200);
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-
-    .management-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--gray-200);
-        vertical-align: middle;
-    }
-
-    .management-table tbody tr {
-        transition: var(--transition);
-    }
-
-    .management-table tbody tr:hover {
-        background: var(--gray-50);
-    }
-
-    .management-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    /* Compact Action Buttons */
-    .compact-actions {
-        display: flex;
-        gap: 4px;
-        justify-content: center;
-    }
-
-    .btn-compact {
-        width: 28px;
-        height: 28px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: white;
-        font-size: 0.8rem;
-    }
-
-    .btn-compact-edit {
-        background: var(--primary);
-    }
-
-    .btn-compact-edit:hover {
-        background: var(--primary-dark);
-        transform: scale(1.05);
-    }
-
-    .btn-compact-delete {
-        background: var(--danger);
-    }
-
-    .btn-compact-delete:hover {
-        background: #dc2626;
-        transform: scale(1.05);
-    }
-
-    /* Status Badge Variants */
-    .status-badge-sm {
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-
-    .status-badge-sm.active {
-        background: rgba(16, 185, 129, 0.1);
-        color: var(--success);
-    }
-
-    .status-badge-sm.inactive {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--danger);
-    }
-
-    /* Form Text Improvements */
-    .form-text {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.85rem;
-        color: var(--gray-500);
-        margin-top: 4px;
-    }
-
-    .form-text .char-count {
-        font-weight: 500;
-    }
-
-    /* Input Group Enhancements */
-    .input-group .btn-outline-secondary {
-        border: 2px solid var(--gray-200);
-        border-left: none;
-        background: white;
-        color: var(--gray-600);
-        transition: var(--transition);
-    }
-
-    .input-group .btn-outline-secondary:hover {
-        background: var(--gray-100);
-        color: var(--gray-700);
-    }
-
-    /* Responsive Improvements for Brand Modal */
-    @media (max-width: 992px) {
-        .modal-premium .modal-body .row {
-            flex-direction: column;
-        }
-
-        .modal-premium .modal-body .col-lg-5,
-        .modal-premium .modal-body .col-lg-7 {
-            width: 100%;
-            max-width: 100%;
-        }
-
-        .form-section-container {
-            position: static;
-            margin-bottom: 24px;
-        }
-    }
-
-    /* Loading State for Tables */
-    .table-loading {
-        position: relative;
-        min-height: 200px;
-    }
-
-    .table-loading::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 30px;
-        height: 30px;
-        border: 3px solid var(--gray-200);
-        border-left: 3px solid var(--primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    /* Animation for smooth transitions */
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .table-section-container .table-responsive {
-        animation: fadeIn 0.3s ease-out;
-    }
-
-    /* Scrollbar Styling for Tables */
-    .table-responsive::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    .table-responsive::-webkit-scrollbar-track {
-        background: var(--gray-100);
-        border-radius: 4px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: var(--gray-300);
-        border-radius: 4px;
-    }
-
-    .table-responsive::-webkit-scrollbar-thumb:hover {
-        background: var(--gray-400);
-    }
-
-    /* Focus States for Accessibility */
-    .form-control:focus,
-    .form-select:focus,
-    .search-box-sm:focus-within {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        outline: none;
-    }
-
-    /* Button States */
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none !important;
-    }
-
-    .btn:disabled:hover {
-        transform: none !important;
-    }
-
-    /* Text Truncation for Table Cells */
-    .text-truncate {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .max-width-200 {
-        max-width: 200px;
-    }
-
-    .max-width-150 {
-        max-width: 150px;
-    }
-
-    /* Badge Styles for Tables */
-    .badge-sm {
-        padding: 4px 8px;
-        font-size: 0.75rem;
-        border-radius: 6px;
-        font-weight: 500;
-    }
-
-    .badge-outline {
-        background: transparent;
-        border: 1px solid currentColor;
-    }
-
-    /* Custom Checkbox Alignment */
-    {{!-- .col-checkbox {
-        width: 40px;
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    .col-checkbox input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-    } --}}
-
-    /* Image Cell Styles */
-    .col-image {
-        width: 60px;
-        text-align: center;
-    }
-
-    .image-cell {
-        width: 40px;
-        height: 40px;
-        border-radius: 6px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--gray-100);
-        margin: 0 auto;
-    }
-
-    .image-cell img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    /* Action Column Styles */
-    .col-actions {
-        width: 100px;
-        text-align: center;
-    }
-
-    /* Ensure modal content fits properly */
-    .modal-premium .modal-body {
-        padding: 10px;
-    }
-
-    .modal-premium .container-fluid {
-        padding: 0;
-    }
-
-    /* Fix for modal header in management modals */
-    .modal-premium .modal-header {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border-bottom: none;
-        padding: 20px 24px;
-    }
-
-    .modal-premium .modal-title {
-        font-weight: 600;
-        font-size: 1.3rem;
-    }
-
-    /* Responsive text sizes */
-    @media (max-width: 768px) {
-        .modal-premium .modal-title {
-            font-size: 1.1rem;
-        }
-
-        .section-title {
-            font-size: 1rem;
-        }
-
-        .form-actions {
-            flex-direction: column;
-        }
-
-        .form-actions .btn {
-            width: 100%;
-        }
-    }
-
-    /* Print Styles */
-    @media print {
-
-        .modal-premium .modal-header,
-        .modal-premium .modal-footer,
-        .table-controls,
-        .form-section-container {
-            display: none !important;
-        }
-
-        .modal-premium .modal-body {
-            padding: 0;
-        }
-
-        .table-section-container {
-            border: none;
-            box-shadow: none;
-        }
-    }
-
-    /* Loading state improvements */
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none !important;
-    }
-
-    .fa-spinner {
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* Table loading state */
-    .table-loading {
-        text-align: center;
-        color: var(--gray-500);
-    }
-
-    .table-loading .loading-spinner {
-        margin: 0 auto 16px auto;
-    }
-
-    /* Empty state improvements */
-    .empty-state-sm {
-        transition: var(--transition);
-    }
-
-    /* Thêm vào cuối file CSS */
-    .search-box-sm {
-        display: flex;
-        align-items: center;
-        background: white;
-        border: 1px solid var(--gray-300);
-        border-radius: 6px;
-        padding: 8px 12px;
-        min-width: 200px;
-        transition: var(--transition);
-        position: relative;
-    }
-
-    .search-box-sm:focus-within {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-    }
-
-    .search-box-sm i {
-        color: var(--gray-400);
-        margin-right: 8px;
-        font-size: 0.9rem;
-    }
-
-    .search-box-sm input {
-        border: none;
-        background: none;
-        outline: none;
-        flex: 1;
-        font-size: 0.85rem;
-        color: var(--gray-800);
-        width: 100%;
-    }
-
-    .search-box-sm input::placeholder {
-        color: var(--gray-400);
-    }
-
-    /* Clear button cho search */
-    .search-box-sm .clear-search {
-        position: absolute;
-        right: 8px;
-        background: none;
-        border: none;
-        color: var(--gray-400);
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-    }
-
-    .search-box-sm .clear-search:hover {
-        background: var(--gray-200);
-        color: var(--gray-600);
-    }
-
-    /* Search results info */
-    .search-results-info {
-        font-size: 0.8rem;
-        color: var(--gray-500);
-        margin-top: 4px;
-    }
-
-    .search-results-info.has-results {
-        color: var(--primary);
-    }
-
-    /* Thêm vào cuối file CSS */
-    /* Căn giữa header cho tất cả các bảng */
-    .products-table th {
-        text-align: center !important;
-        vertical-align: middle !important;
-    }
-
-    /* Căn giữa nội dung trong các cột */
-    .products-table td {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    /* Riêng cột tên sản phẩm và mô tả có thể căn trái để dễ đọc */
-    .products-table .col-name,
-    .products-table .col-name .product-name,
-    .products-table .col-name .product-sku {
-        text-align: left;
-    }
-
-    /* Căn giữa cho bảng thương hiệu */
-    #brandsTable th,
-    #brandsTable td {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    /* Riêng cột tên thương hiệu và mô tả căn trái */
-    #brandsTable td:first-child {
-        text-align: left;
-    }
-
-    /* Căn giữa cho bảng danh mục */
-    #categoriesTable th,
-    #categoriesTable td {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    /* Riêng cột tên danh mục căn trái */
-    #categoriesTable td:first-child {
-        text-align: left;
-    }
-
-    /* Căn giữa cho bảng sản phẩm chính */
-    #productsTable th,
-    #productsTable td {
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    /* Riêng các cột cần căn trái trong bảng sản phẩm */
-    #productsTable .col-name,
-    #productsTable .col-name .product-name,
-    #productsTable .col-sku .product-sku {
-        text-align: left;
-    }
-
-    /* Căn giữa cho các icon và badge */
-    .status-badge,
-    .category-badge,
-    .brand-badge {
-        display: inline-block;
-        text-align: center;
-    }
-
-    /* Căn giữa cho hình ảnh */
-    .product-table-image {
-        margin: 0 auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    /* Căn giữa cho action buttons */
-    .action-buttons {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 6px;
-    }
-
-    /* Căn giữa cho checkbox */
-    {{!-- .col-checkbox {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    } --}}
-
-    /* Căn giữa cho featured icon */
-    {{!-- .col-featured {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    } --}}
-
-    /* Căn giữa cho nút xem thông số */
-    .btn-view-specs {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 0 auto;
-    }
-
-    /* Đảm bảo price info cũng được căn giữa */
-    .price-info {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-
-        .products-table th,
-        .products-table td {
-            text-align: center;
-        }
-
-        /* Trên mobile, có thể căn trái tất cả cho dễ đọc */
-        .products-table .col-name,
-        .products-table .col-name .product-name,
-        .products-table .col-sku .product-sku {
-            text-align: center;
-        }
-    }
-    
-    
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -3978,6 +1869,7 @@
             this.itemsPerPage = 6; // Số item mỗi trang
             this.totalPages = 0; // Tổng số trang
             this.searchKeyword = ''; // Thêm biến lưu từ khóa tìm kiếm
+            this.simpleImageUpload = null; // Thêm reference
             this.bindEvents();
         }
 
@@ -4182,12 +2074,24 @@
 
         async openBrandModal(brand = null) {
             this.currentEditId = brand ? brand.id : null;
-            this.searchKeyword = ''; // Reset search khi mở modal
+            this.searchKeyword = '';
 
             const modalElement = document.getElementById('brandModal');
             const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
 
-            // Reset ô tìm kiếm
+            // Khởi tạo image upload manager nếu chưa có
+            // Use the shared global image upload manager instance to avoid duplicate instances
+            if (!this.simpleImageUpload) {
+                if (window && window.simpleImageUploadManager) {
+                    this.simpleImageUpload = window.simpleImageUploadManager;
+                } else {
+                    this.simpleImageUpload = new SimpleImageUploadManager();
+                    // expose globally so other parts reuse the same instance
+                    window.simpleImageUploadManager = this.simpleImageUpload;
+                }
+            }
+
+            // Reset search
             const searchInput = document.getElementById('brandSearch');
             if (searchInput) {
                 searchInput.value = '';
@@ -4198,9 +2102,13 @@
             if (brand) {
                 this.fillBrandForm(brand);
                 console.log('Form filled for editing brand:', brand.ten_thuong_hieu);
+                
+                // Load existing image for edit mode
+                if (brand.logo_url) {
+                    this.simpleImageUpload.loadBrandImageForEdit(brand.logo_url);
+                }
             } else {
                 this.resetBrandForm();
-
                 if (!modalElement.classList.contains('show')) {
                     modal.show();
                 }
@@ -4214,13 +2122,22 @@
         updateFormUI() {
             const title = document.getElementById('brandFormTitle');
             const saveText = document.getElementById('saveBrandText');
+            const saveBtn = document.getElementById('saveBrandBtn');
 
             if (this.currentEditId) {
-                title.textContent = 'Chỉnh sửa thương hiệu';
-                saveText.textContent = 'Cập nhật thương hiệu';
+                if (title) title.textContent = 'Chỉnh sửa thương hiệu';
+                if (saveText) {
+                    saveText.textContent = 'Cập nhật thương hiệu';
+                } else if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Cập nhật thương hiệu';
+                }
             } else {
-                title.textContent = 'Thêm thương hiệu mới';
-                saveText.textContent = 'Thêm thương hiệu';
+                if (title) title.textContent = 'Thêm thương hiệu mới';
+                if (saveText) {
+                    saveText.textContent = 'Thêm thương hiệu';
+                } else if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Thêm thương hiệu';
+                }
             }
         }
 
@@ -4259,11 +2176,21 @@
 
         resetBrandForm() {
             this.currentEditId = null;
-            document.getElementById('brandForm').reset();
-            document.getElementById('brandId').value = '';
-            document.getElementById('brandStatus').value = '1';
-            document.getElementById('charCount').textContent = '0';
-            this.updateLogoPreview('');
+            const brandForm = document.getElementById('brandForm');
+            if (brandForm) brandForm.reset();
+
+            const brandIdEl = document.getElementById('brandId');
+            if (brandIdEl) brandIdEl.value = '';
+
+            const brandStatusEl = document.getElementById('brandStatus');
+            if (brandStatusEl) brandStatusEl.value = '1';
+
+            const charCountEl = document.getElementById('charCount');
+            if (charCountEl) charCountEl.textContent = '0';
+
+            if (this.simpleImageUpload) {
+                this.simpleImageUpload.resetBrandImage();
+            }
             this.updateFormUI(); // Cập nhật UI về chế độ thêm mới
         }
 
@@ -4480,6 +2407,51 @@
                 if (!this.validateBrandForm(formData)) {
                     return;
                 }
+ 
+                // Hiển thị loading
+                const saveBtn = document.getElementById('saveBrandBtn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                saveBtn.disabled = true;
+
+                // Khai báo biến lưu URL upload
+                let uploadedImageUrl = null;
+                try {
+                    console.log('🔼 Preparing brand image before saving data...');
+
+                    // Lấy ảnh cũ nếu đang edit
+                    const oldImageUrl = this.currentEditId ? 
+                        this.brands.find(b => b.id === this.currentEditId)?.logo_url : null;
+
+                    // Nếu có file mới được chọn thì upload bây giờ, nếu không thì giữ URL cũ khi edit
+                    if (this.simpleImageUpload && this.simpleImageUpload.brandImageFile) {
+                        // Upload file selected earlier
+                        uploadedImageUrl = await this.simpleImageUpload.uploadBrandImage(oldImageUrl);
+                        if (uploadedImageUrl) {
+                            formData.logo_url = uploadedImageUrl;
+                            console.log('✅ Brand image uploaded during save:', uploadedImageUrl);
+                            // Clear the file reference after successful upload
+                            this.simpleImageUpload.brandImageFile = null;
+                        }
+                    } else if (this.currentEditId) {
+                        // Nếu đang edit và không có ảnh mới, giữ URL cũ
+                        const currentBrand = this.brands.find(b => b.id === this.currentEditId);
+                        if (currentBrand && currentBrand.logo_url) {
+                            formData.logo_url = currentBrand.logo_url;
+                        }
+                    }
+
+                } catch (error) {
+                    this.showError('Lỗi upload logo: ' + error.message);
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+
+                // (Upload handled above)
+
+                // KIỂM TRA LẠI FORM DATA SAU KHI UPLOAD ẢNH
+                console.log('📦 Form data to save:', formData);
 
                 let result;
                 if (this.currentEditId) {
@@ -4499,13 +2471,22 @@
 
             } catch (error) {
                 this.showError('Không thể lưu thương hiệu: ' + error.message);
+            } finally {
+                // Khôi phục nút
+                const saveBtn = document.getElementById('saveBrandBtn');
+                if (saveBtn) {
+                    saveBtn.innerHTML = this.currentEditId ? 
+                        '<i class="fas fa-save"></i> Cập nhật thương hiệu' : 
+                        '<i class="fas fa-save"></i> Thêm thương hiệu';
+                    saveBtn.disabled = false;
+                }
             }
         }
 
         getBrandFormData() {
             return {
                 ten_thuong_hieu: document.getElementById('brandName').value.trim(),
-                logo_url: document.getElementById('brandLogo').value.trim(),
+                logo_url: '',
                 mo_ta: document.getElementById('brandDescription').value.trim(),
                 trang_thai: parseInt(document.getElementById('brandStatus').value),
                 slug: Utils.generateSlug(document.getElementById('brandName').value.trim())
@@ -4550,7 +2531,7 @@
             return await response.json();
         }
 
-        handleEditBrand(button) {
+        async handleEditBrand(button) {
             const brandId = button.getAttribute('data-id');
             this.currentEditId = brandId; // Set currentEditId trước
 
@@ -4558,7 +2539,16 @@
             this.updateFormUI();
 
             // Load chi tiết thương hiệu
-            this.loadBrandDetail(brandId);
+            await this.loadBrandDetail(brandId);
+
+            // Show modal for editing (ensure it appears)
+            const modalElement = document.getElementById('brandModal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+                if (!modalElement.classList.contains('show')) {
+                    modal.show();
+                }
+            }
         }
 
         async loadBrandDetail(brandId) {
@@ -4658,6 +2648,7 @@
             this.itemsPerPage = 7;
             this.totalPages = 0;
             this.searchKeyword = '';
+            this.simpleImageUpload = null; // Thêm reference
             this.bindEvents();
         }
 
@@ -4902,6 +2893,12 @@
             const modalElement = document.getElementById('categoryModal');
             const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
 
+            // Khởi tạo image upload manager nếu chưa có
+            if (!this.simpleImageUpload) {
+                this.simpleImageUpload = new SimpleImageUploadManager();
+            }
+
+            // Reset search
             const searchInput = document.getElementById('categorySearch');
             if (searchInput) {
                 searchInput.value = '';
@@ -4909,7 +2906,7 @@
 
             this.updateFormUI();
 
-            // LOAD DANH SÁCH TRƯỚC KHI FILL FORM
+            // Load data trước khi fill form
             await Promise.all([
                 this.loadCategories(),
                 this.loadParentCategories()
@@ -4918,9 +2915,13 @@
             if (category) {
                 this.fillCategoryForm(category);
                 console.log('Form filled for editing category:', category.ten_danh_muc);
+                
+                // Load existing image for edit mode
+                if (category.anh_url) {
+                    this.simpleImageUpload.loadCategoryImageForEdit(category.anh_url);
+                }
             } else {
                 this.resetCategoryForm();
-
                 if (!modalElement.classList.contains('show')) {
                     modal.show();
                 }
@@ -4934,11 +2935,11 @@
             const saveText = document.getElementById('saveCategoryText');
 
             if (this.currentEditId) {
-                title.textContent = 'Chỉnh sửa danh mục';
-                saveText.textContent = 'Cập nhật danh mục';
+                if (title) title.textContent = 'Chỉnh sửa danh mục';
+                if (saveText) saveText.textContent = 'Cập nhật danh mục';
             } else {
-                title.textContent = 'Thêm danh mục mới';
-                saveText.textContent = 'Thêm danh mục';
+                if (title) title.textContent = 'Thêm danh mục mới';
+                if (saveText) saveText.textContent = 'Thêm danh mục';
             }
         }
 
@@ -4985,7 +2986,9 @@
             document.getElementById('categoryOrder').value = '0'; // Reset về 0
             document.getElementById('parentCategory').value = '';
             document.getElementById('categoryCharCount').textContent = '0';
-            this.updateImagePreview('');
+            if (this.simpleImageUpload) {
+                this.simpleImageUpload.resetCategoryImage();
+            }
             this.updateFormUI();
         }
 
@@ -5291,12 +3294,52 @@
 
         async saveCategory() {
             try {
+
                 const formData = this.getCategoryFormData();
-                console.log('Category Data:', formData);
+                console.log('Category Data (before upload):', formData);
 
                 if (!this.validateCategoryForm(formData)) {
                     return;
                 }
+
+                // Show loading state on save button
+                const saveBtn = document.getElementById('saveCategoryBtn');
+                const originalText = saveBtn ? saveBtn.innerHTML : null;
+                if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                    saveBtn.disabled = true;
+                }
+
+                // Upload category image if a new file was selected
+                try {
+                    const oldImageUrl = this.currentEditId ?
+                        this.categories.find(c => c.id === this.currentEditId)?.anh_url : null;
+
+                    if (this.categoryImageFile) {
+                        const uploadedImageUrl = await this.uploadCategoryImage(oldImageUrl);
+                        if (uploadedImageUrl) {
+                            formData.anh_url = uploadedImageUrl;
+                            console.log('✅ Category image uploaded during save:', uploadedImageUrl);
+                            // Clear the file reference after successful upload
+                            this.categoryImageFile = null;
+                        }
+                    } else if (this.currentEditId) {
+                        // If editing and no new image chosen, keep existing URL
+                        const currentCategory = this.categories.find(c => c.id === this.currentEditId);
+                        if (currentCategory && currentCategory.anh_url) {
+                            formData.anh_url = currentCategory.anh_url;
+                        }
+                    }
+                } catch (uploadError) {
+                    this.showError('Lỗi upload ảnh danh mục: ' + uploadError.message);
+                    if (saveBtn) {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                    }
+                    return;
+                }
+
+                console.log('Category Data (to save):', formData);
 
                 let result;
                 if (this.currentEditId) {
@@ -5312,11 +3355,19 @@
                     this.loadCategories(),
                     this.loadParentCategories()
                 ]);
-                
+
                 this.renderCategoriesTable();
                 this.updateCategoriesTableInfo();
                 this.updatePaginationControls();
                 this.resetCategoryForm();
+
+                // Restore save button
+                if (saveBtn) {
+                    saveBtn.innerHTML = this.currentEditId ?
+                        '<i class="fas fa-save"></i> Cập nhật danh mục' :
+                        '<i class="fas fa-save"></i> Thêm danh mục';
+                    saveBtn.disabled = false;
+                }
 
             } catch (error) {
                 this.showError('Không thể lưu danh mục: ' + error.message);
@@ -5529,4 +3580,3740 @@
         new BrandManager();
         new CategoryManager();
     });
+    // File Upload Manager
+    class FileUploadManager {
+        constructor() {
+            this.mainImageFile = null;
+            this.additionalImages = [];
+            this.videos = [];
+            this.init();
+        }
+
+        init() {
+            this.bindEvents();
+        }
+
+        bindEvents() {
+            // Main Image Upload
+            const mainImageUploadArea = document.getElementById('mainImageUploadArea');
+            const mainImageInput = document.getElementById('productMainImage');
+            const changeMainImageBtn = document.getElementById('changeMainImageBtn');
+
+            mainImageUploadArea?.addEventListener('click', () => mainImageInput.click());
+            mainImageUploadArea?.addEventListener('dragover', this.handleDragOver.bind(this));
+            mainImageUploadArea?.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            mainImageUploadArea?.addEventListener('drop', this.handleMainImageDrop.bind(this));
+            
+            mainImageInput?.addEventListener('change', (e) => this.handleMainImageSelect(e));
+            changeMainImageBtn?.addEventListener('click', () => mainImageInput.click());
+
+            // Additional Images Upload
+            const additionalImagesUploadArea = document.getElementById('additionalImagesUploadArea');
+            const additionalImagesInput = document.getElementById('productAdditionalImages');
+
+            additionalImagesUploadArea?.addEventListener('click', () => additionalImagesInput.click());
+            additionalImagesUploadArea?.addEventListener('dragover', this.handleDragOver.bind(this));
+            additionalImagesUploadArea?.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            additionalImagesUploadArea?.addEventListener('drop', this.handleAdditionalImagesDrop.bind(this));
+            
+            additionalImagesInput?.addEventListener('change', (e) => this.handleAdditionalImagesSelect(e));
+
+            // Videos Upload
+            const videosUploadArea = document.getElementById('videosUploadArea');
+            const videosInput = document.getElementById('productVideos');
+
+            videosUploadArea?.addEventListener('click', () => videosInput.click());
+            videosUploadArea?.addEventListener('dragover', this.handleDragOver.bind(this));
+            videosUploadArea?.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            videosUploadArea?.addEventListener('drop', this.handleVideosDrop.bind(this));
+            
+            videosInput?.addEventListener('change', (e) => this.handleVideosSelect(e));
+        }
+
+        handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        handleDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        // Main Image Handlers
+        handleMainImageDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && this.isImageFile(files[0])) {
+                this.processMainImage(files[0]);
+            }
+        }
+
+        handleMainImageSelect(e) {
+            const file = e.target.files[0];
+            if (file && this.isImageFile(file)) {
+                this.processMainImage(file);
+            }
+        }
+
+        processMainImage(file) {
+            if (this.validateImageFile(file)) {
+                this.mainImageFile = file;
+                this.displayMainImagePreview(file);
+                this.uploadMainImage(file);
+            }
+        }
+
+        displayMainImagePreview(file) {
+            const previewArea = document.getElementById('mainImageUploadArea');
+            const placeholder = previewArea.querySelector('.upload-placeholder');
+            const preview = document.getElementById('mainImagePreview');
+            const previewImg = document.getElementById('mainImagePreviewImg');
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                placeholder.style.display = 'none';
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Additional Images Handlers
+        handleAdditionalImagesDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => this.isImageFile(file));
+            if (files.length > 0) {
+                this.processAdditionalImages(files);
+            }
+        }
+
+        handleAdditionalImagesSelect(e) {
+            const files = Array.from(e.target.files).filter(file => this.isImageFile(file));
+            if (files.length > 0) {
+                this.processAdditionalImages(files);
+            }
+        }
+
+        processAdditionalImages(files) {
+            const validFiles = files.filter(file => this.validateImageFile(file));
+            const remainingSlots = 10 - this.additionalImages.length;
+            
+            if (validFiles.length > remainingSlots) {
+                this.showError(`Chỉ có thể thêm tối đa 10 ảnh. Bạn đã chọn ${validFiles.length} nhưng chỉ còn ${remainingSlots} chỗ trống.`);
+                validFiles.splice(remainingSlots);
+            }
+
+            validFiles.forEach(file => {
+                if (this.additionalImages.length < 10) {
+                    this.additionalImages.push(file);
+                    this.displayAdditionalImagePreview(file);
+                    this.uploadAdditionalImage(file);
+                }
+            });
+        }
+
+        displayAdditionalImagePreview(file) {
+            const previewContainer = document.getElementById('additionalImagesPreview');
+            const placeholder = document.querySelector('#additionalImagesUploadArea .upload-placeholder');
+
+            // Hide placeholder when first image is added
+            if (this.additionalImages.length === 1) {
+                placeholder.style.display = 'none';
+                previewContainer.style.display = 'grid';
+            }
+
+            const imageItem = document.createElement('div');
+            imageItem.className = 'additional-image-item';
+            
+            const img = document.createElement('img');
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-image-btn';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.title = 'Xóa ảnh';
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeAdditionalImage(file, imageItem);
+            });
+
+            imageItem.appendChild(img);
+            imageItem.appendChild(removeBtn);
+            previewContainer.appendChild(imageItem);
+        }
+
+        removeAdditionalImage(file, element) {
+            const index = this.additionalImages.indexOf(file);
+            if (index > -1) {
+                this.additionalImages.splice(index, 1);
+            }
+            element.remove();
+
+            // Show placeholder if no images left
+            const previewContainer = document.getElementById('additionalImagesPreview');
+            const placeholder = document.querySelector('#additionalImagesUploadArea .upload-placeholder');
+            
+            if (this.additionalImages.length === 0) {
+                previewContainer.style.display = 'none';
+                placeholder.style.display = 'block';
+            }
+        }
+
+        // Videos Handlers
+        handleVideosDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => this.isVideoFile(file));
+            if (files.length > 0) {
+                this.processVideos(files);
+            }
+        }
+
+        handleVideosSelect(e) {
+            const files = Array.from(e.target.files).filter(file => this.isVideoFile(file));
+            if (files.length > 0) {
+                this.processVideos(files);
+            }
+        }
+
+        processVideos(files) {
+            const validFiles = files.filter(file => this.validateVideoFile(file));
+            
+            validFiles.forEach(file => {
+                this.videos.push(file);
+                this.displayVideoPreview(file);
+                this.uploadVideo(file);
+            });
+        }
+
+        displayVideoPreview(file) {
+            const previewContainer = document.getElementById('videosPreview');
+            const placeholder = document.querySelector('#videosUploadArea .upload-placeholder');
+
+            // Hide placeholder when first video is added
+            if (this.videos.length === 1) {
+                placeholder.style.display = 'none';
+                previewContainer.style.display = 'block';
+            }
+
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            
+            const videoInfo = document.createElement('div');
+            videoInfo.className = 'video-info';
+            
+            const videoIcon = document.createElement('div');
+            videoIcon.className = 'video-icon';
+            videoIcon.innerHTML = '<i class="fas fa-film"></i>';
+            
+            const videoDetails = document.createElement('div');
+            videoDetails.className = 'video-details';
+            
+            const videoName = document.createElement('div');
+            videoName.className = 'video-name';
+            videoName.textContent = file.name;
+            
+            const videoSize = document.createElement('div');
+            videoSize.className = 'video-size';
+            videoSize.textContent = this.formatFileSize(file.size);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-video-btn';
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.title = 'Xóa video';
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeVideo(file, videoItem);
+            });
+
+            videoDetails.appendChild(videoName);
+            videoDetails.appendChild(videoSize);
+            videoInfo.appendChild(videoIcon);
+            videoInfo.appendChild(videoDetails);
+            videoItem.appendChild(videoInfo);
+            videoItem.appendChild(removeBtn);
+            previewContainer.appendChild(videoItem);
+        }
+
+        removeVideo(file, element) {
+            const index = this.videos.indexOf(file);
+            if (index > -1) {
+                this.videos.splice(index, 1);
+            }
+            element.remove();
+
+            // Show placeholder if no videos left
+            const previewContainer = document.getElementById('videosPreview');
+            const placeholder = document.querySelector('#videosUploadArea .upload-placeholder');
+            
+            if (this.videos.length === 0) {
+                previewContainer.style.display = 'none';
+                placeholder.style.display = 'block';
+            }
+        }
+
+        // File Validation
+        isImageFile(file) {
+            return file.type.startsWith('image/');
+        }
+
+        isVideoFile(file) {
+            return file.type.startsWith('video/');
+        }
+
+        validateImageFile(file) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+            if (!allowedTypes.includes(file.type)) {
+                this.showError('Chỉ chấp nhận file ảnh định dạng JPG, PNG, GIF hoặc WebP');
+                return false;
+            }
+
+            if (file.size > maxSize) {
+                this.showError('Kích thước file ảnh không được vượt quá 5MB');
+                return false;
+            }
+
+            return true;
+        }
+
+        validateVideoFile(file) {
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime'];
+
+            if (!allowedTypes.includes(file.type)) {
+                this.showError('Chỉ chấp nhận file video định dạng MP4, MOV hoặc AVI');
+                return false;
+            }
+
+            if (file.size > maxSize) {
+                this.showError('Kích thước file video không được vượt quá 50MB');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Upload Methods (Simulated - You'll need to implement actual upload logic)
+        async uploadMainImage(file) {
+            try {
+                // Simulate upload process
+                console.log('Uploading main image:', file.name);
+                
+                // Here you would implement actual file upload to your server
+                // Example:
+                // const formData = new FormData();
+                // formData.append('image', file);
+                // const response = await fetch('/api/upload', { method: 'POST', body: formData });
+                // const result = await response.json();
+                // document.getElementById('productImage').value = result.url;
+
+                // For now, we'll just store the file object
+                document.getElementById('productImage').value = file.name;
+                
+            } catch (error) {
+                this.showError('Lỗi khi upload hình ảnh chính: ' + error.message);
+            }
+        }
+
+        async uploadAdditionalImage(file) {
+            try {
+                console.log('Uploading additional image:', file.name);
+                // Implement actual upload logic here
+            } catch (error) {
+                this.showError('Lỗi khi upload ảnh phụ: ' + error.message);
+            }
+        }
+
+        async uploadVideo(file) {
+            try {
+                console.log('Uploading video:', file.name);
+                // Implement actual upload logic here
+            } catch (error) {
+                this.showError('Lỗi khi upload video: ' + error.message);
+            }
+        }
+
+        // Utility Methods
+        formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi!',
+                text: message,
+                confirmButtonColor: '#667eea'
+            });
+        }
+
+        // Reset all file inputs
+        reset() {
+            this.mainImageFile = null;
+            this.additionalImages = [];
+            this.videos = [];
+
+            // Reset main image
+            const mainImagePreview = document.getElementById('mainImagePreview');
+            const mainImagePlaceholder = document.querySelector('#mainImageUploadArea .upload-placeholder');
+            if (mainImagePreview && mainImagePlaceholder) {
+                mainImagePreview.style.display = 'none';
+                mainImagePlaceholder.style.display = 'block';
+            }
+
+            // Reset additional images
+            const additionalImagesPreview = document.getElementById('additionalImagesPreview');
+            const additionalImagesPlaceholder = document.querySelector('#additionalImagesUploadArea .upload-placeholder');
+            if (additionalImagesPreview && additionalImagesPlaceholder) {
+                additionalImagesPreview.innerHTML = '';
+                additionalImagesPreview.style.display = 'none';
+                additionalImagesPlaceholder.style.display = 'block';
+            }
+
+            // Reset videos
+            const videosPreview = document.getElementById('videosPreview');
+            const videosPlaceholder = document.querySelector('#videosUploadArea .upload-placeholder');
+            if (videosPreview && videosPlaceholder) {
+                videosPreview.innerHTML = '';
+                videosPreview.style.display = 'none';
+                videosPlaceholder.style.display = 'block';
+            }
+
+            // Reset hidden inputs
+            document.getElementById('productImage').value = '';
+            document.getElementById('productAdditionalImagesData').value = '';
+            document.getElementById('productVideosData').value = '';
+        }
+
+        // Get uploaded data (for form submission)
+        getUploadData() {
+            return {
+                mainImage: this.mainImageFile,
+                additionalImages: this.additionalImages,
+                videos: this.videos
+            };
+        }
+    }
+
+    // Initialize file upload manager when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        window.fileUploadManager = new FileUploadManager();
+    });
+
+    // Update the ProductManager to integrate with file uploads
+    // Add this method to the ProductManager class
+    /*
+    resetProductForm() {
+        document.getElementById('productForm').reset();
+        document.getElementById('productStatus').value = '1';
+        
+        // Reset file uploads
+        if (window.fileUploadManager) {
+            window.fileUploadManager.reset();
+        }
+    }
+    */
+    
+    // Simple Image Upload Manager - Fixed version
+class SimpleImageUploadManager {
+    constructor() {
+        this.brandImageFile = null;
+        this.categoryImageFile = null;
+        this.isProcessing = false;
+        this.brandEventsBound = false;
+        this.categoryEventsBound = false;
+        this.init();
+    }
+
+    init() {
+        this.bindBrandEvents();
+        this.bindCategoryEvents();
+    }
+
+    
+
+    // Brand Image Upload - Fixed single click
+    bindBrandEvents() {
+        if (this.brandEventsBound) return;
+        
+        const brandUploadArea = document.getElementById('brandLogoUploadArea');
+        const brandInput = document.getElementById('brandLogoInput');
+        const changeBrandBtn = document.getElementById('changeBrandLogoBtn');
+
+        if (brandUploadArea && brandInput) {
+            console.log('✅ Binding brand events (first time)...');
+
+            // Remove any existing event listeners by cloning
+            const newBrandUploadArea = brandUploadArea.cloneNode(true);
+            brandUploadArea.parentNode.replaceChild(newBrandUploadArea, brandUploadArea);
+
+            const newBrandInput = brandInput.cloneNode(true);
+            brandInput.parentNode.replaceChild(newBrandInput, brandInput);
+
+            // Get new references
+            const currentBrandUploadArea = document.getElementById('brandLogoUploadArea');
+            const currentBrandInput = document.getElementById('brandLogoInput');
+            const currentChangeBtn = document.getElementById('changeBrandLogoBtn');
+            const currentChooseBtn = document.getElementById('chooseBrandLogoBtn');
+
+            // Single click handler
+            const handleBrandClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Brand area clicked');
+                currentBrandInput.click();
+            };
+
+            currentBrandUploadArea.addEventListener('click', handleBrandClick);
+
+            currentBrandUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                currentBrandUploadArea.classList.add('dragover');
+            });
+
+            currentBrandUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                currentBrandUploadArea.classList.remove('dragover');
+            });
+
+            currentBrandUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                currentBrandUploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && this.isImageFile(files[0])) {
+                    this.processBrandImage(files[0]);
+                }
+            });
+
+            // Change button
+            if (currentChangeBtn) {
+                currentChangeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔁 Change brand button clicked');
+                    currentBrandInput.click();
+                });
+            }
+
+            // Choose button (single button to open file picker)
+            if (currentChooseBtn) {
+                currentChooseBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Choose brand logo button clicked');
+                    currentBrandInput.click();
+                });
+            }
+
+            // Input change - FIXED: Only process once
+            currentBrandInput.addEventListener('change', (e) => {
+                console.log('📤 Brand input changed');
+                const file = e.target.files[0];
+                if (file && this.isImageFile(file)) {
+                    this.processBrandImage(file);
+                }
+                // Reset input but don't prevent future uploads
+                setTimeout(() => {
+                    e.target.value = '';
+                }, 100);
+            });
+
+            this.brandEventsBound = true;
+        }
+    }
+
+    // Category Image Upload - Fixed preview
+    bindCategoryEvents() {
+        if (this.categoryEventsBound) return;
+
+        const categoryUploadArea = document.getElementById('categoryImageUploadArea');
+        const categoryInput = document.getElementById('categoryImageInput');
+        const changeCategoryBtn = document.getElementById('changeCategoryImageBtn');
+
+        if (categoryUploadArea && categoryInput) {
+            console.log('✅ Binding category events (first time)...');
+
+            // Remove any existing event listeners by cloning
+            const newCategoryUploadArea = categoryUploadArea.cloneNode(true);
+            categoryUploadArea.parentNode.replaceChild(newCategoryUploadArea, categoryUploadArea);
+
+            const newCategoryInput = categoryInput.cloneNode(true);
+            categoryInput.parentNode.replaceChild(newCategoryInput, categoryInput);
+
+            // Get new references
+            const currentCategoryUploadArea = document.getElementById('categoryImageUploadArea');
+            const currentCategoryInput = document.getElementById('categoryImageInput');
+            const currentChangeBtn = document.getElementById('changeCategoryImageBtn');
+
+            // Single click handler
+            const handleCategoryClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Category area clicked');
+                currentCategoryInput.click();
+            };
+
+            currentCategoryUploadArea.addEventListener('click', handleCategoryClick);
+
+            currentCategoryUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                currentCategoryUploadArea.classList.add('dragover');
+            });
+
+            currentCategoryUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                currentCategoryUploadArea.classList.remove('dragover');
+            });
+
+            currentCategoryUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                currentCategoryUploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && this.isImageFile(files[0])) {
+                    this.processCategoryImage(files[0]);
+                }
+            });
+
+            // Change button
+            if (currentChangeBtn) {
+                currentChangeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔁 Change category button clicked');
+                    currentCategoryInput.click();
+                });
+            }
+
+            // Input change - FIXED: Only process once
+            currentCategoryInput.addEventListener('change', (e) => {
+                console.log('📤 Category input changed');
+                const file = e.target.files[0];
+                if (file && this.isImageFile(file)) {
+                    this.processCategoryImage(file);
+                }
+                // Reset input but don't prevent future uploads
+                setTimeout(() => {
+                    e.target.value = '';
+                }, 100);
+            });
+
+            this.categoryEventsBound = true;
+        }
+    }
+
+    // Process images - ONLY PREVIEW, NO UPLOAD
+    processBrandImage(file) {
+        if (this.validateImageFile(file)) {
+            console.log('✅ Processing brand image preview:', file.name);
+            // Store selected file and show preview. Upload will happen on Save.
+            this.brandImageFile = file;
+            // Clear any previously stored uploaded URL to avoid stale data
+            this.brandImageUploadedUrl = null;
+            this.displayBrandImagePreview(file);
+        }
+    }
+
+    processCategoryImage(file) {
+        if (this.validateImageFile(file)) {
+            console.log('✅ Processing category image preview:', file.name);
+            this.categoryImageFile = file;
+            this.displayCategoryImagePreview(file);
+        }
+    }
+
+    // Display previews - FIXED CATEGORY PREVIEW
+    displayBrandImagePreview(file) {
+        const previewArea = document.getElementById('brandLogoUploadArea');
+        const placeholder = previewArea?.querySelector('.upload-placeholder');
+        const preview = document.getElementById('brandLogoPreview');
+        const previewImg = document.getElementById('brandLogoPreviewImg');
+
+        if (!previewArea || !previewImg) {
+            console.error('❌ Brand preview elements not found');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            console.log('🖼️ Brand preview loaded');
+            previewImg.src = e.target.result;
+            if (placeholder) placeholder.style.display = 'none';
+            if (preview) preview.style.display = 'block';
+            
+            // Update the external preview container
+            this.updateBrandLogoPreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    displayCategoryImagePreview(file) {
+        const previewArea = document.getElementById('categoryImageUploadArea');
+        const placeholder = previewArea?.querySelector('.upload-placeholder');
+        const preview = document.getElementById('categoryImagePreview');
+        const previewImg = document.getElementById('categoryImagePreviewImg');
+
+        console.log('🔍 Category preview elements:', {
+            previewArea: !!previewArea,
+            placeholder: !!placeholder,
+            preview: !!preview,
+            previewImg: !!previewImg
+        });
+
+        if (!previewArea || !previewImg) {
+            console.error('❌ Category preview elements not found');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            console.log('🖼️ Category preview loaded');
+            previewImg.src = e.target.result;
+            if (placeholder) placeholder.style.display = 'none';
+            if (preview) preview.style.display = 'block';
+            
+            // FIXED: Update the correct external preview container
+            this.updateCategoryImagePreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    updateBrandLogoPreview(imageUrl) {
+        const logoPreview = document.getElementById('logoPreview');
+        if (logoPreview) {
+            console.log('✅ Updating brand logo preview container');
+            logoPreview.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Brand Logo Preview';
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '80%';
+            img.style.objectFit = 'contain';
+            logoPreview.appendChild(img);
+            logoPreview.parentElement.classList.add('has-logo');
+        }
+    }
+
+    updateCategoryImagePreview(imageUrl) {
+        // FIXED: Use the correct container ID
+        const imagePreviewContainer = document.querySelector('.logo-preview-container #categoryImagePreview');
+        if (imagePreviewContainer) {
+            console.log('✅ Updating category image preview container');
+            imagePreviewContainer.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Category Image Preview';
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100px';
+            img.style.objectFit = 'contain';
+            imagePreviewContainer.appendChild(img);
+            imagePreviewContainer.parentElement.classList.add('has-logo');
+        } else {
+            console.error('❌ Category image preview container not found');
+            // Try alternative selectors
+            const alternativeSelectors = [
+                '#categoryImagePreview',
+                '.image-preview-section .logo-preview',
+                '.logo-preview-container .logo-preview'
+            ];
+            
+            alternativeSelectors.forEach(selector => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    console.log(`✅ Found category preview with selector: ${selector}`);
+                    element.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.alt = 'Category Image Preview';
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100px';
+                    img.style.objectFit = 'contain';
+                    element.appendChild(img);
+                    element.parentElement.classList.add('has-logo');
+                }
+            });
+        }
+    }
+
+    // UPLOAD ONLY WHEN CALLED (on save)
+     async uploadBrandImage(oldImageUrl = null) {
+        // Nếu không có file mới thì không upload
+        if (!this.brandImageFile) {
+            console.log('ℹ️ No new brand image to upload');
+            return null;
+        }
+
+        console.log('⬆️ Starting brand image upload to API...');
+        
+        try {
+            const formData = new FormData();
+            formData.append('brandLogo', this.brandImageFile);
+            
+            // Gửi ảnh cũ để xóa nếu có
+            if (oldImageUrl) {
+                formData.append('oldImageUrl', oldImageUrl);
+            }
+
+            const response = await fetch('/api/upload/brand-logo', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.data && result.data.url) {
+                const imageUrl = result.data.url;
+                console.log('✅ Brand image uploaded successfully:', imageUrl);
+                return imageUrl; // CHỈ TRẢ VỀ URL, KHÔNG SET VALUE
+            } else {
+                throw new Error(result.message || 'Upload failed - no URL returned');
+            }
+        } catch (error) {
+            console.error('❌ Brand image upload failed:', error);
+            throw error;
+        }
+    }
+    
+    
+    async uploadCategoryImage(oldImageUrl = null) {
+        if (!this.categoryImageFile) {
+            console.log('ℹ️ No new category image to upload');
+            return document.getElementById('categoryImage').value;
+        }
+
+        console.log('⬆️ Starting category image upload to API...');
+        
+        try {
+            const formData = new FormData();
+            formData.append('categoryImage', this.categoryImageFile);
+            
+            // Gửi ảnh cũ để xóa nếu có
+            if (oldImageUrl) {
+                formData.append('oldImageUrl', oldImageUrl);
+            }
+
+            const response = await fetch('/api/upload/category-image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.data && result.data.url) {
+                const imageUrl = result.data.url;
+                document.getElementById('categoryImage').value = imageUrl;
+                console.log('✅ Category image uploaded successfully:', imageUrl);
+                return imageUrl;
+            } else {
+                throw new Error(result.message || 'Upload failed - no URL returned');
+            }
+        } catch (error) {
+            console.error('❌ Category image upload failed:', error);
+            throw error;
+        }
+    }
+
+    // Utility methods
+    isImageFile(file) {
+        return file && file.type.startsWith('image/');
+    }
+
+    validateImageFile(file) {
+        const maxSize = 5 * 1024 * 1024;
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+        if (!file) return false;
+
+        if (!allowedTypes.includes(file.type)) {
+            this.showError('Chỉ chấp nhận file ảnh định dạng JPG, PNG, GIF hoặc WebP');
+            return false;
+        }
+
+        if (file.size > maxSize) {
+            this.showError('Kích thước file ảnh không được vượt quá 5MB');
+            return false;
+        }
+
+        return true;
+    }
+
+    // Reset methods
+    resetBrandImage() {
+        this.brandImageFile = null;
+        this.brandImageUploadedUrl = null;
+        const previewArea = document.getElementById('brandLogoUploadArea');
+        const placeholder = previewArea?.querySelector('.upload-placeholder');
+        const preview = document.getElementById('brandLogoPreview');
+        const logoPreview = document.getElementById('logoPreview');
+
+        if (preview) preview.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'block';
+        if (logoPreview) {
+            logoPreview.innerHTML = `
+                <div class="preview-placeholder">
+                    <i class="fas fa-image fa-3x"></i>
+                    <span>Logo sẽ hiển thị tại đây</span>
+                </div>
+            `;
+            logoPreview.parentElement.classList.remove('has-logo');
+        }
+        document.getElementById('brandLogo').value = '';
+        
+        const brandInput = document.getElementById('brandLogoInput');
+        if (brandInput) brandInput.value = '';
+    }
+
+    resetCategoryImage() {
+        this.categoryImageFile = null;
+        const previewArea = document.getElementById('categoryImageUploadArea');
+        const placeholder = previewArea?.querySelector('.upload-placeholder');
+        const preview = document.getElementById('categoryImagePreview');
+        const imagePreviewContainer = document.querySelector('.logo-preview-container #categoryImagePreview');
+
+        if (preview) preview.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'block';
+        if (imagePreviewContainer) {
+            imagePreviewContainer.innerHTML = `
+                <div class="preview-placeholder">
+                    <i class="fas fa-image fa-3x"></i>
+                    <span>Ảnh sẽ hiển thị tại đây</span>
+                </div>
+            `;
+            imagePreviewContainer.parentElement.classList.remove('has-logo');
+        }
+        document.getElementById('categoryImage').value = '';
+        
+        const categoryInput = document.getElementById('categoryImageInput');
+        if (categoryInput) categoryInput.value = '';
+    }
+
+    // Load existing images for edit mode
+    loadBrandImageForEdit(imageUrl) {
+        if (imageUrl) {
+            console.log('📥 Loading brand image for edit:', imageUrl);
+            this.updateBrandLogoPreview(imageUrl);
+            document.getElementById('brandLogo').value = imageUrl;
+            
+            const previewArea = document.getElementById('brandLogoUploadArea');
+            const placeholder = previewArea?.querySelector('.upload-placeholder');
+            const preview = document.getElementById('brandLogoPreview');
+            const previewImg = document.getElementById('brandLogoPreviewImg');
+
+            if (previewImg && preview && placeholder) {
+                previewImg.src = imageUrl;
+                placeholder.style.display = 'none';
+                preview.style.display = 'block';
+            }
+        }
+    }
+
+    loadCategoryImageForEdit(imageUrl) {
+        if (imageUrl) {
+            console.log('📥 Loading category image for edit:', imageUrl);
+            this.updateCategoryImagePreview(imageUrl);
+            document.getElementById('categoryImage').value = imageUrl;
+            
+            const previewArea = document.getElementById('categoryImageUploadArea');
+            const placeholder = previewArea?.querySelector('.upload-placeholder');
+            const preview = document.getElementById('categoryImagePreview');
+            const previewImg = document.getElementById('categoryImagePreviewImg');
+
+            if (previewImg && preview && placeholder) {
+                previewImg.src = imageUrl;
+                placeholder.style.display = 'none';
+                preview.style.display = 'block';
+            }
+        }
+    }
+
+    showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: message,
+            confirmButtonColor: '#667eea'
+        });
+    }
+
+    getBrandImageData() {
+        return this.brandImageFile;
+    }
+
+    getCategoryImageData() {
+        return this.categoryImageFile;
+    }
+
+    // Reinitialize when modals are opened
+    reinitialize() {
+        console.log('🔄 Reinitializing upload manager...');
+        this.brandEventsBound = false;
+        this.categoryEventsBound = false;
+        this.bindBrandEvents();
+        this.bindCategoryEvents();
+    }
+}
+
+// Update HTML structure for Category Modal to fix preview issue
+const categoryModalHTMLFix = `
+<!-- Replace the Image Preview section in Category Modal with this -->
+<div class="image-preview-section mt-3">
+    <label class="form-label">Preview Ảnh</label>
+    <div class="logo-preview-container">
+        <div class="logo-preview" id="categoryImagePreviewContainer">
+            <div class="preview-placeholder">
+                <i class="fas fa-image fa-3x"></i>
+                <span>Ảnh sẽ hiển thị tại đây</span>
+            </div>
+        </div>
+    </div>
+</div>
+`;
+
+// Update the updateCategoryImagePreview method to use new ID
+SimpleImageUploadManager.prototype.updateCategoryImagePreview = function(imageUrl) {
+    // Use the new container ID
+    const imagePreviewContainer = document.getElementById('categoryImagePreviewContainer');
+    if (imagePreviewContainer) {
+        console.log('✅ Updating category image preview container');
+        imagePreviewContainer.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = 'Category Image Preview';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100px';
+        img.style.objectFit = 'contain';
+        imagePreviewContainer.appendChild(img);
+        imagePreviewContainer.parentElement.classList.add('has-logo');
+    } else {
+        console.error('❌ Category image preview container not found');
+    }
+};
+
+// Update resetCategoryImage to use new ID
+SimpleImageUploadManager.prototype.resetCategoryImage = function() {
+    this.categoryImageFile = null;
+    const previewArea = document.getElementById('categoryImageUploadArea');
+    const placeholder = previewArea?.querySelector('.upload-placeholder');
+    const preview = document.getElementById('categoryImagePreview');
+    const imagePreviewContainer = document.getElementById('categoryImagePreviewContainer');
+
+    if (preview) preview.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'block';
+    if (imagePreviewContainer) {
+        imagePreviewContainer.innerHTML = `
+            <div class="preview-placeholder">
+                <i class="fas fa-image fa-3x"></i>
+                <span>Ảnh sẽ hiển thị tại đây</span>
+            </div>
+        `;
+        imagePreviewContainer.parentElement.classList.remove('has-logo');
+    }
+    document.getElementById('categoryImage').value = '';
+    
+    const categoryInput = document.getElementById('categoryImageInput');
+    if (categoryInput) categoryInput.value = '';
+};
+
+// Enhanced CSS for better preview display
+const enhancedPreviewCSS = `
+/* Ensure preview containers work properly */
+.logo-preview-container {
+    border: 2px dashed var(--gray-300);
+    border-radius: 10px;
+    padding: 12px;
+    background: white;
+    transition: var(--transition);
+    min-height: 110px;
+    display: inline-block;
+    vertical-align: top;
+    width: 62%;
+    box-sizing: border-box;
+}
+
+.logo-preview-container.has-logo {
+    border-color: var(--primary);
+    background: var(--gray-50);
+    padding: 10px;
+}
+
+.logo-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-preview img {
+    max-width: 100%;
+    max-height: 180px;
+    border-radius: 6px;
+    object-fit: contain;
+}
+
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--gray-500);
+    text-align: center;
+}
+
+.preview-placeholder i {
+    font-size: 2rem;
+    color: var(--gray-300);
+}
+
+/* Upload area improvements */
+.file-upload-area {
+    position: relative;
+    cursor: pointer;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+}
+
+.upload-preview {
+    text-align: center;
+}
+
+.upload-preview img {
+    max-width: 100%;
+    max-height: 70%;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.btn-change-image {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.btn-change-image:hover {
+    background: var(--primary-dark);
+}
+
+/* Fix for multiple event binding */
+.file-upload-area * {
+    pointer-events: none;
+}
+
+.btn-change-image {
+    pointer-events: all !important;
+}
+
+input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Layout: make upload area compact and preview beside it */
+.file-upload-container {
+    display: grid;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 340px; /* tăng chiều cao vùng upload */
+    padding: 0px;
+}
+
+.file-upload-container > .file-upload-area {
+    width: 22%;
+    box-sizing: border-box;
+}
+
+.file-upload-container > .logo-preview-container {
+    width: 80%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* Smaller choose button for brand logo */
+#chooseBrandLogoBtn {
+    pointer-events: all !important;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    background: var(--gray-100);
+    color: var(--dark);
+    border: 1px solid var(--gray-300);
+    white-space: nowrap;
+}
+
+#chooseBrandLogoBtn i {
+    font-size: 0.85rem;
+}
+
+/* Ensure preview container sits to the right of upload area when space permits */
+.logo-preview-container { margin-left: 12px; }
+`;
+
+// Add CSS to document
+const style = document.createElement('style');
+style.textContent = enhancedPreviewCSS;
+document.head.appendChild(style);
+
+// Initialize with modal event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing Enhanced Image Upload Manager...');
+    window.simpleImageUploadManager = new SimpleImageUploadManager();
+    
+    // Reinitialize when modals are shown
+    const brandModal = document.getElementById('brandModal');
+    const categoryModal = document.getElementById('categoryModal');
+    
+    [brandModal, categoryModal].forEach(modal => {
+        if (modal) {
+            modal.addEventListener('show.bs.modal', () => {
+                setTimeout(() => {
+                    window.simpleImageUploadManager?.reinitialize();
+                }, 100);
+            });
+        }
+    });
+});
 </script>
+
+
+<style>
+    /* Modern CSS Reset and Base Styles */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :root {
+        --primary: #667eea;
+        --primary-dark: #5a6fd8;
+        --secondary: #764ba2;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --dark: #1f2937;
+        --light: #f8fafc;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --border-radius: 12px;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --transition: all 0.3s ease;
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--light);
+        color: var(--gray-800);
+        line-height: 1.6;
+    }
+
+    .main-content {
+        min-height: 100vh;
+        padding: 24px;
+        max-width: 100%;
+    }
+
+    /* Header Styles */
+    .dashboard-header {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .header-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .title-icon {
+        font-size: 2.75rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .header-title h1 {
+        margin: 0;
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--gray-800);
+    }
+
+    .header-title p {
+        margin: 4px 0 0 0;
+        color: var(--gray-500);
+        font-size: 1rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: var(--transition);
+        box-shadow: var(--shadow);
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+        width: 65%;
+        left: 100%;
+    }
+
+
+    /* Brand-specific: stack upload area above preview */
+    .brand-file-upload {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .brand-file-upload > .file-upload-area {
+        width: 100%;
+    }
+
+    .brand-file-upload > .logo-preview-container {
+        width: 100%;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+        background: white;
+        color: var(--gray-700);
+        border: 2px solid var(--gray-300);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .btn-secondary:hover {
+        background: var(--gray-100);
+        border-color: var(--gray-400);
+        transform: translateY(-1px);
+    }
+
+    /* Stats Overview */
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary), var(--secondary));
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        box-shadow: var(--shadow);
+    }
+
+    .stat-icon.total {
+        background: linear-gradient(135deg, #fed7d7, #feb2b2);
+        color: #e53e3e;
+    }
+
+    .stat-icon.available {
+        background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+        color: #38a169;
+    }
+
+    .stat-icon.busy {
+        background: linear-gradient(135deg, #fef5e7, #fbd38d);
+        color: #ed8936;
+    }
+
+    .stat-icon.premium {
+        background: linear-gradient(135deg, #e9d8fd, #d6bcfa);
+        color: #805ad5;
+    }
+
+    .stat-info h3 {
+        margin: 0;
+        font-size: 2rem;
+        color: var(--gray-800);
+        font-weight: 700;
+    }
+
+    .stat-info p {
+        margin: 4px 0 0 0;
+        color: var(--gray-500);
+        font-weight: 500;
+    }
+
+    /* Search and Filter */
+    .search-filter-bar {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 24px;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+    }
+
+    .search-box {
+        display: flex;
+        align-items: center;
+        background: var(--gray-100);
+        border-radius: 10px;
+        padding: 12px 20px;
+        flex: 1;
+        min-width: 400px;
+        border: 2px solid var(--gray-200);
+        transition: var(--transition);
+    }
+
+    .search-box:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-box i {
+        color: var(--gray-400);
+        margin-right: 12px;
+    }
+
+    .search-box input {
+        border: none;
+        background: none;
+        outline: none;
+        flex: 1;
+        padding: 4px 0;
+        font-size: 0.95rem;
+        color: var(--gray-800);
+    }
+
+    .search-btn {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-left: 12px;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .search-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .filter-controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-select {
+        padding: 10px 16px;
+        border: 2px solid var(--gray-200);
+        border-radius: 8px;
+        background: white;
+        color: var(--gray-700);
+        min-width: 160px;
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 0.9rem;
+    }
+
+    .filter-select:focus {
+        border-color: var(--primary);
+        outline: none;
+    }
+
+    .clear-filters {
+        background: none;
+        border: 2px solid var(--gray-200);
+        color: var(--gray-600);
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: var(--transition);
+    }
+
+    .clear-filters:hover {
+        background: var(--gray-100);
+        border-color: var(--gray-300);
+    }
+
+    /* Table Styles */
+    .table-container {
+        background: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        margin-bottom: 5px;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--gray-200);
+        background: var(--gray-50);
+    }
+
+    .table-header h3 {
+        margin: 0;
+        color: var(--gray-800);
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-export {
+        background: white;
+        color: var(--gray-700);
+        border: 2px solid var(--gray-300);
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .btn-export:hover {
+        background: var(--gray-100);
+        border-color: var(--gray-400);
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .products-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .products-table th {
+        background: var(--gray-50);
+        padding: 16px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-200);
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .products-table td {
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--gray-200);
+        vertical-align: middle;
+    }
+
+    .products-table tbody tr {
+        transition: var(--transition);
+    }
+
+    .products-table tbody tr:hover {
+        background: var(--gray-50);
+    }
+
+    .products-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Table Column Styles */
+    {{!-- .col-checkbox {
+        width: 40px;
+        text-align: center;
+    } --}}
+
+    .col-image {
+        width: 80px;
+    }
+
+    .col-name {
+        min-width: 200px;
+    }
+
+    .col-sku {
+        width: 120px;
+    }
+
+    .col-price {
+        width: 120px;
+    }
+
+    .col-category,
+    .col-brand {
+        width: 120px;
+    }
+
+    .col-status {
+        width: 140px;
+    }
+
+    {{!-- .col-featured {
+        width: 80px;
+        text-align: center;
+    } --}}
+
+    .col-specs {
+        width: 0px;
+    }
+
+    .col-actions {
+        width: 100px;
+    }
+
+    /* Table Content Styles */
+    .product-table-image {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gray-100);
+    }
+
+    .product-table-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .product-name {
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+    }
+
+    .price-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .current-price {
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 0.95rem;
+    }
+
+    .original-price {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        text-decoration: line-through;
+    }
+
+    .category-badge,
+    .brand-badge {
+        background: var(--gray-100);
+        color: var(--gray-700);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .status-badge {
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .status-badge.active {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+
+    .status-badge.inactive {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
+    .featured-icon {
+        color: var(--warning);
+    }
+
+    .btn-view-specs {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.85rem;
+        transition: var(--transition);
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-view-specs:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        color: white;
+        font-size: 0.9rem;
+    }
+
+    .btn-edit {
+        background: var(--primary);
+    }
+
+    .btn-edit:hover {
+        background: var(--primary-dark);
+        transform: scale(1.1);
+    }
+
+    .btn-toggle-status {
+        background: var(--warning);
+    }
+
+    .btn-toggle-status:hover {
+        background: #e58e0b;
+        transform: scale(1.1);
+    }
+
+    .btn-delete {
+        background: var(--danger);
+    }
+
+    .btn-delete:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    /* Table Footer */
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        border-top: 1px solid var(--gray-200);
+        background: var(--gray-50);
+    }
+
+    .table-info {
+        color: var(--gray-600);
+        font-size: 0.9rem;
+    }
+
+    .table-pagination {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pagination-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--gray-300);
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        color: var(--gray-600);
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: var(--gray-100);
+        border-color: var(--gray-400);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        color: var(--gray-600);
+    }
+
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 80px 40px;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+        text-align: center;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.7;
+    }
+
+    .empty-content h3 {
+        margin: 0 0 8px 0;
+        color: var(--gray-800);
+        font-size: 1.5rem;
+    }
+
+    .empty-content p {
+        margin: 0 0 24px 0;
+        color: var(--gray-500);
+    }
+
+    /* Loading State */
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--gray-200);
+        border-left: 4px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Modal Styles */
+    .modal-premium .modal-content {
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+    }
+
+    .modal-premium .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-bottom: none;
+        padding: 24px 28px;
+    }
+
+    .modal-premium .modal-title {
+        font-weight: 700;
+        font-size: 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .modal-premium .modal-body {
+        padding: 0;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .modal-premium .modal-footer {
+        border-top: 1px solid var(--gray-200);
+        padding: 5px 28px;
+        background: white;
+    }
+
+    /* Technical Specifications Modal Styles */
+    .specs-modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .specs-product-info h6 {
+        margin: 0 0 4px 0;
+        color: var(--gray-800);
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .specs-product-sku {
+        margin: 0;
+        color: var(--gray-500);
+        font-size: 0.9rem;
+    }
+
+    .specs-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .specs-list-title {
+        margin: 0;
+        color: var(--gray-700);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .specs-table-container {
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .specs-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .specs-table th {
+        background: var(--gray-50);
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-200);
+        font-size: 0.9rem;
+    }
+
+    .specs-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .specs-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .specs-table tr:hover {
+        background: var(--gray-50);
+    }
+
+    .spec-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .btn-spec-action {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        color: white;
+        font-size: 0.8rem;
+    }
+
+    .btn-edit-spec {
+        background: var(--warning);
+    }
+
+    .btn-edit-spec:hover {
+        background: #e58e0b;
+        transform: scale(1.1);
+    }
+
+    .btn-delete-spec {
+        background: var(--danger);
+    }
+
+    .btn-delete-spec:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    .no-specs-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--gray-500);
+    }
+
+    .no-specs-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        color: var(--gray-300);
+    }
+
+    /* Form Styles */
+    .form-sections {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .form-section {
+        background: var(--gray-50);
+        border-radius: 12px;
+        padding: 0 20px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        color: var(--gray-700);
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .section-title i {
+        color: var(--primary);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--gray-700);
+        margin: 8px 0px 3px 0px;
+        font-size: 0.95rem;
+        display: block;
+    }
+
+    .form-control,
+    .form-select {
+        border: 2px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.95rem;
+        transition: var(--transition);
+        background: white;
+        width: 100%;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    .input-group {
+        display: flex;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .input-group .form-control {
+        border-radius: 8px 0 0 8px;
+    }
+
+    .input-group .input-group-text {
+        background: var(--gray-100);
+        border: 2px solid var(--gray-200);
+        border-left: none;
+        color: var(--gray-600);
+        padding: 12px;
+        border-radius: 0 8px 8px 0;
+    }
+
+    .image-preview-container {
+        margin-top: 12px;
+    }
+
+    .image-preview {
+        border: 2px dashed var(--gray-300);
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        color: var(--gray-500);
+        background: white;
+        transition: var(--transition);
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .image-preview.has-image {
+        border-color: var(--primary);
+        background: var(--gray-50);
+        padding: 20px;
+    }
+
+    .image-preview img {
+        max-width: 100%;
+        max-height: 160px;
+        border-radius: 8px;
+    }
+
+    .preview-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .preview-placeholder i {
+        font-size: 3rem;
+        color: var(--gray-300);
+    }
+
+    .checkbox-group {
+        margin-top: 8px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--gray-700);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        display: none;
+    }
+
+    .checkmark {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--gray-300);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .checkbox-label input[type="checkbox"]:checked+.checkmark {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .checkbox-label input[type="checkbox"]:checked+.checkmark::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    /* Spec Edit Modal Styles */
+    #specEditModal .modal-content {
+        border-radius: 12px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    #specEditModal .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-bottom: none;
+    }
+
+    #specEditModal .modal-title {
+        font-weight: 600;
+    }
+
+    #specEditModal .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .products-table {
+            min-width: 1000px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 16px;
+        }
+
+        .header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .header-actions {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .search-filter-bar {
+            flex-direction: column;
+        }
+
+        .search-box {
+            min-width: auto;
+            width: 100%;
+        }
+
+        .filter-controls {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .filter-select {
+            flex: 1;
+            min-width: auto;
+        }
+
+        .table-header {
+            flex-direction: column;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .table-footer {
+            flex-direction: column;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-overview {
+            grid-template-columns: 1fr;
+        }
+
+        .specs-list-header {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .header-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .modal-premium .modal-footer {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .modal-premium .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Additional styles for management modals */
+    .management-modal .modal-content {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .management-modal .table-container {
+        margin-top: 20px;
+    }
+
+    .management-modal .form-section {
+        background: var(--gray-50);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .management-modal .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        color: var(--gray-700);
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    /* THÊM VÀO CUỐI FILE CSS */
+    .modal-premium .modal-dialog {
+        max-width: none;
+        margin: 1.75rem auto;
+    }
+
+    .modal-premium .modal-xl {
+        max-width: 1140px;
+    }
+
+    .modal-premium .modal-xxl {
+        max-width: 1400px;
+    }
+
+    .modal-premium .modal-lg {
+        max-width: 800px;
+    }
+
+    /* Đảm bảo modal content không bị ảnh hưởng bởi các style khác */
+    .modal-premium .modal-content {
+        border: none !important;
+        box-shadow: var(--shadow-lg) !important;
+    }
+
+    .modal-premium .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    @media (max-width: 1400px) {
+        .modal-premium .modal-xxl {
+            max-width: 95%;
+            margin: 1rem auto;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .modal-premium .modal-xl {
+            max-width: 95%;
+        }
+    }
+
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .form-grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Đảm bảo form controls trong modal không bị ảnh hưởng */
+    .modal-premium .form-control,
+    .modal-premium .form-select {
+        border: 2px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.95rem;
+        background: white;
+    }
+
+    .modal-premium .form-control:focus,
+    .modal-premium .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    .modal-premium .table-responsive {
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+    }
+
+    .modal-premium .products-table {
+        margin-bottom: 0;
+    }
+
+    .modal-premium .products-table th {
+        background: var(--gray-50);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .logo-preview-container {
+        border: 2px dashed var(--gray-300);
+        border-radius: 12px;
+        padding: 20px;
+        background: white;
+        transition: var(--transition);
+    }
+
+    .logo-preview-container.has-logo {
+        border-color: var(--primary);
+        background: var(--gray-50);
+    }
+
+    .logo-preview {
+        text-align: center;
+        min-height: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .logo-preview img {
+        max-width: 100%;
+        max-height: 70%;
+        border-radius: 8px;
+    }
+
+    .preview-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: var(--gray-500);
+    }
+
+    .preview-placeholder i {
+        font-size: 2rem;
+        color: var(--gray-300);
+    }
+
+    .char-count-warning {
+        color: var(--warning);
+    }
+
+    .char-count-error {
+        color: var(--danger);
+    }
+
+    /* ===== BRAND MANAGEMENT MODAL STYLES ===== */
+    .modal-premium .modal-xxl {
+        max-width: 1400px;
+    }
+
+    .modal-premium .modal-xl {
+        max-width: 1140px;
+    }
+
+    .modal-premium .modal-lg {
+        max-width: 800px;
+    }
+
+    @media (max-width: 1400px) {
+        .modal-premium .modal-xxl {
+            max-width: 95%;
+            margin: 1rem auto;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .modal-premium .modal-xl {
+            max-width: 95%;
+        }
+    }
+
+    /* Form Grid System */
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+
+        .form-grid-2,
+        .form-grid-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Form Section Containers */
+    .form-section-container {
+        background: var(--gray-50);
+        border-radius: 12px;
+        padding: 0;
+        height: fit-content;
+        position: sticky;
+        top: 0;
+    }
+
+    .table-section-container {
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        border: 1px solid var(--gray-200);
+        overflow: hidden;
+    }
+
+    .table-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--gray-200);
+        background: var(--gray-50);
+    }
+
+    .table-section-header .section-title {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .table-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .search-box-sm {
+        display: flex;
+        align-items: center;
+        background: white;
+        border: 1px solid var(--gray-300);
+        border-radius: 6px;
+        padding: 8px 12px;
+        min-width: 200px;
+    }
+
+    .search-box-sm i {
+        color: var(--gray-400);
+        margin-right: 8px;
+        font-size: 0.9rem;
+    }
+
+    .search-box-sm input {
+        border: none;
+        background: none;
+        outline: none;
+        flex: 1;
+        font-size: 0.85rem;
+        color: var(--gray-800);
+    }
+
+    /* Logo Preview Styles */
+    .logo-preview-container {
+        border: 2px dashed var(--gray-300);
+        border-radius: 12px;
+        padding: 20px;
+        background: white;
+        transition: var(--transition);
+        margin-top: 8px;
+    }
+
+    .logo-preview-container.has-logo {
+        border-color: var(--primary);
+        background: var(--gray-50);
+    }
+
+    .logo-preview {
+        text-align: center;
+        min-height: 190px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .logo-preview img {
+        max-width: 100%;
+        max-height: 70%;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    /* File upload + preview layout (brand & category) */
+    .file-upload-container {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .file-upload-area {
+        min-width: 180px;
+        max-width: 220px;
+        padding: 12px;
+        border: 1px dashed var(--gray-300);
+        border-radius: 8px;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .file-upload-area .choose-btn {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .overlay-choose-btn {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .upload-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .upload-preview img,
+    .logo-preview img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 6px;
+        object-fit: cover;
+    }
+
+    .logo-preview {
+        position: relative;
+        width: 100%;
+        max-width: 360px;
+        min-height: 160px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--gray-50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+    }
+
+    /* specific container for category preview to match brand */
+    #categoryImagePreviewContainer {
+        border: 1px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 140px;
+        background: white;
+    }
+
+    /* When a logo exists, slightly highlight the container */
+    .logo-preview-container.has-logo #categoryImagePreviewContainer,
+    .logo-preview-container.has-logo .logo-preview {
+        border-color: var(--primary);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .preview-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        color: var(--gray-500);
+    }
+
+    .preview-placeholder i {
+        font-size: 2rem;
+        color: var(--gray-300);
+    }
+
+    .preview-placeholder span {
+        font-size: 0.9rem;
+    }
+
+    /* Character Counter */
+    .char-counter {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--gray-500);
+        margin-top: 4px;
+    }
+
+    .char-count-warning {
+        color: var(--warning);
+    }
+
+    .char-count-error {
+        color: var(--danger);
+    }
+
+    /* Form Actions */
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding-top: 16px;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .form-actions .btn {
+        min-width: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    /* Empty State Styles */
+    .empty-state-sm {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--gray-500);
+    }
+
+    .empty-state-sm .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        opacity: 0.7;
+    }
+
+    .empty-state-sm .empty-content h5 {
+        margin: 0 0 8px 0;
+        color: var(--gray-600);
+        font-size: 1.1rem;
+    }
+
+    .empty-state-sm .empty-content p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Hide empty state when there's data */
+    .table-container:has(tbody tr:first-child)+.empty-state-sm,
+    .table-section-container:has(.table-responsive table tbody tr:first-child) .empty-state-sm {
+        display: none !important;
+    }
+
+    /* Show empty state when no data */
+    .table-container:not(:has(tbody tr:first-child))+.empty-state-sm,
+    .table-section-container:not(:has(.table-responsive table tbody tr:first-child)) .empty-state-sm {
+        display: flex !important;
+    }
+
+    /* Modal Footer Info */
+    .modal-footer-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--gray-500);
+        font-size: 0.9rem;
+    }
+
+    .modal-footer-info i {
+        color: var(--primary);
+    }
+
+    /* Enhanced Table Styles for Management Modals */
+    .management-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .management-table th {
+        background: var(--gray-50);
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 1px solid var(--gray-200);
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .management-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--gray-200);
+        vertical-align: middle;
+    }
+
+    .management-table tbody tr {
+        transition: var(--transition);
+    }
+
+    .management-table tbody tr:hover {
+        background: var(--gray-50);
+    }
+
+    .management-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Compact Action Buttons */
+    .compact-actions {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .btn-compact {
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        color: white;
+        font-size: 0.8rem;
+    }
+
+    .btn-compact-edit {
+        background: var(--primary);
+    }
+
+    .btn-compact-edit:hover {
+        background: var(--primary-dark);
+        transform: scale(1.05);
+    }
+
+    .btn-compact-delete {
+        background: var(--danger);
+    }
+
+    .btn-compact-delete:hover {
+        background: #dc2626;
+        transform: scale(1.05);
+    }
+
+    /* Status Badge Variants */
+    .status-badge-sm {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .status-badge-sm.active {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+
+    .status-badge-sm.inactive {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+
+    /* Form Text Improvements */
+    .form-text {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.70rem;
+        color: var(--gray-500);
+        margin-top: 4px;
+    }
+
+    .form-text .char-count {
+        font-weight: 500;
+    }
+
+    /* Input Group Enhancements */
+    .input-group .btn-outline-secondary {
+        border: 2px solid var(--gray-200);
+        border-left: none;
+        background: white;
+        color: var(--gray-600);
+        transition: var(--transition);
+    }
+
+    .input-group .btn-outline-secondary:hover {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+
+    /* Responsive Improvements for Brand Modal */
+    @media (max-width: 992px) {
+        .modal-premium .modal-body .row {
+            flex-direction: column;
+        }
+
+        .modal-premium .modal-body .col-lg-5,
+        .modal-premium .modal-body .col-lg-7 {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .form-section-container {
+            position: static;
+            margin-bottom: 24px;
+        }
+    }
+
+    /* Loading State for Tables */
+    .table-loading {
+        position: relative;
+        min-height: 200px;
+    }
+
+    .table-loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 30px;
+        height: 30px;
+        border: 3px solid var(--gray-200);
+        border-left: 3px solid var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    /* Animation for smooth transitions */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .table-section-container .table-responsive {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Scrollbar Styling for Tables */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: var(--gray-100);
+        border-radius: 4px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: var(--gray-300);
+        border-radius: 4px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: var(--gray-400);
+    }
+
+    /* Focus States for Accessibility */
+    .form-control:focus,
+    .form-select:focus,
+    .search-box-sm:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    /* Button States */
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .btn:disabled:hover {
+        transform: none !important;
+    }
+
+    /* Text Truncation for Table Cells */
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .max-width-200 {
+        max-width: 200px;
+    }
+
+    .max-width-150 {
+        max-width: 150px;
+    }
+
+    /* Badge Styles for Tables */
+    .badge-sm {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+    .badge-outline {
+        background: transparent;
+        border: 1px solid currentColor;
+    }
+
+    /* Custom Checkbox Alignment */
+    {{!-- .col-checkbox {
+        width: 40px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .col-checkbox input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    } --}}
+
+    /* Image Cell Styles */
+    .col-image {
+        width: 60px;
+        text-align: center;
+    }
+
+    .image-cell {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gray-100);
+        margin: 0 auto;
+    }
+
+    .image-cell img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Action Column Styles */
+    .col-actions {
+        width: 100px;
+        text-align: center;
+    }
+
+    /* Ensure modal content fits properly */
+    .modal-premium .modal-body {
+        padding: 10px;
+    }
+
+    .modal-premium .container-fluid {
+        padding: 0;
+    }
+
+    /* Fix for modal header in management modals */
+    .modal-premium .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border-bottom: none;
+        padding: 20px 24px;
+    }
+
+    .modal-premium .modal-title {
+        font-weight: 600;
+        font-size: 1.3rem;
+    }
+
+    /* Responsive text sizes */
+    @media (max-width: 768px) {
+        .modal-premium .modal-title {
+            font-size: 1.1rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .form-actions .btn {
+            width: 100%;
+        }
+    }
+
+    /* Print Styles */
+    @media print {
+
+        .modal-premium .modal-header,
+        .modal-premium .modal-footer,
+        .table-controls,
+        .form-section-container {
+            display: none !important;
+        }
+
+        .modal-premium .modal-body {
+            padding: 0;
+        }
+
+        .table-section-container {
+            border: none;
+            box-shadow: none;
+        }
+    }
+
+    /* Loading state improvements */
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .fa-spinner {
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Table loading state */
+    .table-loading {
+        text-align: center;
+        color: var(--gray-500);
+    }
+
+    .table-loading .loading-spinner {
+        margin: 0 auto 16px auto;
+    }
+
+    /* Empty state improvements */
+    .empty-state-sm {
+        transition: var(--transition);
+    }
+
+    /* Thêm vào cuối file CSS */
+    .search-box-sm {
+        display: flex;
+        align-items: center;
+        background: white;
+        border: 1px solid var(--gray-300);
+        border-radius: 6px;
+        padding: 8px 12px;
+        min-width: 200px;
+        transition: var(--transition);
+        position: relative;
+    }
+
+    .search-box-sm:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-box-sm i {
+        color: var(--gray-400);
+        margin-right: 8px;
+        font-size: 0.9rem;
+    }
+
+    .search-box-sm input {
+        border: none;
+        background: none;
+        outline: none;
+        flex: 1;
+        font-size: 0.85rem;
+        color: var(--gray-800);
+        width: 100%;
+    }
+
+    .search-box-sm input::placeholder {
+        color: var(--gray-400);
+    }
+
+    /* Clear button cho search */
+    .search-box-sm .clear-search {
+        position: absolute;
+        right: 8px;
+        background: none;
+        border: none;
+        color: var(--gray-400);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .search-box-sm .clear-search:hover {
+        background: var(--gray-200);
+        color: var(--gray-600);
+    }
+
+    /* Search results info */
+    .search-results-info {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        margin-top: 4px;
+    }
+
+    .search-results-info.has-results {
+        color: var(--primary);
+    }
+
+    /* Thêm vào cuối file CSS */
+    /* Căn giữa header cho tất cả các bảng */
+    .products-table th {
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+
+    /* Căn giữa nội dung trong các cột */
+    .products-table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Riêng cột tên sản phẩm và mô tả có thể căn trái để dễ đọc */
+    .products-table .col-name,
+    .products-table .col-name .product-name,
+    .products-table .col-name .product-sku {
+        text-align: left;
+    }
+
+    /* Căn giữa cho bảng thương hiệu */
+    #brandsTable th,
+    #brandsTable td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Riêng cột tên thương hiệu và mô tả căn trái */
+    #brandsTable td:first-child {
+        text-align: left;
+    }
+
+    /* Căn giữa cho bảng danh mục */
+    #categoriesTable th,
+    #categoriesTable td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Riêng cột tên danh mục căn trái */
+    #categoriesTable td:first-child {
+        text-align: left;
+    }
+
+    /* Căn giữa cho bảng sản phẩm chính */
+    #productsTable th,
+    #productsTable td {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* Riêng các cột cần căn trái trong bảng sản phẩm */
+    #productsTable .col-name,
+    #productsTable .col-name .product-name,
+    #productsTable .col-sku .product-sku {
+        text-align: left;
+    }
+
+    /* Căn giữa cho các icon và badge */
+    .status-badge,
+    .category-badge,
+    .brand-badge {
+        display: inline-block;
+        text-align: center;
+    }
+
+    /* Căn giữa cho hình ảnh */
+    .product-table-image {
+        margin: 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Căn giữa cho action buttons */
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Căn giữa cho checkbox */
+    {{!-- .col-checkbox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    } --}}
+
+    /* Căn giữa cho featured icon */
+    {{!-- .col-featured {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    } --}}
+
+    /* Căn giữa cho nút xem thông số */
+    .btn-view-specs {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
+    }
+
+    /* Đảm bảo price info cũng được căn giữa */
+    .price-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+
+        .products-table th,
+        .products-table td {
+            text-align: center;
+        }
+
+        /* Trên mobile, có thể căn trái tất cả cho dễ đọc */
+        .products-table .col-name,
+        .products-table .col-name .product-name,
+        .products-table .col-sku .product-sku {
+            text-align: center;
+        }
+    }
+    
+    
+/* File Upload Styles */
+    .file-upload-container {
+        margin-bottom: 16px;
+    }
+
+    .file-upload-area {
+        border: 2px dashed var(--gray-300);
+        border-radius: 12px;
+        padding: 30px 20px;
+        text-align: center;
+        background: var(--gray-50);
+        transition: var(--transition);
+        cursor: pointer;
+        position: relative;
+    }
+
+    .file-upload-area:hover {
+        border-color: var(--primary);
+        background: var(--gray-100);
+    }
+
+    .file-upload-area.dragover {
+        border-color: var(--primary);
+        background: rgba(102, 126, 234, 0.1);
+    }
+
+    .upload-placeholder {
+        color: var(--gray-500);
+    }
+
+    .upload-placeholder i {
+        font-size: 2.5rem;
+        margin-bottom: 0px;
+        display: block;
+        color: var(--gray-400);
+    }
+
+    .upload-placeholder span {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--gray-600);
+    }
+
+    .upload-placeholder small {
+        color: var(--gray-400);
+        font-size: 0.85rem;
+    }
+
+    /* Main Image Preview */
+    .upload-preview {
+        text-align: center;
+    }
+
+    .upload-preview img {
+        max-width: 200px;
+        max-height: 150px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        border: 2px solid var(--gray-200);
+    }
+
+    .btn-change-image {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .btn-change-image:hover {
+        background: var(--primary-dark);
+    }
+
+    /* Additional Images Preview */
+    .additional-images-preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .additional-image-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid var(--gray-200);
+    }
+
+    .additional-image-item img {
+        width: 100%;
+        height: 80px;
+        object-fit: cover;
+    }
+
+    .remove-image-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 24px;
+        height: 24px;
+        background: var(--danger);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: var(--transition);
+    }
+
+    .additional-image-item:hover .remove-image-btn {
+        opacity: 1;
+    }
+
+    /* Videos Preview */
+    .videos-preview {
+        margin-top: 16px;
+    }
+
+    .video-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        background: var(--gray-100);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid var(--gray-200);
+    }
+
+    .video-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .video-icon {
+        color: var(--primary);
+        font-size: 1.5rem;
+    }
+
+    .video-details {
+        flex: 1;
+    }
+
+    .video-name {
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 4px;
+    }
+
+    .video-size {
+        color: var(--gray-500);
+        font-size: 0.85rem;
+    }
+
+    .remove-video-btn {
+        background: var(--danger);
+        color: white;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .remove-video-btn:hover {
+        background: #dc2626;
+    }
+
+    /* Upload Progress */
+    .upload-progress {
+        margin-top: 8px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--gray-200);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--success);
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        font-size: 0.8rem;
+        color: var(--gray-500);
+        margin-top: 4px;
+        text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .additional-images-preview {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        }
+
+        .video-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .video-info {
+            width: 100%;
+        }
+
+        .remove-video-btn {
+            align-self: flex-end;
+        }
+    }
+</style>

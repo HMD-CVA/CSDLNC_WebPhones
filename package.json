@@ -19,6 +19,7 @@
     "express-session": "^1.18.2",
     "mongoose": "^8.18.2",
     "mssql": "^12.1.0",
+    "multer": "^2.0.2",
     "sequelize": "^6.37.7",
     "tedious": "^19.1.3"
   },

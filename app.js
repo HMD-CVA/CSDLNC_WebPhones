@@ -2,7 +2,22 @@ import express from 'express';
 import { engine } from 'express-handlebars';
 import db from './server.js';
 import DataModel from './app/model/index.js';
-import Op from 'sequelize'
+
+import multer from 'multer';
+import path from 'path';
+
+import { v2 as cloudinary } from 'cloudinary';
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+import fs from 'fs';
+// import cors from 'cors';
+
+import dotenv from 'dotenv';
+dotenv.config();
 
 db.connectAllDB();
 const app = express();
@@ -12,6 +27,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+// Map legacy `/images` URL path to actual `public/image` folder
+app.use('/images', express.static(path.join(process.cwd(), 'public', 'image')));
 
 // Handlebars setup
 app.engine('handlebars', engine({
@@ -50,6 +67,341 @@ app.engine('handlebars', engine({
 }));
 app.set('view engine', 'handlebars');
 app.set('views', './views');
+
+
+
+// =============================================
+// MULTER CONFIGURATION FOR FILE UPLOAD
+// =============================================
+
+// Tạo thư mục upload tạm
+const tempUploadDir = path.join(process.cwd(), 'temp_uploads');
+if (!fs.existsSync(tempUploadDir)) {
+    fs.mkdirSync(tempUploadDir, { recursive: true });
+}
+
+// Cấu hình storage cho multer
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, tempUploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        const name = path.basename(file.originalname, ext);
+        cb(null, name + '-' + uniqueSuffix + ext);
+    }
+});
+
+// File filter
+const fileFilter = (req, file, cb) => {
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (allowedImageTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Định dạng file không được hỗ trợ: ${file.mimetype}. Chỉ chấp nhận JPG, PNG, GIF, WebP`), false);
+    }
+};
+
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+    }
+});
+
+// Middleware xử lý lỗi upload
+const handleUploadError = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                message: 'Kích thước file quá lớn. Tối đa 10MB'
+            });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({
+                success: false,
+                message: 'Quá nhiều file được chọn'
+            });
+        }
+    }
+    res.status(400).json({
+        success: false,
+        message: err.message
+    });
+};
+
+
+
+// =============================================
+// CLOUDINARY UTILITY FUNCTIONS
+// =============================================
+
+// Hàm upload ảnh lên Cloudinary
+const uploadToCloudinary = async (filePath, folder = 'products') => {
+    try {
+        console.log(`☁️ Uploading to Cloudinary folder: ${folder}`);
+        
+        const result = await cloudinary.uploader.upload(filePath, {
+            folder: `webPhone/${folder}`,
+            resource_type: 'image',
+            quality: 'auto:good',
+            fetch_format: 'auto'
+        });
+
+        // Xóa file tạm sau khi upload
+        fs.unlinkSync(filePath);
+        
+        console.log(`✅ Upload successful: ${result.secure_url}`);
+        return result;
+    } catch (error) {
+        // Vẫn xóa file tạm dù upload thất bại
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        throw new Error(`Cloudinary upload failed: ${error.message}`);
+    }
+};
+
+// Hàm xóa ảnh từ Cloudinary
+const deleteFromCloudinary = async (imageUrl) => {
+    try {
+        if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
+            return { result: 'not_cloudinary' };
+        }
+
+        // Extract public_id từ URL Cloudinary
+        const publicId = extractPublicIdFromUrl(imageUrl);
+        if (!publicId) {
+            throw new Error('Could not extract public_id from URL');
+        }
+
+        console.log(`🗑️ Deleting from Cloudinary: ${publicId}`);
+        const result = await cloudinary.uploader.destroy(publicId);
+        return result;
+    } catch (error) {
+        console.error('❌ Cloudinary delete failed:', error);
+        throw error;
+    }
+};
+
+// Hàm extract public_id từ Cloudinary URL
+const extractPublicIdFromUrl = (url) => {
+    try {
+        // Ví dụ: https://res.cloudinary.com/cloudname/image/upload/v1234567/karaoke/products/image.jpg
+        const matches = url.match(/\/upload\/(?:v\d+\/)?(.+)\.(?:jpg|jpeg|png|gif|webp)/i);
+        return matches ? matches[1] : null;
+    } catch (error) {
+        console.error('Error extracting public_id:', error);
+        return null;
+    }
+};
+
+// =============================================
+// UPLOAD ROUTES FOR BRAND, CATEGORY, PRODUCT
+// =============================================
+
+// Upload brand logo
+app.post('/api/upload/brand-logo', upload.single('brandLogo'), handleUploadError, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file logo'
+            });
+        }
+
+        // Kiểm tra nếu có oldImageUrl trong body thì xóa ảnh cũ
+        const { oldImageUrl } = req.body;
+        if (oldImageUrl) {
+            try {
+                await deleteFromCloudinary(oldImageUrl);
+            } catch (deleteError) {
+                console.warn('⚠️ Could not delete old image:', deleteError.message);
+            }
+        }
+
+        // Upload ảnh mới lên Cloudinary
+        const result = await uploadToCloudinary(req.file.path, 'brands');
+        
+        res.json({
+            success: true,
+            message: 'Upload logo thành công',
+            data: {
+                url: result.secure_url,
+                public_id: result.public_id,
+                format: result.format,
+                bytes: result.bytes
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Brand logo upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi upload logo: ' + error.message
+        });
+    }
+});
+
+// Upload category image
+app.post('/api/upload/category-image', upload.single('categoryImage'), handleUploadError, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file ảnh'
+            });
+        }
+
+        // Kiểm tra nếu có oldImageUrl trong body thì xóa ảnh cũ
+        const { oldImageUrl } = req.body;
+        if (oldImageUrl) {
+            try {
+                await deleteFromCloudinary(oldImageUrl);
+            } catch (deleteError) {
+                console.warn('⚠️ Could not delete old image:', deleteError.message);
+            }
+        }
+
+        // Upload ảnh mới lên Cloudinary
+        const result = await uploadToCloudinary(req.file.path, 'categories');
+        
+        res.json({
+            success: true,
+            message: 'Upload ảnh danh mục thành công',
+            data: {
+                url: result.secure_url,
+                public_id: result.public_id,
+                format: result.format,
+                bytes: result.bytes
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Category image upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi upload ảnh danh mục: ' + error.message
+        });
+    }
+});
+
+// Upload product main image
+app.post('/api/upload/product-main-image', upload.single('productMainImage'), handleUploadError, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file ảnh chính'
+            });
+        }
+
+        // Kiểm tra nếu có oldImageUrl trong body thì xóa ảnh cũ
+        const { oldImageUrl } = req.body;
+        if (oldImageUrl) {
+            try {
+                await deleteFromCloudinary(oldImageUrl);
+            } catch (deleteError) {
+                console.warn('⚠️ Could not delete old image:', deleteError.message);
+            }
+        }
+
+        // Upload ảnh mới lên Cloudinary
+        const result = await uploadToCloudinary(req.file.path, 'products/main');
+        
+        res.json({
+            success: true,
+            message: 'Upload ảnh chính thành công',
+            data: {
+                url: result.secure_url,
+                public_id: result.public_id,
+                format: result.format,
+                bytes: result.bytes
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Product main image upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi upload ảnh chính: ' + error.message
+        });
+    }
+});
+
+// Upload multiple product additional images
+app.post('/api/upload/product-additional-images', upload.array('productAdditionalImages', 10), handleUploadError, async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file ảnh'
+            });
+        }
+
+        const uploadPromises = req.files.map(file => 
+            uploadToCloudinary(file.path, 'products/additional')
+        );
+
+        const results = await Promise.all(uploadPromises);
+        
+        const uploadedImages = results.map(result => ({
+            url: result.secure_url,
+            public_id: result.public_id,
+            format: result.format,
+            bytes: result.bytes
+        }));
+
+        res.json({
+            success: true,
+            message: `Upload ${uploadedImages.length} ảnh thành công`,
+            data: uploadedImages
+        });
+
+    } catch (error) {
+        console.error('❌ Product additional images upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi upload ảnh phụ: ' + error.message
+        });
+    }
+});
+
+// API để xóa ảnh từ Cloudinary
+app.delete('/api/upload/image', async (req, res) => {
+    try {
+        const { imageUrl } = req.body;
+
+        if (!imageUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu URL ảnh'
+            });
+        }
+
+        console.log('🗑️ Received delete request for:', imageUrl);
+        const result = await deleteFromCloudinary(imageUrl);
+
+        res.json({
+            success: true,
+            message: 'Xóa ảnh thành công',
+            data: result
+        });
+
+    } catch (error) {
+        console.error('❌ Image delete error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa ảnh: ' + error.message
+        });
+    }
+});
+
+
 
 ///////////////////////////////
 //         GET ROUTES         //
@@ -993,416 +1345,4 @@ app.delete('/api/danhmuc/:id', async (req, res) => {
 
 
 
-
-// // Quản lý phòng hát
-// app.get('/admin/phonghat', async (req, res) => {
-//     try {
-//         const phonghats = await DataModel.Data_PhongHat_Model.find({}).lean();
-//         const phonghatsWithStatus = phonghats.map(room => ({
-//             ...room,
-//             statusText: room.TrangThai === 1 ? 'CÒN TRỐNG' : 
-//                         room.TrangThai === 0 ? 'ĐANG SỬ DỤNG' : 
-//                         room.TrangThai === 2 ? 'ĐÃ ĐẶT' : 
-//                         room.TrangThai === -1 ? 'ĐÃ XOÁ': 'KHÔNG XÁC ĐỊNH'
-//         }));
-//         res.render('dienthoai', { layout: 'AdminMain', title: 'Quản lý phòng hát', phonghats: phonghatsWithStatus,phonghatPage: true });
-//     } catch (err) {
-//         console.error('Error:', err);
-//         res.status(500).send('Lỗi server!');
-//     }
-// });
-
-// // Quản lý khách hàng
-// app.get('/admin/khachhang', async (req, res) => {
-//     try {
-//         const khachhangs = await DataModel.Data_KhachHang_Model.find({}).lean();
-//         res.render('khachhang', { layout: 'AdminMain', title: 'Quản lý khách hàng', khachhangs });
-//     } catch (err) {
-//         res.status(500).send('Lỗi server!');
-//     }
-// });
-
-// // Admin login page
-// app.get('/admin-login', (req, res) => res.redirect('/'));
-
-// ///////////////////////////////
-// //         POST ROUTES        //
-// ///////////////////////////////
-
-// // Admin login
-// app.post('/admin-login', async (req, res) => {
-//     const { username, password } = req.body;
-//     try {
-//         const admin = await DataModel.Data_Admin_Model.findOne({ username, password });
-//         if (admin) {
-//             req.session.isAdmin = true;
-//             return res.redirect('/admin');
-//         }
-//         res.send('Sai tài khoản hoặc mật khẩu!');
-//     } catch (err) {
-//         res.status(500).send('Lỗi server!');
-//     }
-// });
-
-// // Thêm khách hàng
-// app.post('/api/khachhang', async (req, res) => {
-//     try {
-//         const { name, phone, address } = req.body;
-//         const kh = await DataModel.Data_KhachHang_Model.create({ name, phone, address });
-//         res.status(200).json(kh);
-//     } catch (err) {
-//         res.status(400).json({ error: err.message });
-//     }
-// });
-
-// // Thêm nhân viên
-// app.post('/api/nhanvien', async (req, res) => {
-//     try {
-//         const { name, email, age } = req.body;
-//         const nv = await DataModel.Data_NhanVien_Model.create({ name, email, age });
-//         res.status(200).json(nv);
-//     } catch (err) {
-//         res.status(400).json({ error: err.message });
-//     }
-// });
-
-// // API thêm sản phẩm
-// app.post('/api/sanpham', async (req, res) => {
-//     try {
-//         console.log('📨 Nhận request thêm sản phẩm:', req.body);
-        
-//         // Kiểm tra dữ liệu đầu vào
-//         if (!req.body.ten_san_pham || !req.body.ma_sku || !req.body.danh_muc_id || !req.body.thuong_hieu_id) {
-//             console.log('❌ Thiếu thông tin bắt buộc');
-//             return res.status(400).json({ 
-//                 error: 'Thiếu thông tin bắt buộc: tên sản phẩm, mã SKU, danh mục và thương hiệu' 
-//             });
-//         }
-
-//         const productData = {
-//             ten_san_pham: req.body.ten_san_pham,
-//             ma_sku: req.body.ma_sku,
-//             danh_muc_id: req.body.danh_muc_id,
-//             thuong_hieu_id: req.body.thuong_hieu_id,
-//             gia_niem_yet: req.body.gia_niem_yet || req.body.gia_ban || 0,
-//             gia_ban: req.body.gia_ban || 0,
-//             trong_luong: req.body.trong_luong || null,
-//             kich_thuoc: req.body.kich_thuoc || '',
-//             mo_ta: req.body.mo_ta || '',
-//             mo_ta_ngan: req.body.mo_ta_ngan || (req.body.mo_ta ? req.body.mo_ta.substring(0, 100) : ''),
-//             slug: req.body.slug || (req.body.ten_san_pham ? req.body.ten_san_pham.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '') : ''),
-//             san_pham_noi_bat: req.body.san_pham_noi_bat || false,
-//             trang_thai: req.body.trang_thai || 1,
-//             luot_xem: 0,
-//             link_anh: req.body.link_anh || '',
-//             ngay_tao: new Date(),
-//             ngay_cap_nhat: new Date()
-//         };
-
-//         console.log('💾 Dữ liệu sẽ lưu:', productData);
-        
-//         const newProduct = await DataModel.Data_SanPham_Model.create(productData);
-        
-//         // Populate để trả về đầy đủ thông tin
-//         const populatedProduct = await DataModel.Data_SanPham_Model.findById(newProduct._id)
-//             .populate('danh_muc_id')
-//             .populate('thuong_hieu_id')
-//             .lean();
-        
-//         console.log('✅ Thêm sản phẩm thành công:', populatedProduct._id);
-        
-//         res.status(201).json(populatedProduct);
-        
-//     } catch (err) {
-//         console.error('❌ Lỗi thêm sản phẩm:', err);
-//         res.status(500).json({ 
-//             error: 'Lỗi khi thêm sản phẩm',
-//             details: err.message
-//         });
-//     }
-// });
-
-// // API Thêm danh mục
-// app.post('/api/danhmuc', async (req, res) => {
-//   try {
-//     const { ten_danh_muc, mo_ta, danh_muc_cha_id, anh_url, thu_tu, trang_thai } = req.body;
-    
-//     // Tạo slug từ tên danh mục
-//     const slug = ten_danh_muc
-//       .toLowerCase()
-//       .normalize('NFD')
-//       .replace(/[\u0300-\u036f]/g, '')
-//       .replace(/[đĐ]/g, 'd')
-//       .replace(/[^a-z0-9 -]/g, '')
-//       .replace(/\s+/g, '-')
-//       .replace(/-+/g, '-');
-
-//     const newCategory = new DataModel.Data_Category_Model({
-//       ten_danh_muc,
-//       mo_ta,
-//       danh_muc_cha_id: danh_muc_cha_id || null,
-//       anh_url,
-//       thu_tu: thu_tu || 0,
-//       trang_thai: trang_thai !== undefined ? trang_thai : 1,
-//       slug
-//     });
-
-//     await newCategory.save();
-//     res.status(201).json(newCategory);
-//   } catch (error) {
-//     console.error('Lỗi thêm danh mục:', error);
-//     if (error.code === 11000) {
-//       res.status(400).json({ error: 'Slug đã tồn tại!' });
-//     } else {
-//       res.status(500).json({ error: 'Lỗi server!' });
-//     }
-//   }
-// });
-
-// // API Thêm thương hiệu
-// app.post('/api/thuonghieu', async (req, res) => {
-//   try {
-//     const { ten_thuong_hieu, mo_ta, logo_url, trang_thai } = req.body;
-    
-//     // Tạo slug từ tên thương hiệu
-//     const slug = ten_thuong_hieu
-//       .toLowerCase()
-//       .normalize('NFD')
-//       .replace(/[\u0300-\u036f]/g, '')
-//       .replace(/[đĐ]/g, 'd')
-//       .replace(/[^a-z0-9 -]/g, '')
-//       .replace(/\s+/g, '-')
-//       .replace(/-+/g, '-');
-
-//     const newBrand = new DataModel.Data_Brand_Model({
-//       ten_thuong_hieu,
-//       mo_ta,
-//       logo_url,
-//       trang_thai: trang_thai !== undefined ? trang_thai : 1,
-//       slug
-//     });
-
-//     await newBrand.save();
-//     res.status(201).json(newBrand);
-//   } catch (error) {
-//     console.error('Lỗi thêm thương hiệu:', error);
-//     if (error.code === 11000) {
-//       res.status(400).json({ error: 'Slug đã tồn tại!' });
-//     } else {
-//       res.status(500).json({ error: 'Lỗi server!' });
-//     }
-//   }
-// });
-
-// ///////////////////////////////
-// //         PUT ROUTES         //
-// ///////////////////////////////
-
-// // Cập nhật khách hàng
-// app.put('/api/khachhang/:id', async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const { name, phone, address } = req.body;
-//         const kh = await DataModel.Data_KhachHang_Model.findByIdAndUpdate(id, { name, phone, address }, { new: true });
-//         if (!kh) return res.status(404).json({ error: 'Không tìm thấy khách hàng' });
-//         res.json(kh);
-//     } catch (err) {
-//         res.status(400).json({ error: err.message });
-//     }
-// });
-
-// // API cập nhật sản phẩm
-// app.put('/api/sanpham/:id', async (req, res) => {
-//     try {
-//         const updateData = {
-//             ...req.body,
-//             ngay_cap_nhat: new Date()
-//         };
-        
-//         const updatedProduct = await DataModel.Data_SanPham_Model.findByIdAndUpdate(
-//             req.params.id,
-//             updateData,
-//             { new: true }
-//         ).populate('danh_muc_id').populate('thuong_hieu_id').lean();
-        
-//         if (!updatedProduct) {
-//             return res.status(404).json({ error: 'Không tìm thấy sản phẩm' });
-//         }
-        
-//         res.json(updatedProduct);
-        
-//     } catch (err) {
-//         res.status(500).json({ error: 'Lỗi khi cập nhật sản phẩm' });
-//     }
-// });
-
-// // API Cập nhật danh mục
-// app.put('/api/danhmuc/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { ten_danh_muc, mo_ta, danh_muc_cha_id, anh_url, thu_tu, trang_thai } = req.body;
-
-//     const updateData = {
-//       ten_danh_muc,
-//       mo_ta,
-//       danh_muc_cha_id: danh_muc_cha_id || null,
-//       anh_url,
-//       thu_tu,
-//       trang_thai,
-//       ngay_cap_nhat: Date.now()
-//     };
-
-//     const updatedCategory = await DataModel.Data_Category_Model.findByIdAndUpdate(
-//       id,
-//       updateData,
-//       { new: true, runValidators: true }
-//     );
-
-//     if (!updatedCategory) {
-//       return res.status(404).json({ error: 'Không tìm thấy danh mục!' });
-//     }
-
-//     res.json(updatedCategory);
-//   } catch (error) {
-//     console.error('Lỗi cập nhật danh mục:', error);
-//     res.status(500).json({ error: 'Lỗi server!' });
-//   }
-// });
-
-// // API Cập nhật thương hiệu
-// app.put('/api/thuonghieu/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { ten_thuong_hieu, mo_ta, logo_url, trang_thai } = req.body;
-
-//     const updateData = {
-//       ten_thuong_hieu,
-//       mo_ta,
-//       logo_url,
-//       trang_thai,
-//       ngay_cap_nhat: Date.now()
-//     };
-
-//     const updatedBrand = await DataModel.Data_Brand_Model.findByIdAndUpdate(
-//       id,
-//       updateData,
-//       { new: true, runValidators: true }
-//     );
-
-//     if (!updatedBrand) {
-//       return res.status(404).json({ error: 'Không tìm thấy thương hiệu!' });
-//     }
-
-//     res.json(updatedBrand);
-//   } catch (error) {
-//     console.error('Lỗi cập nhật thương hiệu:', error);
-//     res.status(500).json({ error: 'Lỗi server!' });
-//   }
-// });
-
-// // Cập nhật phòng hát
-// app.put('/api/phonghat/:id', async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const { TenPhong, LoaiPhong, GiaPhong, SucChua, TrangThai, MoTa, AnhPhong } = req.body;
-//         const ph = await DataModel.Data_PhongHat_Model.findByIdAndUpdate(id, { TenPhong, LoaiPhong, GiaPhong, SucChua, TrangThai, MoTa, AnhPhong }, { new: true });
-//         if (!ph) return res.status(404).json({ error: 'Không tìm thấy phòng hát' });
-//         res.json(ph);
-//     } catch (err) {
-//         res.status(400).json({ error: err.message });
-//     }
-// });
-
-// ///////////////////////////////
-// //        DELETE ROUTES       //
-// ///////////////////////////////
-
-// // Xóa khách hàng
-// app.delete('/api/khachhang/:id', async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const kh = await DataModel.Data_KhachHang_Model.findByIdAndDelete(id);
-//         if (!kh) return res.status(404).json({ error: 'Không tìm thấy khách hàng' });
-//         res.json({ message: 'Xóa khách hàng thành công' });
-//     } catch (err) {
-//         res.status(400).json({ error: err.message });
-//     }
-// });
-
-// // API xóa sản phẩm
-// app.delete('/api/sanpham/:id', async (req, res) => {
-//     try {
-//         await DataModel.Data_SanPham_Model.findByIdAndDelete(req.params.id);
-//         res.json({ success: true });
-//     } catch (err) {
-//         res.status(500).json({ error: 'Lỗi khi xóa sản phẩm' });
-//     }
-// });
-
-// // API Xoá danh mục
-// app.delete('/api/danhmuc/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-    
-//     // Kiểm tra xem danh mục có sản phẩm không
-//     const productCount = await DataModel.Data_SanPham_Model.countDocuments({ danh_muc_id: id });
-//     if (productCount > 0) {
-//       return res.status(400).json('Không thể xóa danh mục này vì có sản phẩm đang sử dụng!');
-//     }
-
-//     const deletedCategory = await DataModel.Data_Category_Model.findByIdAndDelete(id);
-    
-//     if (!deletedCategory) {
-//       return res.status(404).json({ error: 'Không tìm thấy danh mục!' });
-//     }
-
-//     res.json({ message: 'Xóa danh mục thành công!' });
-//   } catch (error) {
-//     console.error('Lỗi xóa danh mục:', error);
-//     res.status(500).json({ error: 'Lỗi server!' });
-//   }
-// });
-
-// // API Xoá thương hiệu
-// app.delete('/api/thuonghieu/:id', async (req, res) => {
-//   try {
-//     const { id } = req.params;
-    
-//     // Kiểm tra xem thương hiệu có sản phẩm không
-//     const productCount = await DataModel.Data_SanPham_Model.countDocuments({ thuong_hieu_id: id });
-//     if (productCount > 0) {
-//       return res.status(400).json('Không thể xóa thương hiệu này vì có sản phẩm đang sử dụng!' );
-//     }
-
-//     const deletedBrand = await DataModel.Data_Brand_Model.findByIdAndDelete(id);
-    
-//     if (!deletedBrand) {
-//       return res.status(404).json({ error: 'Không tìm thấy thương hiệu!' });
-//     }
-
-//     res.json({ message: 'Xóa thương hiệu thành công!' });
-//   } catch (error) {
-//     console.error('Lỗi xóa thương hiệu:', error);
-//     res.status(500).json({ error: 'Lỗi server!' });
-//   }
-// });
-
-// // Xóa phòng hát
-// app.delete('/api/phonghat/:id', async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const ph = await DataModel.Data_PhongHat_Model.findByIdAndDelete(id);
-//         if (!ph) return res.status(404).json({ error: 'Không tìm thấy phòng hát' });
-//         res.json({ message: 'Xóa phòng hát thành công' });
-//     } catch (err) {
-//         res.status(400).json({ error: err.message });
-//     }
-// });
-
-
-
-
-///////////////////////////////
-//        START SERVER        //
-///////////////////////////////
 app.listen(3000, () => console.log('Server running on port 3000'));
