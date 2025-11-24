@@ -3,6 +3,8 @@ import { engine } from 'express-handlebars';
 import db from './server.js';
 import DataModel from './app/model/index.js';
 
+import mongoose from 'mongoose';
+
 import multer from 'multer';
 import path from 'path';
 
@@ -783,20 +785,96 @@ app.put('/api/sanpham/:id', async (req, res) => {
     try {
         const productId = req.params.id;
         const updateData = req.body;
-        await DataModel.SQL.Product.update(updateData, { where: { id: productId } });
+        await DataModel.SQL.Product.update(updateData, productId);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
 
+// Cập nhật API xóa sản phẩm trong app.js
 app.delete('/api/sanpham/:id', async (req, res) => {
     try {
         const productId = req.params.id;
-        await DataModel.SQL.Product.destroy({ where: { id: productId } });
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        
+        console.log(`🗑️ API: Xóa sản phẩm ${productId}`);
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID sản phẩm là bắt buộc'
+            });
+        }
+
+        // Tìm sản phẩm để lấy thông tin ảnh và mongo_detail_id
+        const product = await DataModel.SQL.Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+
+        // Xóa ảnh chính từ Cloudinary nếu có
+        if (product.link_anh && product.link_anh.includes('cloudinary.com')) {
+            try {
+                console.log('🗑️ Deleting product main image from Cloudinary:', product.link_anh);
+                await deleteFromCloudinary(product.link_anh);
+            } catch (delErr) {
+                console.warn('⚠️ Failed to delete product main image:', delErr.message);
+            }
+        }
+
+        // Xóa document MongoDB nếu có
+        if (product.mongo_detail_id) {
+            try {
+                // Xóa ảnh phụ từ Cloudinary trước
+                const mongoDoc = await DataModel.Mongo.ProductDetail.findOne({ 
+                    sql_product_id: productId 
+                });
+                
+                if (mongoDoc && mongoDoc.hinh_anh && Array.isArray(mongoDoc.hinh_anh)) {
+                    for (const imageUrl of mongoDoc.hinh_anh) {
+                        if (imageUrl && imageUrl.includes('cloudinary.com')) {
+                            try {
+                                await deleteFromCloudinary(imageUrl);
+                                console.log('🗑️ Deleted additional image:', imageUrl);
+                            } catch (imgErr) {
+                                console.warn('⚠️ Failed to delete additional image:', imgErr.message);
+                            }
+                        }
+                    }
+                }
+
+                // Xóa document MongoDB
+                await DataModel.Mongo.ProductDetail.findByIdAndDelete(product.mongo_detail_id);
+                console.log('✅ MongoDB document deleted:', product.mongo_detail_id);
+            } catch (mongoError) {
+                console.warn('⚠️ Could not delete MongoDB document:', mongoError.message);
+            }
+        }
+
+        // Xóa sản phẩm từ SQL
+        const result = await DataModel.SQL.Product.destroy({
+            where: { id: productId }
+        });
+
+        console.log(`✅ Đã xóa sản phẩm: ${product.ten_san_pham}`);
+
+        res.json({
+            success: true,
+            message: 'Xóa sản phẩm thành công',
+            data: result
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi khi xóa sản phẩm:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi xóa sản phẩm',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -1352,6 +1430,588 @@ app.delete('/api/danhmuc/:id', async (req, res) => {
         });
     }
 });
+
+
+
+
+// =============================================
+// PRODUCT API ROUTES
+// =============================================
+
+// POST /api/sanpham - Thêm sản phẩm mới
+app.post('/api/sanpham', async (req, res) => {
+    try {
+        const productData = req.body;
+        console.log('🔄 API: Thêm sản phẩm mới', productData);
+
+        // Validate dữ liệu
+        if (!productData.ten_san_pham || !productData.ma_sku) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tên sản phẩm và mã SKU là bắt buộc'
+            });
+        }
+
+        // Kiểm tra SKU trùng
+        const existingProduct = await DataModel.SQL.Product.findOne({ 
+            where: { ma_sku: productData.ma_sku } 
+        });
+        
+        if (existingProduct) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã SKU đã tồn tại'
+            });
+        }
+
+        const newProduct = await DataModel.SQL.Product.create({
+            ten_san_pham: productData.ten_san_pham,
+            ma_sku: productData.ma_sku,
+            danh_muc_id: productData.danh_muc_id,
+            thuong_hieu_id: productData.thuong_hieu_id,
+            gia_niem_yet: productData.gia_niem_yet || null,
+            gia_ban: productData.gia_ban,
+            giam_gia: productData.giam_gia || 0,
+            trang_thai: productData.trang_thai !== undefined ? productData.trang_thai : 1,
+            link_anh: productData.link_anh || '',
+            mo_ta: productData.mo_ta || '',
+            mo_ta_ngan: productData.mo_ta_ngan || '',
+            san_pham_noi_bat: productData.san_pham_noi_bat || false,
+            slug: productData.slug,
+            so_luong_ton: productData.so_luong_ton || 0,
+            luot_xem: productData.luot_xem || 0,
+            so_luong_ban: productData.so_luong_ban || 0,
+            ngay_tao: new Date(),
+            ngay_cap_nhat: new Date()
+        });
+
+        console.log(`✅ Đã thêm sản phẩm: ${newProduct.ten_san_pham}`);
+
+        res.status(201).json({
+            success: true,
+            message: 'Thêm sản phẩm thành công',
+            product: newProduct
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi khi thêm sản phẩm:', error);
+        
+        if (error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã SKU đã tồn tại'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi thêm sản phẩm',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// PUT /api/sanpham/:id - Cập nhật sản phẩm
+app.put('/api/sanpham/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const productData = req.body;
+        
+        console.log(`🔄 API: Cập nhật sản phẩm ${productId}`, productData);
+
+        // Validate dữ liệu
+        if (!productData.ten_san_pham) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tên sản phẩm là bắt buộc'
+            });
+        }
+
+        // Tìm sản phẩm hiện tại
+        const existingProduct = await DataModel.SQL.Product.findById(productId);
+        if (!existingProduct) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+
+        // Kiểm tra SKU trùng (nếu thay đổi)
+        if (productData.ma_sku && productData.ma_sku !== existingProduct.ma_sku) {
+            const duplicateProduct = await DataModel.SQL.Product.findOne({ 
+                where: { ma_sku: productData.ma_sku } 
+            });
+            
+            if (duplicateProduct && duplicateProduct.id != productId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Mã SKU đã tồn tại'
+                });
+            }
+        }
+
+        const updateData = {
+            ten_san_pham: productData.ten_san_pham,
+            ma_sku: productData.ma_sku || existingProduct.ma_sku,
+            danh_muc_id: productData.danh_muc_id || existingProduct.danh_muc_id,
+            thuong_hieu_id: productData.thuong_hieu_id || existingProduct.thuong_hieu_id,
+            gia_niem_yet: productData.gia_niem_yet || existingProduct.gia_niem_yet,
+            gia_ban: productData.gia_ban || existingProduct.gia_ban,
+            giam_gia: productData.giam_gia !== undefined ? productData.giam_gia : existingProduct.giam_gia,
+            trang_thai: productData.trang_thai !== undefined ? productData.trang_thai : existingProduct.trang_thai,
+            link_anh: productData.link_anh || existingProduct.link_anh,
+            mo_ta: productData.mo_ta || existingProduct.mo_ta,
+            mo_ta_ngan: productData.mo_ta_ngan || existingProduct.mo_ta_ngan,
+            san_pham_noi_bat: productData.san_pham_noi_bat !== undefined ? productData.san_pham_noi_bat : existingProduct.san_pham_noi_bat,
+            slug: productData.slug || existingProduct.slug,
+            ngay_cap_nhat: new Date()
+        };
+
+        // Nếu URL ảnh thay đổi, xóa ảnh cũ khỏi Cloudinary
+        if (productData.link_anh && productData.link_anh !== existingProduct.link_anh) {
+            try {
+                if (existingProduct.link_anh && existingProduct.link_anh.includes('cloudinary.com')) {
+                    console.log('🗑️ Deleting old product image from Cloudinary:', existingProduct.link_anh);
+                    await deleteFromCloudinary(existingProduct.link_anh);
+                }
+            } catch (delErr) {
+                console.warn('⚠️ Failed to delete old product image:', delErr.message);
+            }
+        }
+
+        console.log('📤 Dữ liệu cập nhật:', updateData);
+
+        const updatedProduct = await DataModel.SQL.Product.update(productId, updateData);
+
+        console.log(`✅ Đã cập nhật sản phẩm: ${updatedProduct.ten_san_pham}`);
+
+        res.json({
+            success: true,
+            message: 'Cập nhật sản phẩm thành công',
+            product: updatedProduct
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi khi cập nhật sản phẩm:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi cập nhật sản phẩm',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// DELETE /api/sanpham/:id - Xóa sản phẩm
+app.delete('/api/sanpham/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        
+        console.log(`🗑️ API: Xóa sản phẩm ${productId}`);
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID sản phẩm là bắt buộc'
+            });
+        }
+
+        // Tìm sản phẩm để lấy thông tin ảnh
+        const product = await DataModel.SQL.Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+
+        // Xóa ảnh từ Cloudinary nếu có
+        if (product.link_anh && product.link_anh.includes('cloudinary.com')) {
+            try {
+                console.log('🗑️ Deleting product image from Cloudinary:', product.link_anh);
+                await deleteFromCloudinary(product.link_anh);
+            } catch (delErr) {
+                console.warn('⚠️ Failed to delete product image:', delErr.message);
+            }
+        }
+
+        // Xóa thông số kỹ thuật từ MongoDB
+        try {
+            await DataModel.Mongo.ProductDetail.deleteOne({ sql_product_id: productId });
+            console.log('✅ Đã xóa thông số kỹ thuật từ MongoDB');
+        } catch (mongoError) {
+            console.warn('⚠️ Could not delete MongoDB specs:', mongoError.message);
+        }
+
+        const result = await DataModel.SQL.Product.destroy({
+            where: { id: productId }
+        });
+
+        console.log(`✅ Đã xóa sản phẩm: ${product.ten_san_pham}`);
+
+        res.json({
+            success: true,
+            message: 'Xóa sản phẩm thành công',
+            data: result
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi khi xóa sản phẩm:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi xóa sản phẩm',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// PUT /api/sanpham/:id/status - Cập nhật trạng thái sản phẩm
+app.put('/api/sanpham/:id/status', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const { trang_thai } = req.body;
+
+        console.log(`🔄 API: Cập nhật trạng thái sản phẩm ${productId} -> ${trang_thai}`);
+
+        if (trang_thai === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Trạng thái là bắt buộc'
+            });
+        }
+
+        const product = await DataModel.SQL.Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+
+        const updatedProduct = await DataModel.SQL.Product.update(productId, {
+            trang_thai: trang_thai,
+            ngay_cap_nhat: new Date()
+        });
+
+        const statusText = trang_thai ? 'kích hoạt' : 'ngừng bán';
+        
+        res.json({
+            success: true,
+            message: `Đã ${statusText} sản phẩm thành công`,
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi cập nhật trạng thái sản phẩm:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi cập nhật trạng thái',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// =============================================
+// MONGODB PRODUCT DETAILS API ROUTES - FIXED FOR strict: false
+// =============================================
+
+// POST /api/mongo/sanpham - Tạo document mới trong MongoDB
+app.post('/api/mongo/sanpham', async (req, res) => {
+    try {
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug } = req.body;
+
+        console.log('🔄 API: Tạo document MongoDB mới');
+        console.log('📝 Request data:', {
+            sql_product_id,
+            has_specs: !!thong_so_ky_thuat,
+            has_images: !!hinh_anh,
+            has_description: !!mo_ta_chi_tiet,
+            slug
+        });
+
+        // Kiểm tra kết nối MongoDB
+        const dbState = mongoose.connection.readyState;
+        console.log('🔌 MongoDB connection state:', dbState);
+        
+        if (dbState !== 1) {
+            throw new Error(`MongoDB connection is not ready. State: ${dbState}`);
+        }
+
+        // Tạo document data - với strict: false, chúng ta có thể thêm bất kỳ trường nào
+        const documentData = {
+            sql_product_id: sql_product_id || null,
+            slug: slug || `temp-${Date.now()}`
+        };
+
+        // Thêm thông số kỹ thuật nếu có
+        if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
+            // Chuyển đổi từ object sang array format
+            documentData.thong_so_ky_thuat = Object.entries(thong_so_ky_thuat).map(([ten, gia_tri]) => ({
+                ten: ten.trim(),
+                gia_tri: gia_tri
+            }));
+        } else {
+            documentData.thong_so_ky_thuat = [];
+        }
+
+        // Thêm hình ảnh nếu có
+        if (hinh_anh && Array.isArray(hinh_anh)) {
+            documentData.hinh_anh = hinh_anh;
+        } else {
+            documentData.hinh_anh = [];
+        }
+
+        // Thêm mô tả chi tiết nếu có
+        if (mo_ta_chi_tiet) {
+            documentData.mo_ta_chi_tiet = mo_ta_chi_tiet;
+        }
+
+        console.log('📊 Document data to save:', {
+            sql_product_id: documentData.sql_product_id,
+            slug: documentData.slug,
+            specs_count: documentData.thong_so_ky_thuat.length,
+            images_count: documentData.hinh_anh.length,
+            has_description: !!documentData.mo_ta_chi_tiet
+        });
+
+        // Tạo và lưu document
+        const newProductDetail = new DataModel.Mongo.ProductDetail(documentData);
+        const savedDetail = await newProductDetail.save();
+        
+        console.log('✅ MongoDB document created successfully:', savedDetail._id);
+
+        res.status(201).json({
+            success: true,
+            message: 'Tạo document MongoDB thành công',
+            data: savedDetail
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi tạo document MongoDB:', error);
+        
+        // Log chi tiết lỗi
+        console.error('📛 Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code,
+            keyPattern: error.keyPattern,
+            keyValue: error.keyValue
+        });
+
+        // Xử lý các loại lỗi cụ thể
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Lỗi validation: ' + errors.join(', '),
+                errors: errors
+            });
+        }
+        
+        if (error.name === 'MongoError' && error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Lỗi trùng lặp: sql_product_id đã tồn tại trong MongoDB',
+                errorCode: error.code
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi tạo document MongoDB: ' + error.message,
+            error: process.env.NODE_ENV === 'development' ? {
+                name: error.name,
+                message: error.message
+            } : undefined
+        });
+    }
+});
+
+
+// GET /api/check-mongodb - Kiểm tra kết nối MongoDB
+app.get('/api/check-mongodb', async (req, res) => {
+    try {
+        const dbState = mongoose.connection.readyState;
+        const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+        
+        console.log('🔌 MongoDB connection state:', states[dbState]);
+        
+        // Thử thực hiện một truy vấn đơn giản
+        const count = await DataModel.Mongo.ProductDetail.countDocuments();
+        
+        res.json({
+            success: true,
+            message: `MongoDB connection is ${states[dbState]}`,
+            state: states[dbState],
+            documentCount: count
+        });
+    } catch (error) {
+        console.error('❌ MongoDB check failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'MongoDB connection failed: ' + error.message
+        });
+    }
+});
+
+
+// PUT /api/mongo/sanpham/:id - Cập nhật document MongoDB bằng _id
+app.put('/api/mongo/sanpham/:id', async (req, res) => {
+    try {
+        const mongoId = req.params.id;
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug } = req.body;
+
+        console.log(`🔄 API: Cập nhật document MongoDB ${mongoId}`);
+        console.log('📝 Update data:', { sql_product_id, slug, thong_so_ky_thuat: thong_so_ky_thuat ? Object.keys(thong_so_ky_thuat).length : 0, hinh_anh: hinh_anh ? hinh_anh.length : 0 });
+
+        // Chuyển đổi thông số kỹ thuật từ object sang array
+        const thongSoKyThuatArray = [];
+        if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
+            Object.entries(thong_so_ky_thuat).forEach(([ten, gia_tri]) => {
+                thongSoKyThuatArray.push({
+                    ten: ten.trim(),
+                    gia_tri: gia_tri
+                });
+            });
+        }
+
+        const updateData = {
+            updatedAt: new Date()
+        };
+
+        if (sql_product_id !== undefined) updateData.sql_product_id = sql_product_id;
+        if (thong_so_ky_thuat !== undefined) updateData.thong_so_ky_thuat = thongSoKyThuatArray;
+        if (hinh_anh !== undefined) updateData.hinh_anh = hinh_anh;
+        if (mo_ta_chi_tiet !== undefined) updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
+        if (slug !== undefined) updateData.slug = slug;
+
+        const updatedDetail = await DataModel.Mongo.ProductDetail.findByIdAndUpdate(
+            mongoId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedDetail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy document MongoDB'
+            });
+        }
+
+        console.log('✅ MongoDB document updated:', mongoId);
+
+        res.json({
+            success: true,
+            message: 'Cập nhật document MongoDB thành công',
+            data: updatedDetail
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi cập nhật document MongoDB:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi cập nhật document MongoDB',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// GET /api/mongo/sanpham/sql/:sql_product_id - Lấy document MongoDB bằng sql_product_id
+app.get('/api/mongo/sanpham/sql/:sql_product_id', async (req, res) => {
+    try {
+        const sqlProductId = req.params.sql_product_id;
+        console.log(`🔍 API: Lấy document MongoDB bằng sql_product_id ${sqlProductId}`);
+
+        const productDetail = await DataModel.Mongo.ProductDetail.findOne({ 
+            sql_product_id: sqlProductId 
+        });
+
+        if (!productDetail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy document MongoDB'
+            });
+        }
+
+        // Chuyển đổi thông số kỹ thuật từ array sang object
+        const thongSoKyThuatObject = {};
+        if (productDetail.thong_so_ky_thuat && Array.isArray(productDetail.thong_so_ky_thuat)) {
+            productDetail.thong_so_ky_thuat.forEach(spec => {
+                if (spec.ten && spec.gia_tri !== undefined) {
+                    thongSoKyThuatObject[spec.ten] = spec.gia_tri;
+                }
+            });
+        }
+
+        const responseData = {
+            _id: productDetail._id,
+            sql_product_id: productDetail.sql_product_id,
+            slug: productDetail.slug,
+            thong_so_ky_thuat: thongSoKyThuatObject,
+            hinh_anh: productDetail.hinh_anh || [],
+            mo_ta_chi_tiet: productDetail.mo_ta_chi_tiet,
+            createdAt: productDetail.createdAt,
+            updatedAt: productDetail.updatedAt
+        };
+
+        res.json({
+            success: true,
+            data: responseData
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi lấy document MongoDB:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi lấy document MongoDB',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// DELETE /api/mongo/sanpham/:id - Xóa document MongoDB
+app.delete('/api/mongo/sanpham/:id', async (req, res) => {
+    try {
+        const mongoId = req.params.id;
+        console.log(`🗑️ API: Xóa document MongoDB ${mongoId}`);
+
+        const result = await DataModel.Mongo.ProductDetail.findByIdAndDelete(mongoId);
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy document MongoDB'
+            });
+        }
+
+        console.log('✅ MongoDB document deleted:', mongoId);
+
+        res.json({
+            success: true,
+            message: 'Xóa document MongoDB thành công',
+            data: result
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi xóa document MongoDB:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi xóa document MongoDB',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+
+
+
+
+
+
+
+
 
 
 

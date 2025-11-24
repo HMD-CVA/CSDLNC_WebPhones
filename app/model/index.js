@@ -634,6 +634,60 @@ class SQLProductModel {
       throw error;
     }
   }
+  static async update(productData, id) {
+    try {
+        console.log('🔍 Updating Product ID:', id);
+        console.log('📦 Product Data:', JSON.stringify(productData, null, 2));
+        const request = new sql.Request();
+        
+        // Thêm id vào parameters
+        request.input('id', sql.UniqueIdentifier, id);
+        
+        // Xây dựng SET clause đơn giản
+        const setClauses = [];
+        const params = {};
+          
+        // Chỉ cần duyệt qua các field trong productData
+        Object.keys(productData).forEach(key => {
+            if (productData[key] !== undefined && productData[key] !== null) {
+                setClauses.push(`${key} = @${key}`);
+                
+                // Xử lý kiểu dữ liệu cơ bản
+                if (key === 'danh_muc_id' || key === 'thuong_hieu_id') {
+                    request.input(key, sql.UniqueIdentifier, productData[key]);
+                } else if (key.includes('gia')) {
+                    request.input(key, sql.Decimal(15, 2), productData[key]);
+                } else if (key === 'trang_thai' || key === 'so_luong_ton' || key === 'luot_xem' || key === 'so_luong_ban') {
+                    request.input(key, sql.Int, productData[key]);
+                } else if (key === 'san_pham_noi_bat') {
+                    request.input(key, sql.Bit, productData[key] ? 1 : 0);
+                } else {
+                    request.input(key, sql.NVarChar(sql.MAX), productData[key]);
+                }
+            }
+        });
+        
+        // Thêm ngày cập nhật
+        setClauses.push('ngay_cap_nhat = GETDATE()');
+        
+        const sqlQuery = `
+            UPDATE products 
+            SET ${setClauses.join(', ')}
+            WHERE id = @id
+        `;
+        
+        console.log('📝 Update Query:', sqlQuery);
+        
+        const result = await request.query(sqlQuery);
+        
+        // Trả về sản phẩm đã được cập nhật
+        return await this.findById(id);
+        
+    } catch (error) {
+        console.error('❌ SQL Product Update Error:', error);
+        throw error;
+    }
+  }
 }
 
 // ==================== EXPORT ALL MODELS ====================

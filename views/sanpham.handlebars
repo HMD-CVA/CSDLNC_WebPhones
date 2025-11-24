@@ -138,7 +138,7 @@
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="brandName" required
                                                             placeholder="Nhập tên thương hiệu (tối đa 100 ký tự)">
-                                                        <div class="form-text">Tên thương hiệu là bắt buộc và phải duy nhất</div>
+                                                        <div class="form-text">Tên thương hiệu là bắt buộc và duy nhất</div>
                                                     </div>
 
                                                     <div class="form-group">
@@ -337,7 +337,7 @@
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="categoryName" required
                                                             placeholder="Nhập tên danh mục (tối đa 100 ký tự)">
-                                                        <div class="form-text">Tên danh mục là bắt buộc và phải duy nhất</div>
+                                                        <div class="form-text">Tên danh mục là bắt buộc và duy nhất</div>
                                                     </div>
 
                                                     <div class="form-group">
@@ -371,7 +371,7 @@
                                                         </label>
                                                         <input type="number" class="form-control form-control-lg"
                                                             id="categoryOrder" placeholder="0" min="0" value="0">
-                                                        <div class="form-text">Số nhỏ hơn sẽ hiển thị trước</div>
+                                                        {{!-- <div class="form-text">Số nhỏ hơn sẽ hiển thị trước</div> --}}
                                                     </div>
                                                 </div>
 
@@ -688,16 +688,11 @@
                                     <i class="fas fa-info-circle"></i>
                                     Thông tin cơ bản
                                 </h4>
-                                <div class="form-grid">
+                                <div class="form-grid-3">
                                     <div class="form-group">
                                         <label for="productName" class="form-label">Tên sản phẩm *</label>
                                         <input type="text" class="form-control" id="productName" required
                                             placeholder="Nhập tên sản phẩm">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="productSKU" class="form-label">Mã SKU *</label>
-                                        <input type="text" class="form-control" id="productSKU" required
-                                            placeholder="Nhập mã SKU">
                                     </div>
                                     <div class="form-group">
                                         <label for="productCategory" class="form-label">Danh mục *</label>
@@ -726,7 +721,7 @@
                                     <i class="fas fa-money-bill-wave"></i>
                                     Thông tin giá
                                 </h4>
-                                <div class="form-grid">
+                                <div class="form-grid-2">
                                     <div class="form-group">
                                         <label for="productPrice" class="form-label">Giá bán *</label>
                                         <div class="input-group">
@@ -741,6 +736,41 @@
                                             <input type="number" class="form-control" id="productOriginalPrice"
                                                 placeholder="0" min="0">
                                             <span class="input-group-text">VNĐ</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Technical Specifications -->
+                            <div class="form-section">
+                                <h4 class="section-title">
+                                    <i class="fas fa-cogs"></i>
+                                    Thông số kỹ thuật
+                                    <small class="text-muted">(Kéo thả để sắp xếp thứ tự)</small>
+                                </h4>
+                                <div class="specs-management">
+                                    <div class="specs-table-container">
+                                        <table class="specs-table" id="productSpecsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th width="5%"></th>
+                                                    <th width="35%">Thông số</th>
+                                                    <th width="50%">Giá trị</th>
+                                                    <th width="10%">Thao tác</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="productSpecsBody">
+                                                <!-- Dynamic specs will be loaded here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="specs-actions">
+                                        <button type="button" class="btn btn-primary" id="addProductSpecBtn">
+                                            <i class="fas fa-plus"></i> Thêm thông số
+                                        </button>
+                                        <div class="specs-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Kéo thả biểu tượng <i class="fas fa-bars"></i> để sắp xếp thứ tự
                                         </div>
                                     </div>
                                 </div>
@@ -791,23 +821,6 @@
                                     </div>
                                     <input type="hidden" id="productAdditionalImagesData" name="productAdditionalImages">
                                 </div>
-
-                                <!-- Videos -->
-                                <div class="form-group">
-                                    <label class="form-label">Thêm video</label>
-                                    <div class="file-upload-container">
-                                        <input type="file" class="form-control" id="productVideos" accept="video/*" multiple style="display: none;">
-                                        <div class="file-upload-area" id="videosUploadArea">
-                                            <div class="upload-placeholder">
-                                                <i class="fas fa-video"></i>
-                                                <span>Chọn video từ máy tính</span>
-                                                <small>Định dạng: MP4, MOV, AVI (Tối đa 50MB)</small>
-                                            </div>
-                                            <div class="videos-preview" id="videosPreview" style="display: none;"></div>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" id="productVideosData" name="productVideos">
-                                </div>
                             </div>
 
                             <!-- Status & Features -->
@@ -816,7 +829,7 @@
                                     <i class="fas fa-cog"></i>
                                     Trạng thái & Tính năng
                                 </h4>
-                                <div class="form-grid">
+                                <div class="form-grid-2">
                                     <div class="form-group">
                                         <label for="productStatus" class="form-label">Trạng thái *</label>
                                         <select class="form-select" id="productStatus" required>
@@ -974,6 +987,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
     // Utility Functions
@@ -1082,6 +1096,11 @@
 
         static async updateProduct(id, productData) {
             try {
+
+                console.log('🔍 DEBUG UPDATE PRODUCT:');
+                console.log('📤 ID:', id, 'Type:', typeof id);
+                console.log('📦 Data:', JSON.stringify(productData, null, 2));
+
                 const response = await fetch(`/api/sanpham/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1159,6 +1178,114 @@
                 return await response.json();
             } catch (error) {
                 console.error('API Error:', error);
+                throw error;
+            }
+        }
+        static async updateProductStatus(id, status) {
+            try {
+                const response = await fetch(`/api/sanpham/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trang_thai: status })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi cập nhật trạng thái sản phẩm');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        // Tạo document MongoDB mới
+        static async createProductMongoDetail(sql_product_id, specsData, additionalImages, mo_ta_chi_tiet, slug) {
+            try {
+                const response = await fetch('/api/mongo/sanpham', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sql_product_id: sql_product_id,
+                        thong_so_ky_thuat: specsData,
+                        hinh_anh: additionalImages,
+                        mo_ta_chi_tiet: mo_ta_chi_tiet,
+                        slug: slug
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Lỗi khi tạo document MongoDB');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error creating MongoDB document:', error);
+                throw error;
+            }
+        }
+
+        // Cập nhật document MongoDB
+        static async updateProductMongoDetail(mongoId, sql_product_id, specsData, additionalImages, mo_ta_chi_tiet, slug) {
+            try {
+                const response = await fetch(`/api/mongo/sanpham/${mongoId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sql_product_id: sql_product_id,
+                        thong_so_ky_thuat: specsData,
+                        hinh_anh: additionalImages,
+                        mo_ta_chi_tiet: mo_ta_chi_tiet,
+                        slug: slug
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Lỗi khi cập nhật document MongoDB');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error updating MongoDB document:', error);
+                throw error;
+            }
+        }
+
+        // Lấy document MongoDB bằng sql_product_id
+        static async getProductMongoDetail(sql_product_id) {
+            try {
+                const response = await fetch(`/api/mongo/sanpham/sql/${sql_product_id}`);
+
+                if (!response.ok) {
+                    throw new Error('Lỗi khi lấy document MongoDB');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error getting MongoDB document:', error);
+                throw error;
+            }
+        }
+
+        // Cập nhật tham chiếu sql_product_id trong MongoDB
+        static async updateMongoSqlReference(mongoId, sql_product_id) {
+            try {
+                const response = await fetch(`/api/mongo/sanpham/${mongoId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sql_product_id: sql_product_id })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Lỗi khi cập nhật tham chiếu SQL trong MongoDB');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error updating MongoDB reference:', error);
                 throw error;
             }
         }
@@ -1418,10 +1545,12 @@
             modal.show();
         }
 
-        fillProductForm(product) {
-            document.getElementById('productId').value = product.id;
+        // Thêm vào class ProductManager
+        async fillProductForm(product) {
+            console.log('Filling product form with data:', product);
+
+            document.getElementById('productId').value = product.id || '';
             document.getElementById('productName').value = product.ten_san_pham || '';
-            document.getElementById('productSKU').value = product.ma_sku || '';
             document.getElementById('productPrice').value = product.gia_ban || '';
             document.getElementById('productOriginalPrice').value = product.gia_niem_yet || '';
             document.getElementById('productCategory').value = product.danh_muc_id || '';
@@ -1431,7 +1560,38 @@
             document.getElementById('productDescription').value = product.mo_ta || '';
             document.getElementById('productFeatured').checked = product.san_pham_noi_bat || false;
 
+            // Update image preview
             this.updateImagePreview(product.link_anh);
+
+            // Load thông tin từ MongoDB nếu có mongo_detail_id
+            if (product.mongo_detail_id) {
+                try {
+                    const mongoResult = await ProductAPIService.getProductMongoDetail(product.id);
+                    if (mongoResult.success && mongoResult.data) {
+                        const mongoData = mongoResult.data;
+                        console.log('📥 Loaded MongoDB data:', mongoData);
+                        
+                        // Load thông số kỹ thuật vào productSpecsManager
+                        if (window.productSpecsManager && mongoData.thong_so_ky_thuat) {
+                            window.productSpecsManager.loadSpecsData(mongoData.thong_so_ky_thuat);
+                        }
+
+                        // Có thể xử lý ảnh phụ và mô tả chi tiết ở đây nếu cần
+                        // mongoData.hinh_anh, mongoData.mo_ta_chi_tiet
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Could not load MongoDB data:', error.message);
+                    // Nếu không load được, vẫn tiếp tục hiển thị form
+                    if (window.productSpecsManager) {
+                        window.productSpecsManager.clearSpecs();
+                    }
+                }
+            } else {
+                // Nếu không có mongo_detail_id, clear specs
+                if (window.productSpecsManager) {
+                    window.productSpecsManager.clearSpecs();
+                }
+            }
         }
 
         resetProductForm() {
@@ -1440,59 +1600,263 @@
             this.updateImagePreview('');
         }
 
+        // Sửa lại hàm saveProduct trong ProductManager
         async saveProduct() {
             try {
+                const saveBtn = document.getElementById('saveProductBtn');
+                const originalText = saveBtn ? saveBtn.innerHTML : null;
+                
+                // Show loading state
+                if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                    saveBtn.disabled = true;
+                }
+
                 const formData = this.getProductFormData();
+                const specsData = window.productSpecsManager ? window.productSpecsManager.getSpecsData() : {};
+
+                console.log('📦 Product Data for SQL:', formData);
+                console.log('🔧 Technical Specs for MongoDB:', specsData);
+
+                const validSQLFields = [
+                    'id', 'ma_sku', 'ten_san_pham', 'danh_muc_id', 'thuong_hieu_id',
+                    'gia_niem_yet', 'gia_ban', 'mongo_detail_id', 'trang_thai',
+                    'luot_xem', 'so_luong_ban', 'ngay_tao', 'ngay_cap_nhat'
+                ];
+
+                const sqlData = {};
+                    Object.keys(formData).forEach(key => {
+                        if (validSQLFields.includes(key)) {
+                            sqlData[key] = formData[key];
+                        }
+                });
 
                 if (!this.validateProductForm(formData)) {
+                    if (saveBtn) {
+                        saveBtn.innerHTML = originalText;
+                        saveBtn.disabled = false;
+                    }
                     return;
                 }
 
-                let result;
+                let result, productId, mongoDetailId;
+
+                // BƯỚC 1: Upload ảnh chính nếu có file mới
+                let mainImageUrl = '';
+                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productMainImageFile) {
+                    try {
+                        const oldImageUrl = this.currentEditId ? 
+                            this.products.find(p => p.id === this.currentEditId)?.link_anh : null;
+                        mainImageUrl = await window.simpleImageUploadManager.uploadProductMainImage(oldImageUrl);
+                        console.log('✅ Main image uploaded:', mainImageUrl);
+                    } catch (uploadError) {
+                        this.showError('Lỗi upload ảnh chính: ' + uploadError.message);
+                        if (saveBtn) {
+                            saveBtn.innerHTML = originalText;
+                            saveBtn.disabled = false;
+                        }
+                        return;
+                    }
+                }
+
+                // BƯỚC 2: Upload ảnh phụ nếu có (lưu vào MongoDB)
+                let additionalImages = [];
+                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productAdditionalImages.length > 0) {
+                    try {
+                        additionalImages = await window.simpleImageUploadManager.uploadProductAdditionalImages();
+                        console.log('✅ Additional images uploaded:', additionalImages);
+                    } catch (uploadError) {
+                        console.warn('⚠️ Lỗi upload ảnh phụ:', uploadError.message);
+                    }
+                }
+
+                // BƯỚC 3: XỬ LÝ THEO THỨ TỰ ĐÚNG
+
                 if (this.currentEditId) {
-                    result = await ProductAPIService.updateProduct(this.currentEditId, formData);
+                    // 🟡 TRƯỜNG HỢP CẬP NHẬT SẢN PHẨM
+                    productId = this.currentEditId;
+
+                    console.log('🔄 Updating Product ID:', productId);
+                    
+                    // 3.1: Kiểm tra xem đã có document MongoDB chưa
+                    const product = this.products.find(p => p.id === this.currentEditId);
+                    mongoDetailId = product.mongo_detail_id;
+
+                    if (mongoDetailId) {
+                        // Đã có: cập nhật document MongoDB
+                        try {
+                            await ProductAPIService.updateProductMongoDetail(
+                                mongoDetailId, 
+                                productId,
+                                specsData, 
+                                additionalImages,
+                                document.getElementById('productDescription').value.trim(),
+                                Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                                mainImageUrl
+                            );
+                            console.log('✅ MongoDB document updated:', mongoDetailId);
+                            
+                            // Cập nhật sản phẩm trong SQL
+                            result = await ProductAPIService.updateProduct(productId, sqlData);
+                            console.log('✅ Product updated in SQL:', productId);
+                        } catch (mongoError) {
+                            console.error('❌ Error updating MongoDB:', mongoError);
+                            this.showError('Lỗi cập nhật thông tin chi tiết: ' + mongoError.message);
+                        }
+                    } else {
+                        // Chưa có: thử tìm document MongoDB bằng sql_product_id
+                        try {
+                            // Thử lấy document MongoDB đã tồn tại bằng sql_product_id
+                            const existingMongoDoc = await ProductAPIService.getProductMongoDetail(productId);
+                            if (existingMongoDoc.success && existingMongoDoc.data) {
+                                // Nếu tìm thấy, sử dụng _id của document đó
+                                mongoDetailId = existingMongoDoc.data._id;
+                                console.log('✅ Found existing MongoDB document:', mongoDetailId);
+                                
+                                // Cập nhật document MongoDB
+                                await ProductAPIService.updateProductMongoDetail(
+                                    mongoDetailId, 
+                                    productId,
+                                    specsData, 
+                                    additionalImages,
+                                    document.getElementById('productDescription').value.trim(),
+                                    Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                                    mainImageUrl
+                                );
+                                console.log('✅ MongoDB document updated:', mongoDetailId);
+                            } else {
+                                // Nếu không tìm thấy, tạo mới
+                                const mongoResult = await ProductAPIService.createProductMongoDetail(
+                                    productId,
+                                    specsData, 
+                                    additionalImages,
+                                    document.getElementById('productDescription').value.trim(),
+                                    Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                                    mainImageUrl
+                                );
+                                mongoDetailId = mongoResult.data._id;
+                                console.log('✅ MongoDB document created:', mongoDetailId);
+                            }
+
+                            // Cập nhật sản phẩm SQL với mongo_detail_id
+                            result = await ProductAPIService.updateProduct(productId, {
+                                ...sqlData,
+                                mongo_detail_id: mongoDetailId
+                            });
+                            console.log('✅ SQL product updated with MongoDB ID:', mongoDetailId);
+                            
+                        } catch (mongoError) {
+                            console.error('❌ Error handling MongoDB document:', mongoError);
+                            
+                            // Xử lý lỗi duplicate key
+                            if (mongoError.message.includes('duplicate key')) {
+                                this.showError('Đã tồn tại thông tin chi tiết cho sản phẩm này. Vui lòng thử lại.');
+                            } else {
+                                this.showError('Lỗi xử lý thông tin chi tiết: ' + mongoError.message);
+                            }
+                        }
+                    }
+                } else {
+                    // 🟢 TRƯỜNG HỢP THÊM SẢN PHẨM MỚI
+                    
+                    // 3.1: Tạo sản phẩm trong SQL TRƯỚC (chưa có mongo_detail_id)
+                    result = await ProductAPIService.createProduct(formData);
+                    if (result.success && result.product && result.product.id) {
+                        productId = result.product.id;
+                        console.log('✅ Product created in SQL:', productId);
+                        
+                        // 3.2: Tạo document trong MongoDB VỚI productId đã có
+                        try {
+                            const mongoResult = await ProductAPIService.createProductMongoDetail(
+                                productId,
+                                specsData, 
+                                additionalImages,
+                                document.getElementById('productDescription').value.trim(),
+                                Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                                mainImageUrl
+                            );
+                            mongoDetailId = mongoResult.data._id;
+                            console.log('✅ MongoDB document created:', mongoDetailId);
+                            
+                            // 3.3: Cập nhật ngược lại SQL với mongo_detail_id
+                            await ProductAPIService.updateProduct(productId, { 
+                                mongo_detail_id: mongoDetailId 
+                            });
+                            console.log('✅ SQL product updated with MongoDB ID:', mongoDetailId);
+                            
+                        } catch (mongoError) {
+                            console.error('❌ Error creating MongoDB document:', mongoError);
+                            this.showError('Lỗi tạo thông tin chi tiết: ' + mongoError.message);
+                        }
+                    } else {
+                        throw new Error('Không nhận được ID sản phẩm sau khi tạo');
+                    }
+                }
+
+                // BƯỚC 4: Hiển thị thông báo thành công
+                if (this.currentEditId) {
                     this.showSuccess('Cập nhật sản phẩm thành công');
                 } else {
-                    result = await ProductAPIService.createProduct(formData);
                     this.showSuccess('Thêm sản phẩm thành công');
                 }
 
+                // BƯỚC 5: Đóng modal và làm mới dữ liệu
                 bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
                 await this.loadProducts();
 
             } catch (error) {
+                console.error('❌ Error saving product:', error);
                 this.showError('Không thể lưu sản phẩm: ' + error.message);
+            } finally {
+                // Khôi phục nút lưu
+                const saveBtn = document.getElementById('saveProductBtn');
+                if (saveBtn) {
+                    saveBtn.innerHTML = this.currentEditId ? 
+                        '<i class="fas fa-save"></i> Cập nhật sản phẩm' : 
+                        '<i class="fas fa-save"></i> Thêm sản phẩm';
+                    saveBtn.disabled = false;
+                }
             }
         }
-
+        
         getProductFormData() {
             const productName = document.getElementById('productName').value.trim();
-            const productSKU = document.getElementById('productSKU').value.trim();
+            
+            // Tự động tạo SKU
+            let productSKU = 'SP' + Date.now();
+            
+            const giaBan = parseInt(document.getElementById('productPrice').value) || 0;
+            const giaNiemYet = parseInt(document.getElementById('productOriginalPrice').value) || 0;
 
-            return {
-                ten_san_pham: productName,
+            // Chỉ lấy các trường cần thiết cho SQL
+            const formData = {
                 ma_sku: productSKU,
-                gia_ban: parseInt(document.getElementById('productPrice').value) || 0,
-                gia_niem_yet: parseInt(document.getElementById('productOriginalPrice').value) || 0,
+                ten_san_pham: productName,
                 danh_muc_id: document.getElementById('productCategory').value,
                 thuong_hieu_id: document.getElementById('productBrand').value,
+                gia_niem_yet: giaNiemYet > 0 ? giaNiemYet : null,
+                gia_ban: giaBan,
                 trang_thai: parseInt(document.getElementById('productStatus').value),
-                link_anh: document.getElementById('productImage').value.trim(),
-                mo_ta: document.getElementById('productDescription').value.trim(),
-                san_pham_noi_bat: document.getElementById('productFeatured').checked,
-                slug: Utils.generateSlug(productName + '-' + productSKU),
-                mo_ta_ngan: (document.getElementById('productDescription').value.trim() || '').substring(0, 100)
+                luot_xem: 0,
+                so_luong_ban: 0
             };
-        }
 
+            // Nếu đang edit, thêm id
+            if (this.currentEditId) {
+                formData.id = this.currentEditId;
+            }
+
+            console.log('📦 SQL Form Data:', formData);
+            return formData;
+        }
+        
+        
+        // Cập nhật hàm validateProductForm
         validateProductForm(formData) {
             const errors = [];
 
             if (!formData.ten_san_pham) {
                 errors.push('Vui lòng nhập tên sản phẩm');
-            }
-            if (!formData.ma_sku) {
-                errors.push('Vui lòng nhập mã SKU');
             }
             if (!formData.gia_ban || formData.gia_ban <= 0) {
                 errors.push('Vui lòng nhập giá bán hợp lệ');
@@ -1502,6 +1866,14 @@
             }
             if (!formData.thuong_hieu_id) {
                 errors.push('Vui lòng chọn thương hiệu');
+            }
+
+            // Validate ảnh chính
+            const hasExistingImage = formData.link_anh && formData.link_anh.trim() !== '';
+            const hasNewImage = window.simpleImageUploadManager && window.simpleImageUploadManager.productMainImageFile;
+            
+            if (!hasExistingImage && !hasNewImage) {
+                errors.push('Vui lòng chọn ảnh chính cho sản phẩm');
             }
 
             if (errors.length > 0) {
@@ -4148,6 +4520,8 @@ class SimpleImageUploadManager {
         this.isProcessing = false;
         this.brandEventsBound = false;
         this.categoryEventsBound = false;
+        this.productMainImageFile = null;
+        this.productAdditionalImages = [];
         this.init();
     }
 
@@ -4573,6 +4947,123 @@ class SimpleImageUploadManager {
         }
     }
 
+    // Upload ảnh chính sản phẩm
+    async uploadProductMainImage(oldImageUrl = null) {
+        if (!this.productMainImageFile) {
+            console.log('ℹ️ No new product main image to upload');
+            return null;
+        }
+
+        console.log('⬆️ Starting product main image upload to API...');
+        
+        try {
+            const formData = new FormData();
+            formData.append('productMainImage', this.productMainImageFile);
+            
+            if (oldImageUrl) {
+                formData.append('oldImageUrl', oldImageUrl);
+            }
+
+            const response = await fetch('/api/upload/product-main-image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.data && result.data.url) {
+                const imageUrl = result.data.url;
+                console.log('✅ Product main image uploaded successfully:', imageUrl);
+                this.productMainImageFile = null;
+                return imageUrl;
+            } else {
+                throw new Error(result.message || 'Upload failed - no URL returned');
+            }
+        } catch (error) {
+            console.error('❌ Product main image upload failed:', error);
+            throw error;
+        }
+    }
+
+    // Upload ảnh phụ sản phẩm
+    async uploadProductAdditionalImages() {
+        if (!this.productAdditionalImages || this.productAdditionalImages.length === 0) {
+            console.log('ℹ️ No additional images to upload');
+            return [];
+        }
+
+        console.log(`⬆️ Starting ${this.productAdditionalImages.length} additional images upload to API...`);
+        
+        try {
+            const formData = new FormData();
+            
+            this.productAdditionalImages.forEach((file, index) => {
+                formData.append('productAdditionalImages', file);
+            });
+
+            const response = await fetch('/api/upload/product-additional-images', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.data && Array.isArray(result.data)) {
+                const imageUrls = result.data.map(item => item.url);
+                console.log('✅ Product additional images uploaded successfully:', imageUrls);
+                this.productAdditionalImages = [];
+                return imageUrls;
+            } else {
+                throw new Error(result.message || 'Upload failed - no URLs returned');
+            }
+        } catch (error) {
+            console.error('❌ Product additional images upload failed:', error);
+            throw error;
+        }
+    }
+
+    // Reset ảnh sản phẩm
+    resetProductImages() {
+        this.productMainImageFile = null;
+        this.productAdditionalImages = [];
+        
+        // Reset UI elements
+        const mainImagePreview = document.getElementById('mainImagePreview');
+        const mainImagePlaceholder = document.querySelector('#mainImageUploadArea .upload-placeholder');
+        const additionalImagesPreview = document.getElementById('additionalImagesPreview');
+        const additionalImagesPlaceholder = document.querySelector('#additionalImagesUploadArea .upload-placeholder');
+
+        if (mainImagePreview && mainImagePlaceholder) {
+            mainImagePreview.style.display = 'none';
+            mainImagePlaceholder.style.display = 'block';
+        }
+
+        if (additionalImagesPreview && additionalImagesPlaceholder) {
+            additionalImagesPreview.innerHTML = '';
+            additionalImagesPreview.style.display = 'none';
+            additionalImagesPlaceholder.style.display = 'block';
+        }
+
+        document.getElementById('productImage').value = '';
+    }
+
+
+
+
+
+
+
+
     // Utility methods
     isImageFile(file) {
         return file && file.type.startsWith('image/');
@@ -4959,6 +5450,304 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+});
+// JavaScript để quản lý thông số sản phẩm với kéo thả
+class ProductSpecsManager {
+    constructor() {
+        this.specs = [];
+        this.sortable = null;
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.initSortable();
+    }
+
+    bindEvents() {
+        // Thêm thông số mới
+        document.getElementById('addProductSpecBtn')?.addEventListener('click', () => {
+            this.addNewSpec();
+        });
+
+        // Event delegation cho các nút xóa và chỉnh sửa
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-edit-spec')) {
+                this.editSpec(e.target.closest('.btn-edit-spec'));
+            }
+            if (e.target.closest('.btn-delete-spec')) {
+                this.deleteSpec(e.target.closest('.btn-delete-spec'));
+            }
+        });
+
+        // Tự động cập nhật specs khi người dùng nhập trong các input
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('spec-key-input') || e.target.classList.contains('spec-value-input')) {
+                const row = e.target.closest('tr');
+                if (row) {
+                    const specId = row.getAttribute('data-spec-id');
+                    const keyInput = row.querySelector('.spec-key-input');
+                    const valueInput = row.querySelector('.spec-value-input');
+                    
+                    const spec = this.specs.find(s => s.id == specId);
+                    if (spec) {
+                        spec.key = keyInput.value.trim();
+                        spec.value = valueInput.value.trim();
+                    }
+                }
+            }
+        });
+    }
+
+
+    initSortable() {
+        const tbody = document.getElementById('productSpecsBody');
+        if (!tbody) return;
+
+        this.sortable = Sortable.create(tbody, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            onEnd: (evt) => {
+                // Cập nhật thứ tự trong mảng specs
+                const items = Array.from(tbody.children);
+                this.specs = items.map(item => {
+                    const specId = item.getAttribute('data-spec-id');
+                    return this.specs.find(spec => spec.id == specId);
+                }).filter(spec => spec !== undefined);
+                
+                console.log('Thứ tự mới:', this.specs);
+            }
+        });
+    }
+
+    addNewSpec(key = '', value = '') {
+        const specId = 'spec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newSpec = {
+            id: specId,
+            key: key,
+            value: value
+        };
+
+        this.specs.push(newSpec);
+        this.renderSpecsTable();
+        
+        console.log('➕ Added new spec:', newSpec);
+    }
+
+    editSpec(button) {
+        const row = button.closest('tr');
+        const specId = row.getAttribute('data-spec-id');
+        const keyInput = row.querySelector('.spec-key-input');
+        const valueInput = row.querySelector('.spec-value-input');
+        
+        const spec = this.specs.find(s => s.id == specId);
+        if (spec) {
+            spec.key = keyInput.value.trim();
+            spec.value = valueInput.value.trim();
+            console.log('✏️ Updated spec:', spec);
+        }
+    }
+
+    deleteSpec(button) {
+        const row = button.closest('tr');
+        const specId = row.getAttribute('data-spec-id');
+        
+        this.specs = this.specs.filter(s => s.id != specId);
+        this.renderSpecsTable();
+    }
+
+    renderSpecsTable() {
+        const tbody = document.getElementById('productSpecsBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (this.specs.length === 0) {
+            tbody.innerHTML = `
+                <tr class="specs-empty-state">
+                    <td colspan="4">
+                        <i class="fas fa-cogs"></i>
+                        <p>Chưa có thông số kỹ thuật</p>
+                        <small>Nhấn "Thêm thông số" để bắt đầu</small>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        this.specs.forEach(spec => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-spec-id', spec.id);
+            row.innerHTML = `
+                <td>
+                    <div class="drag-handle" title="Kéo để sắp xếp">
+                        <i class="fas fa-bars"></i>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control spec-key-input" 
+                        value="${spec.key || ''}" 
+                        placeholder="Nhập tên thông số (ví dụ: Màn hình, RAM)">
+                </td>
+                <td>
+                    <input type="text" class="form-control spec-value-input" 
+                        value="${spec.value || ''}" 
+                        placeholder="Nhập giá trị (ví dụ: 6.7 inch, 8GB)">
+                </td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn-action btn-edit-spec" title="Cập nhật">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" class="btn-action btn-delete btn-delete-spec" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Khởi tạo lại Sortable sau khi render
+        if (this.sortable) {
+            this.sortable.destroy();
+        }
+        this.initSortable();
+        
+        console.log('🔄 Rendered specs table with', this.specs.length, 'items');
+    }
+
+    getSpecsData() {
+        console.log('🔧 Getting specs data from manager...');
+        
+        // Cách 1: Lấy từ mảng specs (nếu đã được cập nhật)
+        const specsFromArray = this.specs
+            .filter(spec => spec.key && spec.key.trim() !== '' && spec.value && spec.value.trim() !== '')
+            .reduce((acc, spec) => {
+                acc[spec.key.trim()] = spec.value.trim();
+                return acc;
+            }, {});
+
+        console.log('📋 Specs from array:', specsFromArray);
+
+        // Cách 2: Lấy trực tiếp từ DOM (đảm bảo có dữ liệu mới nhất)
+        const specsFromDOM = {};
+        const rows = document.querySelectorAll('#productSpecsBody tr[data-spec-id]');
+        
+        rows.forEach(row => {
+            const keyInput = row.querySelector('.spec-key-input');
+            const valueInput = row.querySelector('.spec-value-input');
+            
+            if (keyInput && valueInput) {
+                const key = keyInput.value.trim();
+                const value = valueInput.value.trim();
+                
+                if (key && value) {
+                    specsFromDOM[key] = value;
+                }
+            }
+        });
+
+        console.log('📋 Specs from DOM:', specsFromDOM);
+
+        // Ưu tiên dữ liệu từ DOM vì nó luôn mới nhất
+        const finalSpecs = Object.keys(specsFromDOM).length > 0 ? specsFromDOM : specsFromArray;
+        console.log('✅ Final specs data:', finalSpecs);
+        
+        return finalSpecs;
+    }
+
+    loadSpecsData(specsData) {
+        if (!specsData || typeof specsData !== 'object') return;
+        
+        this.specs = [];
+        Object.entries(specsData).forEach(([key, value]) => {
+            this.addNewSpec(key, value);
+        });
+    }
+
+    clearSpecs() {
+        this.specs = [];
+        this.renderSpecsTable();
+    }
+}
+
+// Khởi tạo khi DOM sẵn sàng
+document.addEventListener('DOMContentLoaded', function() {
+    window.productSpecsManager = new ProductSpecsManager();
+    
+    // Cập nhật ProductManager để tích hợp với thông số
+    const originalSaveProduct = ProductManager.prototype.saveProduct;
+    ProductManager.prototype.saveProduct = async function() {
+        try {
+            const formData = this.getProductFormData();
+            
+            // Thêm thông số kỹ thuật vào formData
+            if (window.productSpecsManager) {
+                formData.chi_tiet = window.productSpecsManager.getSpecsData();
+            }
+            
+            // Phần còn lại của logic lưu sản phẩm...
+            if (!this.validateProductForm(formData)) {
+                return;
+            }
+            
+            // Gọi hàm save gốc
+            return await originalSaveProduct.call(this);
+        } catch (error) {
+            console.error('Error saving product with specs:', error);
+            throw error;
+        }
+    };
+    
+    // Cập nhật khi mở modal chỉnh sửa
+    const originalFillProductForm = ProductManager.prototype.fillProductForm;
+    ProductManager.prototype.fillProductForm = function(product) {
+        originalFillProductForm.call(this, product);
+        
+        // Load thông số kỹ thuật nếu có
+        if (window.productSpecsManager && product.chi_tiet) {
+            window.productSpecsManager.loadSpecsData(product.chi_tiet);
+        }
+    };
+    
+    // Reset thông số khi mở modal thêm mới
+    const originalResetProductForm = ProductManager.prototype.resetProductForm;
+    ProductManager.prototype.resetProductForm = function() {
+        originalResetProductForm.call(this);
+        
+        if (window.productSpecsManager) {
+            window.productSpecsManager.clearSpecs();
+        }
+    };
+    
+    // Cập nhật getProductFormData để bỏ SKU
+    const originalGetProductFormData = ProductManager.prototype.getProductFormData;
+    ProductManager.prototype.getProductFormData = function() {
+        const productName = document.getElementById('productName').value.trim();
+        
+        const formData = {
+            ten_san_pham: productName,
+            gia_ban: parseInt(document.getElementById('productPrice').value) || 0,
+            gia_niem_yet: parseInt(document.getElementById('productOriginalPrice').value) || 0,
+            danh_muc_id: document.getElementById('productCategory').value,
+            thuong_hieu_id: document.getElementById('productBrand').value,
+            trang_thai: parseInt(document.getElementById('productStatus').value),
+            link_anh: document.getElementById('productImage').value.trim(),
+            mo_ta: document.getElementById('productDescription').value.trim(),
+            san_pham_noi_bat: document.getElementById('productFeatured').checked,
+            slug: Utils.generateSlug(productName),
+            mo_ta_ngan: (document.getElementById('productDescription').value.trim() || '').substring(0, 100)
+        };
+        
+        // Tự động sinh SKU
+        formData.ma_sku = 'SP' + Date.now();
+        
+        return formData;
+    };
 });
 </script>
 
@@ -6178,6 +6967,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* THÊM VÀO CUỐI FILE CSS */
     .modal-premium .modal-dialog {
+        max-height: 600px;
         max-width: none;
         margin: 1.75rem auto;
     }
@@ -6422,17 +7212,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* Logo Preview Styles */
     .logo-preview-container {
-        border: 2px dashed var(--gray-300);
+        flex: 1;
+        min-height: 280px;
+        border: 3px dashed var(--gray-400);
         border-radius: 12px;
+        background: var(--gray-50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         padding: 20px;
-        background: white;
-        transition: var(--transition);
-        margin-top: 8px;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
     }
 
     .logo-preview-container.has-logo {
-        border-color: var(--primary);
-        background: var(--gray-50);
+        border-color: var(--success);
+        border-style: solid;
+        background: var(--success-light);
     }
 
     .logo-preview {
@@ -6454,24 +7250,34 @@ document.addEventListener('DOMContentLoaded', function() {
     /* File upload + preview layout (brand & category) */
     .file-upload-container {
         display: flex;
-        gap: 12px;
-        align-items: flex-start;
+        gap: 20px;
+        align-items: stretch;
         width: 100%;
-        flex-wrap: wrap;
+        min-height: 300px;
+        margin: 15px 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .brand-file-upload .file-upload-container {
+        min-height: 320px;
     }
 
     .file-upload-area {
-        min-width: 180px;
-        max-width: 220px;
-        padding: 12px;
-        border: 1px dashed var(--gray-300);
-        border-radius: 8px;
-        background: #fff;
+        flex: 1;
+        min-height: 280px;
+        border: 3px dashed var(--gray-400);
+        border-radius: 12px;
+        background: var(--gray-50);
+        cursor: pointer;
+        transition: all 0.3s ease;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
+        padding: 30px;
+        text-align: center;
         position: relative;
+        box-sizing: border-box;
     }
 
     .file-upload-area .choose-btn {
@@ -7257,48 +8063,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
     .file-upload-area:hover {
         border-color: var(--primary);
-        background: var(--gray-100);
+        background: var(--primary-light);
+        transform: translateY(-2px);
     }
 
     .file-upload-area.dragover {
         border-color: var(--primary);
-        background: rgba(102, 126, 234, 0.1);
+        background: var(--primary-light);
+        transform: scale(1.02);
     }
 
     .upload-placeholder {
-        color: var(--gray-500);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        color: var(--gray-600);
+        padding: 20px;
     }
 
     .upload-placeholder i {
-        font-size: 2.5rem;
-        margin-bottom: 0px;
-        display: block;
+        font-size: 3rem !important;
         color: var(--gray-400);
     }
 
     .upload-placeholder span {
-        display: block;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: var(--gray-600);
+        font-size: 1.1rem;
+        font-weight: 500;
     }
 
     .upload-placeholder small {
-        color: var(--gray-400);
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        color: var(--gray-500);
+        max-width: 200px;
+        line-height: 1.4;
     }
 
     /* Main Image Preview */
     .upload-preview {
-        text-align: center;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
     }
 
     .upload-preview img {
-        max-width: 200px;
-        max-height: 150px;
+        max-width: 100%;
+        max-height: 200px;
         border-radius: 8px;
-        margin-bottom: 12px;
-        border: 2px solid var(--gray-200);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        object-fit: contain;
     }
 
     .btn-change-image {
@@ -7467,4 +8284,727 @@ document.addEventListener('DOMContentLoaded', function() {
             align-self: flex-end;
         }
     }
+    /* Container chính cho upload - FIXED */
+.file-upload-container {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    width: 100%;
+    min-height: 300px;
+    margin: 15px 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Đặc biệt cho brand upload */
+.brand-file-upload .file-upload-container {
+    min-height: 320px;
+}
+
+/* Vùng upload file */
+.file-upload-area {
+    flex: 1;
+    min-height: 280px;
+    border: 3px dashed var(--gray-400);
+    border-radius: 12px;
+    background: var(--gray-50);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.file-upload-area:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.file-upload-area.dragover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: scale(1.02);
+}
+
+/* Vùng preview ảnh */
+.logo-preview-container {
+    flex: 1;
+    min-height: 280px;
+    border: 3px dashed var(--gray-400);
+    border-radius: 12px;
+    background: var(--gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.logo-preview-container.has-logo {
+    border-color: var(--success);
+    border-style: solid;
+    background: var(--success-light);
+}
+
+/* Placeholder styling */
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    color: var(--gray-600);
+    padding: 20px;
+}
+
+.upload-placeholder i {
+    font-size: 3rem !important;
+    color: var(--gray-400);
+}
+
+.upload-placeholder span {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.upload-placeholder small {
+    font-size: 0.9rem;
+    color: var(--gray-500);
+    max-width: 200px;
+    line-height: 1.4;
+}
+
+/* Preview image styling */
+.upload-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.upload-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    object-fit: contain;
+}
+
+/* Nút chọn ảnh lớn hơn */
+#chooseBrandLogoBtn,
+#chooseCategoryImageBtn {
+    pointer-events: all !important;
+    padding: 12px 24px !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
+    background: var(--primary) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+#chooseBrandLogoBtn:hover,
+#chooseCategoryImageBtn:hover {
+    background: var(--primary-dark) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Nút thay đổi ảnh */
+.btn-change-image {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-change-image:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Preview container content */
+.logo-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.logo-preview img {
+    max-width: 100%;
+    max-height: 240px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    object-fit: contain;
+}
+
+/* Placeholder trong preview container */
+.preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    color: var(--gray-500);
+    text-align: center;
+    padding: 30px;
+}
+
+.preview-placeholder i {
+    font-size: 3.5rem !important;
+    color: var(--gray-300);
+}
+
+.preview-placeholder span {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .file-upload-container {
+        flex-direction: column;
+        min-height: auto;
+    }
+    
+    .file-upload-area,
+    .logo-preview-container {
+        min-height: 250px;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .file-upload-area,
+    .logo-preview-container {
+        min-height: 200px;
+        padding: 20px;
+    }
+    
+    .upload-placeholder i,
+    .preview-placeholder i {
+        font-size: 2.5rem !important;
+    }
+    
+    #chooseBrandLogoBtn,
+    #chooseCategoryImageBtn {
+        padding: 10px 20px !important;
+        font-size: 0.9rem !important;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.file-upload-area,
+.logo-preview-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Focus states for accessibility */
+.file-upload-area:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Text trong form group */
+.form-group .form-text {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    margin-top: 8px;
+}
+
+/* Đảm bảo các phần tử con không bị ảnh hưởng bởi pointer-events */
+.file-upload-area *:not(.btn-change-image):not(#chooseBrandLogoBtn):not(#chooseCategoryImageBtn) {
+    pointer-events: none;
+}
+
+/* Style cho brand và category cụ thể */
+.brand-file-upload .file-upload-area {
+    border-color: var(--info);
+}
+
+.brand-file-upload .file-upload-area:hover {
+    border-color: var(--info-dark);
+}
+
+.category-file-upload .file-upload-area {
+    border-color: var(--success);
+}
+
+.category-file-upload .file-upload-area:hover {
+    border-color: var(--success-dark);
+}
+/* CSS cho Modal Sản phẩm mới */
+
+.modal-premium .modal-content {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border: none;
+    /* Thêm dòng này để điều chỉnh chiều cao tối đa */
+    max-height: 90vh; /* Hoặc giá trị bạn muốn */
+}
+
+.modal-premium .modal-body {
+    padding: 1.5rem;
+    /* Điều chỉnh chiều cao tối đa cho phần body */
+    max-height: calc(90vh - 120px); /* Trừ đi chiều cao header và footer */
+    overflow-y: auto;
+}
+
+.modal-premium .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 1.2rem 1.5rem;
+    border-bottom: none;
+}
+
+.modal-premium .modal-title {
+    font-weight: 600;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-premium .modal-body {
+    padding: 1.5rem;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.modal-premium .modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+/* Form Sections */
+.form-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f3f4;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.section-title small {
+    font-size: 0.8rem;
+    font-weight: 400;
+    margin-left: auto;
+}
+
+.section-title i {
+    color: #667eea;
+}
+
+/* Form Grid Layouts */
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .form-grid-2,
+    .form-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Form Controls */
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #e2e8f0;
+    color: #718096;
+}
+
+/* Technical Specifications */
+.specs-management {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.specs-table-container {
+    max-height: 850px;
+    overflow-y: auto;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.specs-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.specs-table th {
+    background-color: #f8fafc;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #4a5568;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+}
+
+.specs-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.specs-table tr:last-child td {
+    border-bottom: none;
+}
+
+.specs-table tr:hover {
+    background-color: #f8fafc;
+}
+
+.specs-table input {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+/* Drag and Drop Styles */
+.drag-handle {
+    cursor: grab;
+    color: #a0aec0;
+    text-align: center;
+    transition: color 0.2s;
+    padding: 0.5rem;
+}
+
+.drag-handle:hover {
+    color: #667eea;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.sortable-ghost {
+    opacity: 0.6;
+    background-color: #f0f4ff;
+}
+
+.sortable-chosen {
+    background-color: #f8fafc;
+}
+
+.sortable-drag {
+    opacity: 0.8;
+    transform: rotate(2deg);
+}
+
+.specs-actions {
+    padding: 0.75rem;
+    background-color: #f8fafc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.specs-hint {
+    font-size: 0.8rem;
+    color: #718096;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.specs-hint i {
+    color: #667eea;
+}
+
+/* File Upload Areas */
+.file-upload-container {
+    margin-bottom: 1rem;
+}
+
+.file-upload-area {
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: #f8fafc;
+}
+
+.file-upload-area:hover {
+    border-color: #667eea;
+    background-color: #f0f4ff;
+}
+
+.file-upload-area.dragover {
+    border-color: #667eea;
+    background-color: #e6eeff;
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #718096;
+}
+
+.upload-placeholder i {
+    font-size: 2rem;
+    color: #a0aec0;
+}
+
+.upload-placeholder span {
+    font-weight: 500;
+}
+
+.upload-placeholder small {
+    font-size: 0.8rem;
+}
+
+.upload-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-change-image {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-change-image:hover {
+    background: #5a6fd8;
+}
+
+/* Checkbox Styling */
+.checkbox-group {
+    margin-top: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+    gap: 0.5rem;
+}
+
+.checkbox-label input {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #cbd5e0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.checkbox-label input:checked + .checkmark {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.checkbox-label input:checked + .checkmark:after {
+    content: "✓";
+    color: white;
+    font-size: 0.8rem;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background-color: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+/* Action buttons in table */
+.btn-action {
+    background: none;
+    border: none;
+    padding: 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #718096;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background-color: #f1f5f9;
+    color: #4a5568;
+}
+
+.btn-delete {
+    color: #e53e3e;
+}
+
+.btn-delete:hover {
+    background-color: #fed7d7;
+    color: #c53030;
+}
+
+/* Scrollbar styling */
+.modal-premium .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-premium .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-premium .modal-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.modal-premium .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Empty state for specs table */
+.specs-empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #a0aec0;
+}
+
+.specs-empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Animation for drag and drop */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.sortable-drag {
+    animation: pulse 0.5s ease-in-out infinite;
+}
+    
 </style>
