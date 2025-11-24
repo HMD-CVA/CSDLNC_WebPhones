@@ -1265,6 +1265,18 @@ app.put('/api/danhmuc/:id', async (req, res) => {
             updateData.slug = newSlug;
         }
 
+        // If the image URL changed, attempt to delete the old image from Cloudinary
+        if (categoryData.anh_url && categoryData.anh_url !== existingCategory.anh_url) {
+            try {
+                if (existingCategory.anh_url && existingCategory.anh_url.includes('cloudinary.com')) {
+                    console.log('🗑️ Deleting old category image from Cloudinary:', existingCategory.anh_url);
+                    await deleteFromCloudinary(existingCategory.anh_url);
+                }
+            } catch (delErr) {
+                console.warn('⚠️ Failed to delete old category image:', delErr.message);
+            }
+        }
+
         console.log('📤 Dữ liệu cập nhật:', updateData);
 
         const updatedCategory = await DataModel.SQL.Category.update(categoryId, updateData);

@@ -385,27 +385,30 @@
                                                         <input type="file" class="form-control" id="categoryImageInput" accept="image/*" style="display: none;">
                                                         <div class="file-upload-area" id="categoryImageUploadArea">
                                                             <div class="upload-placeholder">
-                                                                <i class="fas fa-cloud-upload-alt"></i>
-                                                                <span>Chọn ảnh từ máy tính</span>
-                                                                <small>Định dạng: JPG, PNG, GIF (Tối đa 5MB)</small>
+                                                                <button type="button" class="btn btn-secondary" id="chooseCategoryImageBtn">
+                                                                    <i class="fas fa-upload"></i>
+                                                                    &nbsp;Chọn ảnh
+                                                                </button>
+                                                                <div class="form-text mt-2">Định dạng: JPG, PNG, GIF (Tối đa 5MB)</div>
                                                             </div>
-                                                                <div class="upload-preview" id="categoryImagePreview" style="display: none;">
-                                                                    <img id="categoryImagePreviewImg" src="" alt="Preview">
-                                                                    <button type="button" class="btn-change-image" id="changeCategoryImageBtn">
-                                                                        <i class="fas fa-sync-alt"></i> Thay đổi
-                                                                    </button>
-                                                                </div>
 
-                                                                <!-- Image preview container (shows existing image in edit mode) -->
-                                                                <div class="logo-preview-container">
-                                                                    <div class="logo-preview" id="categoryImagePreviewContainer">
-                                                                        <div class="preview-placeholder">
-                                                                            <i class="fas fa-image fa-2x"></i>
-                                                                            <span>Ảnh sẽ hiển thị tại đây</span>
-                                                                        </div>
-                                                                    </div>
+                                                            <div class="upload-preview" id="categoryImagePreview" style="display: none;">
+                                                                <img id="categoryImagePreviewImg" src="" alt="Preview">
+                                                                <button type="button" class="btn-change-image" id="changeCategoryImageBtn">
+                                                                    <i class="fas fa-sync-alt"></i> Thay đổi
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Image preview container (shows existing image in edit mode) -->
+                                                        <div class="logo-preview-container">
+                                                            <div class="logo-preview" id="categoryImagePreviewContainer">
+                                                                <div class="preview-placeholder">
+                                                                    <i class="fas fa-image fa-2x"></i>
+                                                                    <span>Ảnh sẽ hiển thị tại đây</span>
                                                                 </div>
                                                             </div>
+                                                        </div>
                                                     </div>
                                                     <input type="hidden" id="categoryImage" name="categoryImage">
                                                 </div>
@@ -434,7 +437,7 @@
                                             </button>
                                             <button type="button" class="btn btn-primary btn-lg" id="saveCategoryBtn">
                                                 <i class="fas fa-save"></i>
-                                                <span id="saveCategoryText">Thêm danh mục</span>
+                                                <span id="saveCategoryText"></span>
                                             </button>
                                         </div>
                                     </div>
@@ -2400,69 +2403,77 @@
         }
 
         async saveBrand() {
+            const saveBtn = document.getElementById('saveBrandBtn');
+            const originalText = saveBtn ? saveBtn.innerHTML : null;
             try {
                 const formData = this.getBrandFormData();
-                console.log('Data:', formData);
+                console.log('Brand Data (before upload):', formData);
 
                 if (!this.validateBrandForm(formData)) {
                     return;
                 }
- 
-                // Hiển thị loading
-                const saveBtn = document.getElementById('saveBrandBtn');
-                const originalText = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                saveBtn.disabled = true;
 
-                // Khai báo biến lưu URL upload
-                let uploadedImageUrl = null;
-                try {
-                    console.log('🔼 Preparing brand image before saving data...');
+                // Show loading state on save button
+                if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+                    saveBtn.disabled = true;
+                }
 
-                    // Lấy ảnh cũ nếu đang edit
-                    const oldImageUrl = this.currentEditId ? 
-                        this.brands.find(b => b.id === this.currentEditId)?.logo_url : null;
-
-                    // Nếu có file mới được chọn thì upload bây giờ, nếu không thì giữ URL cũ khi edit
-                    if (this.simpleImageUpload && this.simpleImageUpload.brandImageFile) {
-                        // Upload file selected earlier
-                        uploadedImageUrl = await this.simpleImageUpload.uploadBrandImage(oldImageUrl);
-                        if (uploadedImageUrl) {
-                            formData.logo_url = uploadedImageUrl;
-                            console.log('✅ Brand image uploaded during save:', uploadedImageUrl);
-                            // Clear the file reference after successful upload
-                            this.simpleImageUpload.brandImageFile = null;
-                        }
-                    } else if (this.currentEditId) {
-                        // Nếu đang edit và không có ảnh mới, giữ URL cũ
+                // BƯỚC 1: LƯU THÔNG TIN THƯƠNG HIỆU (KHÔNG CÓ ẢNH) ĐỂ LẤY ID
+                let result, brandId;
+                if (this.currentEditId) {
+                    // Nếu đang edit và không có ảnh mới, giữ nguyên URL cũ
+                    if (!(this.simpleImageUpload && this.simpleImageUpload.brandImageFile)) {
                         const currentBrand = this.brands.find(b => b.id === this.currentEditId);
                         if (currentBrand && currentBrand.logo_url) {
                             formData.logo_url = currentBrand.logo_url;
                         }
+                    } else {
+                        // Nếu có ảnh mới, tạm thời để logo_url rỗng, sẽ cập nhật sau khi upload
+                        formData.logo_url = '';
                     }
-
-                } catch (error) {
-                    this.showError('Lỗi upload logo: ' + error.message);
-                    saveBtn.innerHTML = originalText;
-                    saveBtn.disabled = false;
-                    return;
-                }
-
-                // (Upload handled above)
-
-                // KIỂM TRA LẠI FORM DATA SAU KHI UPLOAD ẢNH
-                console.log('📦 Form data to save:', formData);
-
-                let result;
-                if (this.currentEditId) {
                     result = await this.updateBrand(this.currentEditId, formData);
-                    this.showSuccess('Cập nhật thương hiệu thành công');
+                    brandId = this.currentEditId;
                 } else {
+                    // Thêm mới: ban đầu lưu không có ảnh (logo_url rỗng)
+                    formData.logo_url = '';
                     result = await this.createBrand(formData);
-                    this.showSuccess('Thêm thương hiệu thành công');
+                    // Lấy ID của thương hiệu mới tạo
+                    brandId = result && result.data && result.data.id ? result.data.id : (result.id || null);
+                    if (!brandId) {
+                        throw new Error('Không nhận được ID thương hiệu sau khi tạo');
+                    }
                 }
 
-                // Load lại dữ liệu nhưng giữ nguyên trạng thái tìm kiếm và phân trang
+                // BƯỚC 2: NẾU CÓ ẢNH MỚI, UPLOAD ẢNH VÀ CẬP NHẬT LẠI THƯƠNG HIỆU
+                if (this.simpleImageUpload && this.simpleImageUpload.brandImageFile && brandId) {
+                    try {
+                        const oldImageUrl = this.currentEditId ? 
+                            this.brands.find(b => b.id === this.currentEditId)?.logo_url : null;
+                        const uploadedImageUrl = await this.simpleImageUpload.uploadBrandImage(oldImageUrl);
+                        if (uploadedImageUrl) {
+                            // Cập nhật thương hiệu với ảnh mới
+                            await this.updateBrand(brandId, { ...formData, logo_url: uploadedImageUrl });
+                            console.log('✅ Brand image uploaded and updated successfully:', uploadedImageUrl);
+                            this.simpleImageUpload.brandImageFile = null;
+                        }
+                    } catch (uploadError) {
+                        this.showError('Lỗi upload logo: ' + uploadError.message);
+                        // Nếu upload ảnh thất bại, vẫn hiển thị thành công nhưng cảnh báo về ảnh
+                        this.showSuccess(this.currentEditId ? 'Cập nhật thương hiệu thành công (lỗi upload ảnh)' : 'Thêm thương hiệu thành công (lỗi upload ảnh)');
+                        // Load lại dữ liệu và reset form
+                        await this.loadBrands();
+                        this.renderBrandsTable();
+                        this.updateBrandsTableInfo();
+                        this.updatePaginationControls();
+                        this.resetBrandForm();
+                        return;
+                    }
+                }
+
+                this.showSuccess(this.currentEditId ? 'Cập nhật thương hiệu thành công' : 'Thêm thương hiệu thành công');
+
+                // Load lại dữ liệu
                 await this.loadBrands();
                 this.renderBrandsTable();
                 this.updateBrandsTableInfo();
@@ -2473,7 +2484,6 @@
                 this.showError('Không thể lưu thương hiệu: ' + error.message);
             } finally {
                 // Khôi phục nút
-                const saveBtn = document.getElementById('saveBrandBtn');
                 if (saveBtn) {
                     saveBtn.innerHTML = this.currentEditId ? 
                         '<i class="fas fa-save"></i> Cập nhật thương hiệu' : 
@@ -2648,7 +2658,11 @@
             this.itemsPerPage = 7;
             this.totalPages = 0;
             this.searchKeyword = '';
-            this.simpleImageUpload = null; // Thêm reference
+            // Always use the global instance
+            if (!window.simpleImageUploadManager) {
+                window.simpleImageUploadManager = new SimpleImageUploadManager();
+            }
+            this.simpleImageUpload = window.simpleImageUploadManager;
             this.bindEvents();
         }
 
@@ -2668,7 +2682,8 @@
                 if (e.target.closest('.btn-edit-category')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    this.handleEditCategory(e.target.closest('.btn-edit-category'));
+                    const button = e.target.closest('.btn-edit-category');
+                    this.handleEditCategory(button);
                 }
                 if (e.target.closest('.btn-delete-category')) {
                     e.preventDefault();
@@ -2801,7 +2816,8 @@
         }
 
         updateImagePreview(imageUrl) {
-            const previewElement = document.getElementById('categoryImagePreview');
+            // Always update the external preview container (logo-preview)
+            const previewElement = document.getElementById('categoryImagePreviewContainer');
             if (!previewElement) return;
 
             previewElement.innerHTML = '';
@@ -2812,9 +2828,13 @@
                         const img = document.createElement('img');
                         img.src = imageUrl;
                         img.alt = 'Category Image Preview';
+                        img.style.maxWidth = '100%';
+                        img.style.maxHeight = '100px';
+                        img.style.objectFit = 'contain';
                         img.onload = () => {
                             previewElement.appendChild(img);
                             previewElement.parentElement.classList.add('has-logo');
+                            previewElement.style.display = '';
                         };
                         img.onerror = () => {
                             this.showImageError(previewElement);
@@ -2893,18 +2913,14 @@
             const modalElement = document.getElementById('categoryModal');
             const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
 
-            // Khởi tạo image upload manager nếu chưa có
-            if (!this.simpleImageUpload) {
-                this.simpleImageUpload = new SimpleImageUploadManager();
-            }
+            // Always use the global instance
+            this.simpleImageUpload = window.simpleImageUploadManager;
 
             // Reset search
             const searchInput = document.getElementById('categorySearch');
             if (searchInput) {
                 searchInput.value = '';
             }
-
-            this.updateFormUI();
 
             // Load data trước khi fill form
             await Promise.all([
@@ -2914,12 +2930,13 @@
 
             if (category) {
                 this.fillCategoryForm(category);
+                // Always update preview for edit mode
+                this.updateImagePreview(category.anh_url);
+                // Always force edit UI and update save button text
+                this.updateFormUI(true, false);
+                const saveText = document.getElementById('saveCategoryText');
+                if (saveText) saveText.textContent = 'Cập nhật danh mục';
                 console.log('Form filled for editing category:', category.ten_danh_muc);
-                
-                // Load existing image for edit mode
-                if (category.anh_url) {
-                    this.simpleImageUpload.loadCategoryImageForEdit(category.anh_url);
-                }
             } else {
                 this.resetCategoryForm();
                 if (!modalElement.classList.contains('show')) {
@@ -2930,16 +2947,32 @@
             this.setupCategoryEvents();
         }
 
-        updateFormUI() {
+        updateFormUI(forceEdit = false, forceAdd = false) {
             const title = document.getElementById('categoryFormTitle');
             const saveText = document.getElementById('saveCategoryText');
-
-            if (this.currentEditId) {
-                if (title) title.textContent = 'Chỉnh sửa danh mục';
-                if (saveText) saveText.textContent = 'Cập nhật danh mục';
-            } else {
-                if (title) title.textContent = 'Thêm danh mục mới';
-                if (saveText) saveText.textContent = 'Thêm danh mục';
+            
+            // Xác định trạng thái dựa trên currentEditId là chính
+            let isEdit = this.currentEditId !== null && this.currentEditId !== '';
+            
+            // Ưu tiên tham số force nếu được truyền
+            if (forceEdit) isEdit = true;
+            if (forceAdd) isEdit = false;
+            
+            console.log('🔄 Updating form UI - Edit mode:', isEdit, 'Current ID:', this.currentEditId);
+            
+            if (title) {
+                title.textContent = isEdit ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới';
+            }
+            
+            if (saveText) {
+                saveText.textContent = isEdit ? 'Cập nhật danh mục' : 'Thêm danh mục';
+            }
+            
+            // Đảm bảo nút save cũng được cập nhật
+            const saveBtn = document.getElementById('saveCategoryBtn');
+            if (saveBtn) {
+                const icon = '<i class="fas fa-save"></i>';
+                saveBtn.innerHTML = isEdit ? `${icon} Cập nhật danh mục` : `${icon} Thêm danh mục`;
             }
         }
 
@@ -2950,21 +2983,27 @@
             document.getElementById('categoryName').value = category.ten_danh_muc || '';
             document.getElementById('categoryImage').value = category.anh_url || '';
             document.getElementById('categoryDescription').value = category.mo_ta || '';
-            
+
             // SỬA: Chỉ set thứ tự nếu chưa có giá trị (giữ nguyên giá trị hiện tại nếu đang edit)
             const currentOrderValue = document.getElementById('categoryOrder').value;
             if (!currentOrderValue || currentOrderValue === '0') {
                 document.getElementById('categoryOrder').value = category.thu_tu !== undefined ? category.thu_tu : 0;
             }
-            
+
             document.getElementById('parentCategory').value = category.danh_muc_cha_id || '';
 
-            const statusValue = category.trang_thai === true ? '1' : 
-                    category.trang_thai === false ? '0' : 
-                    (category.trang_thai || '1').toString();
+            const statusValue = category.trang_thai === true ? '1' :
+                category.trang_thai === false ? '0' :
+                (category.trang_thai || '1').toString();
             document.getElementById('categoryStatus').value = statusValue;
 
+            // Always update preview for edit mode
             this.updateImagePreview(category.anh_url);
+            // Đảm bảo preview luôn hiển thị khi có ảnh
+            const previewElement = document.getElementById('categoryImagePreviewContainer');
+            if (previewElement && category.anh_url && category.anh_url.trim() !== '') {
+                previewElement.style.display = '';
+            }
 
             const description = document.getElementById('categoryDescription');
             const charCount = document.getElementById('categoryCharCount');
@@ -2976,6 +3015,12 @@
             if (slugInput) {
                 slugInput.value = category.slug || Utils.generateSlug(category.ten_danh_muc);
             }
+
+            // Always force edit UI when filling form for edit
+            this.updateFormUI(true, false);
+            // Ensure save button text is always correct after filling form
+            const saveText = document.getElementById('saveCategoryText');
+            if (saveText) saveText.textContent = 'Cập nhật danh mục';
         }
 
         resetCategoryForm() {
@@ -2989,7 +3034,8 @@
             if (this.simpleImageUpload) {
                 this.simpleImageUpload.resetCategoryImage();
             }
-            this.updateFormUI();
+            // Always force add UI when resetting form
+            this.updateFormUI(false, true);
         }
 
         async loadCategories() {
@@ -3293,8 +3339,9 @@
         }
 
         async saveCategory() {
+            const saveBtn = document.getElementById('saveCategoryBtn');
+            const originalText = saveBtn ? saveBtn.innerHTML : null;
             try {
-
                 const formData = this.getCategoryFormData();
                 console.log('Category Data (before upload):', formData);
 
@@ -3303,51 +3350,53 @@
                 }
 
                 // Show loading state on save button
-                const saveBtn = document.getElementById('saveCategoryBtn');
-                const originalText = saveBtn ? saveBtn.innerHTML : null;
                 if (saveBtn) {
                     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
                     saveBtn.disabled = true;
                 }
 
-                // Upload category image if a new file was selected
-                try {
-                    const oldImageUrl = this.currentEditId ?
-                        this.categories.find(c => c.id === this.currentEditId)?.anh_url : null;
-
-                    if (this.categoryImageFile) {
-                        const uploadedImageUrl = await this.uploadCategoryImage(oldImageUrl);
-                        if (uploadedImageUrl) {
-                            formData.anh_url = uploadedImageUrl;
-                            console.log('✅ Category image uploaded during save:', uploadedImageUrl);
-                            // Clear the file reference after successful upload
-                            this.categoryImageFile = null;
-                        }
-                    } else if (this.currentEditId) {
-                        // If editing and no new image chosen, keep existing URL
-                        const currentCategory = this.categories.find(c => c.id === this.currentEditId);
-                        if (currentCategory && currentCategory.anh_url) {
-                            formData.anh_url = currentCategory.anh_url;
-                        }
+                // If editing and no new image chosen, keep existing URL
+                if (this.currentEditId && !(this.simpleImageUpload && this.simpleImageUpload.categoryImageFile)) {
+                    const currentCategory = this.categories.find(c => c.id === this.currentEditId);
+                    if (currentCategory && currentCategory.anh_url) {
+                        formData.anh_url = currentCategory.anh_url;
                     }
-                } catch (uploadError) {
-                    this.showError('Lỗi upload ảnh danh mục: ' + uploadError.message);
-                    if (saveBtn) {
-                        saveBtn.innerHTML = originalText;
-                        saveBtn.disabled = false;
-                    }
-                    return;
                 }
 
-                console.log('Category Data (to save):', formData);
-
-                let result;
+                // Save to DB first
+                let result, categoryId;
                 if (this.currentEditId) {
                     result = await this.updateCategory(this.currentEditId, formData);
-                    this.showSuccess('Cập nhật danh mục thành công');
+                    categoryId = this.currentEditId;
                 } else {
                     result = await this.createCategory(formData);
-                    this.showSuccess('Thêm danh mục thành công');
+                    // Lấy id mới tạo nếu có
+                    categoryId = result && result.data && result.data.id ? result.data.id : (result.id || null);
+                }
+
+                // Only upload image if DB save succeeded and there is a new file
+                if (this.simpleImageUpload && this.simpleImageUpload.categoryImageFile && categoryId) {
+                    try {
+                        const oldImageUrl = this.currentEditId ?
+                            this.categories.find(c => c.id === this.currentEditId)?.anh_url : null;
+                        const uploadedImageUrl = await this.simpleImageUpload.uploadCategoryImage(oldImageUrl);
+                        if (uploadedImageUrl) {
+                            // Update category with new image URL
+                            await this.updateCategory(categoryId, { ...formData, anh_url: uploadedImageUrl });
+                            console.log('✅ Category image uploaded after DB save:', uploadedImageUrl);
+                            this.showSuccess(this.currentEditId ? 'Cập nhật danh mục thành công' : 'Thêm danh mục thành công');
+                            this.simpleImageUpload.categoryImageFile = null;
+                        }
+                    } catch (uploadError) {
+                        this.showError('Lỗi upload ảnh danh mục: ' + uploadError.message);
+                        if (saveBtn) {
+                            saveBtn.innerHTML = originalText;
+                            saveBtn.disabled = false;
+                        }
+                        return;
+                    }
+                } else {
+                    this.showSuccess(this.currentEditId ? 'Cập nhật danh mục thành công' : 'Thêm danh mục thành công');
                 }
 
                 // CẬP NHẬT CẢ HAI SAU KHI LƯU
@@ -3371,6 +3420,10 @@
 
             } catch (error) {
                 this.showError('Không thể lưu danh mục: ' + error.message);
+                if (saveBtn) {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                }
             }
         }
 
@@ -3424,16 +3477,35 @@
             return await response.json();
         }
 
-        handleEditCategory(button) {
+        // Sửa phương thức handleEditCategory
+        async handleEditCategory(button) {
             const categoryId = button.getAttribute('data-id');
             this.currentEditId = categoryId;
-            this.updateFormUI();
-            this.loadCategoryDetail(categoryId);
+            
+            // Cập nhật UI NGAY LẬP TỨC trước khi load dữ liệu
+            this.updateFormUI(true, false);
+            const saveText = document.getElementById('saveCategoryText');
+            if (saveText) saveText.textContent = 'Cập nhật danh mục';
+            
+            console.log('🔄 Starting edit for category ID:', categoryId);
+            
+            // Load chi tiết danh mục
+            await this.loadCategoryDetail(categoryId);
+            
+            // Đảm bảo modal được mở
+            const modalElement = document.getElementById('categoryModal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+                if (!modalElement.classList.contains('show')) {
+                    modal.show();
+                }
+            }
         }
 
+        // Sửa phương thức loadCategoryDetail để đảm bảo đồng bộ
         async loadCategoryDetail(categoryId) {
             try {
-                console.log('Loading category details for ID:', categoryId);
+                console.log('📥 Loading category details for ID:', categoryId);
                 const response = await fetch(`/api/danhmuc/${categoryId}`);
 
                 if (!response.ok) {
@@ -3443,18 +3515,52 @@
                 const result = await response.json();
                 const category = result.data || result;
 
-                console.log('Category data received:', category);
+                console.log('✅ Category data received:', category);
 
                 if (!category) {
                     throw new Error('Không tìm thấy thông tin danh mục');
                 }
 
+                // Gọi phương thức fill form và ĐẢM BẢO UI được cập nhật
                 this.fillCategoryForm(category);
+                
+                // CẬP NHẬT LẠI UI SAU KHI FILL FORM (đề phòng)
+                this.updateFormUI(true, false);
+                const saveText = document.getElementById('saveCategoryText');
+                if (saveText) saveText.textContent = 'Cập nhật danh mục';
 
             } catch (error) {
-                console.error('Error loading category detail:', error);
+                console.error('❌ Error loading category detail:', error);
                 this.showError('Không thể tải thông tin danh mục: ' + error.message);
             }
+        }
+
+        // Thêm phương thức mới để đảm bảo đồng bộ
+        async openCategoryModalForEdit(categoryId) {
+            this.currentEditId = categoryId;
+            this.searchKeyword = '';
+
+            const modalElement = document.getElementById('categoryModal');
+            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+
+            // CẬP NHẬT UI TRƯỚC KHI MỞ MODAL
+            this.updateFormUI(true, false);
+            const saveText = document.getElementById('saveCategoryText');
+            if (saveText) saveText.textContent = 'Cập nhật danh mục';
+
+            // Load data
+            await Promise.all([
+                this.loadCategories(),
+                this.loadParentCategories()
+            ]);
+
+            // Load chi tiết danh mục
+            await this.loadCategoryDetail(categoryId);
+
+            // Mở modal
+            modal.show();
+            
+            this.setupCategoryEvents();
         }
 
         async handleDeleteCategory(button) {
@@ -3578,6 +3684,10 @@
     // Khởi tạo managers
     document.addEventListener('DOMContentLoaded', function () {
         new BrandManager();
+        // Always create and assign the global instance for category image upload
+        if (!window.simpleImageUploadManager) {
+            window.simpleImageUploadManager = new SimpleImageUploadManager();
+        }
         new CategoryManager();
     });
     // File Upload Manager
@@ -4160,6 +4270,7 @@ class SimpleImageUploadManager {
             const currentCategoryUploadArea = document.getElementById('categoryImageUploadArea');
             const currentCategoryInput = document.getElementById('categoryImageInput');
             const currentChangeBtn = document.getElementById('changeCategoryImageBtn');
+            const currentChooseBtn = document.getElementById('chooseCategoryImageBtn');
 
             // Single click handler
             const handleCategoryClick = (e) => {
@@ -4196,6 +4307,16 @@ class SimpleImageUploadManager {
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('🔁 Change category button clicked');
+                    currentCategoryInput.click();
+                });
+            }
+
+            // Choose button (single button to open file picker)
+            if (currentChooseBtn) {
+                currentChooseBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Choose category image button clicked');
                     currentCategoryInput.click();
                 });
             }
@@ -4266,7 +4387,7 @@ class SimpleImageUploadManager {
         const previewArea = document.getElementById('categoryImageUploadArea');
         const placeholder = previewArea?.querySelector('.upload-placeholder');
         const preview = document.getElementById('categoryImagePreview');
-        const previewImg = document.getElementById('categoryImagePreviewImg');
+        let previewImg = document.getElementById('categoryImagePreviewImg');
 
         console.log('🔍 Category preview elements:', {
             previewArea: !!previewArea,
@@ -4275,9 +4396,26 @@ class SimpleImageUploadManager {
             previewImg: !!previewImg
         });
 
-        if (!previewArea || !previewImg) {
-            console.error('❌ Category preview elements not found');
+        if (!previewArea) {
+            console.error('❌ Category preview area not found');
             return;
+        }
+
+        // Ensure preview wrapper exists; create fallback if necessary
+        let previewWrapper = preview;
+        if (!previewWrapper) {
+            previewWrapper = document.createElement('div');
+            previewWrapper.id = 'categoryImagePreview';
+            previewWrapper.className = 'upload-preview';
+            previewArea.appendChild(previewWrapper);
+        }
+
+        // Ensure an <img> exists inside the preview wrapper
+        if (!previewImg) {
+            previewImg = document.createElement('img');
+            previewImg.id = 'categoryImagePreviewImg';
+            previewImg.alt = 'Preview';
+            previewWrapper.appendChild(previewImg);
         }
 
         const reader = new FileReader();
@@ -4285,10 +4423,14 @@ class SimpleImageUploadManager {
             console.log('🖼️ Category preview loaded');
             previewImg.src = e.target.result;
             if (placeholder) placeholder.style.display = 'none';
-            if (preview) preview.style.display = 'block';
-            
-            // FIXED: Update the correct external preview container
-            this.updateCategoryImagePreview(e.target.result);
+            if (previewWrapper) previewWrapper.style.display = 'block';
+
+            // Update the external preview container (the larger preview area)
+            try {
+                this.updateCategoryImagePreview(e.target.result);
+            } catch (err) {
+                console.warn('⚠️ updateCategoryImagePreview failed:', err);
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -4402,28 +4544,21 @@ class SimpleImageUploadManager {
         }
 
         console.log('⬆️ Starting category image upload to API...');
-        
         try {
             const formData = new FormData();
             formData.append('categoryImage', this.categoryImageFile);
-            
-            // Gửi ảnh cũ để xóa nếu có
             if (oldImageUrl) {
                 formData.append('oldImageUrl', oldImageUrl);
             }
-
             const response = await fetch('/api/upload/category-image', {
                 method: 'POST',
                 body: formData
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Upload failed with status: ${response.status}`);
             }
-
             const result = await response.json();
-            
             if (result.success && result.data && result.data.url) {
                 const imageUrl = result.data.url;
                 document.getElementById('categoryImage').value = imageUrl;
@@ -4778,6 +4913,22 @@ input[type="file"] {
 }
 
 #chooseBrandLogoBtn i {
+    font-size: 0.85rem;
+}
+
+/* Smaller choose button for category image (match brand) */
+#chooseCategoryImageBtn {
+    pointer-events: all !important;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    background: var(--gray-100);
+    color: var(--dark);
+    border: 1px solid var(--gray-300);
+    white-space: nowrap;
+}
+
+#chooseCategoryImageBtn i {
     font-size: 0.85rem;
 }
 
