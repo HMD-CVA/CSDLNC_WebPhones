@@ -783,16 +783,17 @@
                                     Hình ảnh & Video
                                 </h4>
                                 
-                                <!-- Main Image -->
-                                <div class="form-group">
-                                    <label class="form-label">Hình ảnh chính *</label>
+                                <!-- Trong phần Main Image của product modal -->
                                     <div class="file-upload-container">
                                         <input type="file" class="form-control" id="productMainImage" accept="image/*" style="display: none;">
                                         <div class="file-upload-area" id="mainImageUploadArea">
                                             <div class="upload-placeholder">
-                                                <i class="fas fa-cloud-upload-alt"></i>
-                                                <span>Chọn hình ảnh chính từ máy tính</span>
-                                                <small>Định dạng: JPG, PNG, GIF (Tối đa 5MB)</small>
+                                                <!-- THÊM NÚT CHỌN HÌNH GIỐNG BRAND/CATEGORY -->
+                                                <button type="button" class="btn btn-secondary" id="chooseMainImageBtn">
+                                                    <i class="fas fa-upload"></i>
+                                                    &nbsp;Chọn hình chính
+                                                </button>
+                                                <div class="form-text mt-2">Định dạng: JPG, PNG, GIF (Tối đa 5MB)</div>
                                             </div>
                                             <div class="upload-preview" id="mainImagePreview" style="display: none;">
                                                 <img id="mainImagePreviewImg" src="" alt="Preview">
@@ -802,25 +803,22 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <input type="hidden" id="productImage" name="productImage">
-                                </div>
 
-                                <!-- Additional Images -->
-                                <div class="form-group">
-                                    <label class="form-label">Thêm hình ảnh phụ</label>
+                                    <!-- Trong phần Additional Images của product modal -->
                                     <div class="file-upload-container">
                                         <input type="file" class="form-control" id="productAdditionalImages" accept="image/*" multiple style="display: none;">
                                         <div class="file-upload-area" id="additionalImagesUploadArea">
                                             <div class="upload-placeholder">
-                                                <i class="fas fa-images"></i>
-                                                <span>Chọn thêm hình ảnh từ máy tính</span>
-                                                <small>Có thể chọn nhiều ảnh (Tối đa 10 ảnh, mỗi ảnh 5MB)</small>
+                                                <!-- THÊM NÚT CHỌN HÌNH GIỐNG BRAND/CATEGORY -->
+                                                <button type="button" class="btn btn-secondary" id="chooseAdditionalImagesBtn">
+                                                    <i class="fas fa-images"></i>
+                                                    &nbsp;Chọn hình phụ
+                                                </button>
+                                                <div class="form-text mt-2">Có thể chọn nhiều ảnh (Tối đa 10 ảnh, mỗi ảnh 5MB)</div>
                                             </div>
                                             <div class="additional-images-preview" id="additionalImagesPreview" style="display: none;"></div>
                                         </div>
                                     </div>
-                                    <input type="hidden" id="productAdditionalImagesData" name="productAdditionalImages">
-                                </div>
                             </div>
 
                             <!-- Status & Features -->
@@ -1315,9 +1313,137 @@
                 this.products = await ProductAPIService.getProducts();
                 this.showLoading(false);
                 this.updateStats();
+                this.filterProducts();
             } catch (error) {
                 this.showLoading(false);
                 this.showError('Không thể tải danh sách sản phẩm: ' + error.message);
+            }
+        }
+
+        renderProductsTable() {
+            console.log('🔄 Rendering products table...');
+            
+            const tbody = document.querySelector('#productsTable tbody');
+            if (!tbody) {
+                console.error('❌ Products table body not found');
+                return;
+            }
+
+            // Xóa nội dung cũ
+            tbody.innerHTML = '';
+
+            if (this.products.length === 0) {
+                this.toggleEmptyState(true);
+                return;
+            }
+
+            this.toggleEmptyState(false);
+
+            // Render từng sản phẩm
+            this.products.forEach(product => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-id', product.id);
+                row.setAttribute('data-status', product.trang_thai);
+                row.setAttribute('data-category', product.danh_muc_id);
+                row.setAttribute('data-brand', product.thuong_hieu_id);
+
+                row.innerHTML = `
+                    <td class="col-image">
+                        <div class="product-table-image">
+                            <img src="${product.link_anh}" alt="${product.ten_san_pham}" 
+                                onerror="this.src='/images/placeholder.jpg'">
+                        </div>
+                    </td>
+                    <td class="col-name">
+                        <div class="product-name">${Utils.escapeHtml(product.ten_san_pham)}</div>
+                    </td>
+                    <td class="col-sku">
+                        <div class="product-sku">#${product.ma_sku}</div>
+                    </td>
+                    <td class="col-price">
+                        <div class="price-info">
+                            <div class="current-price">${Utils.formatCurrency(product.gia_ban)}</div>
+                            ${product.gia_niem_yet ? `<div class="original-price">${Utils.formatCurrency(product.gia_niem_yet)}</div>` : ''}
+                        </div>
+                    </td>
+                    <td class="col-category">
+                        <span class="category-badge">${product.ten_danh_muc}</span>
+                    </td>
+                    <td class="col-brand">
+                        <span class="brand-badge">${product.ten_thuong_hieu}</span>
+                    </td>
+                    <td class="col-status">
+                        <span class="status-badge ${product.trang_thai ? 'active' : 'inactive'}">
+                            ${product.trang_thai ? '🟢 Đang bán' : '🔴 Ngừng bán'}
+                        </span>
+                    </td>
+                    <td class="col-specs">
+                        <button class="btn-view-specs" data-id="${product.id}" data-name="${product.ten_san_pham}">
+                            <i class="fa fa-info-circle"></i>
+                        </button>
+                    </td>
+                    <td class="col-actions">
+                        <div class="action-buttons">
+                            <button class="btn-action btn-edit" data-id="${product.id}" title="Chỉnh sửa">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action btn-toggle-status" data-id="${product.id}"
+                                data-status="${product.trang_thai}" data-name="${product.ten_san_pham}"
+                                title="Chuyển trạng thái">
+                                <i class="fas ${product.trang_thai ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                            </button>
+                            <button class="btn-action btn-delete-product" data-id="${product.id}"
+                                data-name="${product.ten_san_pham}" title="Xóa">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            console.log(`✅ Rendered ${this.products.length} products`);
+            this.updateTableInfo(this.products.length);
+        }
+
+        async refreshProducts() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const originalHtml = refreshBtn ? refreshBtn.innerHTML : null;
+            
+            try {
+                console.log('🔄 Refreshing products data...');
+                
+                // Hiển thị trạng thái loading trên nút refresh
+                if (refreshBtn) {
+                    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang làm mới...';
+                    refreshBtn.disabled = true;
+                }
+                
+                // Hiển thị trạng thái loading toàn trang
+                this.showLoading(true);
+                
+                // Load lại dữ liệu từ server
+                await this.loadProducts();
+                
+                // Cập nhật bộ lọc và hiển thị
+                this.filterProducts();
+                this.updateStats();
+                
+                console.log('✅ Products data refreshed successfully');
+                
+            } catch (error) {
+                console.error('❌ Error refreshing products:', error);
+                this.showError('Không thể làm mới dữ liệu: ' + error.message);
+            } finally {
+                this.showLoading(false);
+                
+                // Khôi phục nút refresh sau 500ms
+                if (refreshBtn) {
+                    setTimeout(() => {
+                        refreshBtn.innerHTML = originalHtml;
+                        refreshBtn.disabled = false;
+                    }, 500);
+                }
             }
         }
 
@@ -1326,7 +1452,7 @@
             document.getElementById('addProductBtn')?.addEventListener('click', () => this.openProductModal());
             document.getElementById('addProductEmptyBtn')?.addEventListener('click', () => this.openProductModal());
             document.getElementById('saveProductBtn')?.addEventListener('click', () => this.saveProduct());
-            document.getElementById('refreshBtn')?.addEventListener('click', () => this.loadProducts());
+            document.getElementById('refreshBtn')?.addEventListener('click', () => this.refreshProducts());
 
             // Search and Filter
             document.getElementById('searchBtn')?.addEventListener('click', () => this.filterProducts());
@@ -1503,10 +1629,21 @@
         showLoading(show) {
             const loadingState = document.getElementById('loadingState');
             const tableContainer = document.querySelector('.table-container');
+            const emptyState = document.getElementById('emptyState');
 
-            if (loadingState && tableContainer) {
-                loadingState.style.display = show ? 'flex' : 'none';
-                tableContainer.style.display = show ? 'none' : 'block';
+            if (loadingState && tableContainer && emptyState) {
+                if (show) {
+                    loadingState.style.display = 'flex';
+                    tableContainer.style.display = 'none';
+                    emptyState.style.display = 'none';
+                } else {
+                    loadingState.style.display = 'none';
+                    tableContainer.style.display = 'block';
+                    
+                    // Kiểm tra xem có sản phẩm nào không để hiển thị empty state
+                    const visibleCount = document.querySelectorAll('#productsTable tbody tr:not([style*="display: none"])').length;
+                    this.toggleEmptyState(visibleCount === 0);
+                }
             }
         }
 
@@ -1802,7 +1939,7 @@
 
                 // BƯỚC 5: Đóng modal và làm mới dữ liệu
                 bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-                await this.loadProducts();
+                await this.refreshProducts();
 
             } catch (error) {
                 console.error('❌ Error saving product:', error);
@@ -1869,12 +2006,12 @@
             }
 
             // Validate ảnh chính
-            const hasExistingImage = formData.link_anh && formData.link_anh.trim() !== '';
+            {{!-- const hasExistingImage = formData.link_anh && formData.link_anh.trim() !== '';
             const hasNewImage = window.simpleImageUploadManager && window.simpleImageUploadManager.productMainImageFile;
             
             if (!hasExistingImage && !hasNewImage) {
                 errors.push('Vui lòng chọn ảnh chính cho sản phẩm');
-            }
+            } --}}
 
             if (errors.length > 0) {
                 this.showError(errors.join('<br>'));
@@ -1912,7 +2049,10 @@
                 try {
                     await ProductAPIService.deleteProduct(productId);
                     this.showSuccess('Xóa sản phẩm thành công');
-                    await this.loadProducts();
+                    
+                    // Refresh dữ liệu sau khi xóa
+                    await this.refreshProducts();
+                    
                 } catch (error) {
                     this.showError('Không thể xóa sản phẩm: ' + error.message);
                 }
@@ -1941,7 +2081,10 @@
                 try {
                     await ProductAPIService.toggleProductStatus(productId, currentStatus);
                     this.showSuccess(`Đã ${actionText} sản phẩm thành công`);
-                    await this.loadProducts();
+                    
+                    // Refresh dữ liệu sau khi chuyển trạng thái
+                    await this.refreshProducts();
+                    
                 } catch (error) {
                     this.showError('Không thể chuyển trạng thái sản phẩm: ' + error.message);
                 }
@@ -2292,6 +2435,7 @@
             if (brandModal) {
                 brandModal.addEventListener('hidden.bs.modal', () => {
                     document.getElementById('refreshBtn').click();
+                    location.reload();
                 });
             }
 
@@ -3085,6 +3229,7 @@
             if (categoryModal) {
                 categoryModal.addEventListener('hidden.bs.modal', () => {
                     document.getElementById('refreshBtn').click();
+                    location.reload();
                 });
             }
 
@@ -4518,18 +4663,343 @@ class SimpleImageUploadManager {
         this.brandImageFile = null;
         this.categoryImageFile = null;
         this.isProcessing = false;
+        
+        // Event binding flags
         this.brandEventsBound = false;
         this.categoryEventsBound = false;
+        this.productEventsBound = false; // ← THÊM DÒNG NÀY
+        
+        // Event handler references
+        this.brandClickHandler = null;
+        this.brandChangeHandler = null;
+        this.brandInputHandler = null;
+        this.categoryClickHandler = null;
+        this.categoryChangeHandler = null;
+        this.categoryInputHandler = null;
+        
+        // Product event handler references ← THÊM CÁC DÒNG NÀY
+        this.mainImageClickHandler = null;
+        this.mainImageChangeHandler = null;
+        this.mainImageInputHandler = null;
+        this.additionalImagesClickHandler = null;
+        this.additionalImagesInputHandler = null;
+        
         this.productMainImageFile = null;
         this.productAdditionalImages = [];
+        
         this.init();
     }
 
     init() {
         this.bindBrandEvents();
         this.bindCategoryEvents();
+        this.bindProductEvents();
     }
 
+    // Product Image Upload Events
+    bindProductEvents() {
+        if (this.productEventsBound) {
+            console.log('ℹ️ Product events already bound, skipping...');
+            return;
+        }
+
+        const mainImageUploadArea = document.getElementById('mainImageUploadArea');
+        const mainImageInput = document.getElementById('productMainImage');
+        const changeMainImageBtn = document.getElementById('changeMainImageBtn');
+        const additionalImagesUploadArea = document.getElementById('additionalImagesUploadArea');
+        const additionalImagesInput = document.getElementById('productAdditionalImages');
+
+        if (mainImageUploadArea && mainImageInput) {
+            console.log('✅ Binding product events (first time)...');
+
+            // Remove any existing event listeners by cloning (giống brand/category)
+            const newMainImageUploadArea = mainImageUploadArea.cloneNode(true);
+            mainImageUploadArea.parentNode.replaceChild(newMainImageUploadArea, mainImageUploadArea);
+
+            const newMainImageInput = mainImageInput.cloneNode(true);
+            mainImageInput.parentNode.replaceChild(newMainImageInput, mainImageInput);
+
+            // Get new references
+            const currentMainImageUploadArea = document.getElementById('mainImageUploadArea');
+            const currentMainImageInput = document.getElementById('productMainImage');
+            const currentChangeBtn = document.getElementById('changeMainImageBtn');
+
+            // Single click handler (giống brand)
+            const handleMainImageClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Product main image area clicked');
+                currentMainImageInput.click();
+            };
+
+            currentMainImageUploadArea.addEventListener('click', handleMainImageClick);
+
+            currentMainImageUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                currentMainImageUploadArea.classList.add('dragover');
+            });
+
+            currentMainImageUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                currentMainImageUploadArea.classList.remove('dragover');
+            });
+
+            currentMainImageUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                currentMainImageUploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && this.isImageFile(files[0])) {
+                    this.processProductMainImage(files[0]);
+                }
+            });
+
+            // Change button (giống brand)
+            if (currentChangeBtn) {
+                currentChangeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔁 Change product main image button clicked');
+                    currentMainImageInput.click();
+                });
+            }
+
+            // Input change - FIXED: Only process once (giống brand)
+            currentMainImageInput.addEventListener('change', (e) => {
+                console.log('📤 Product main image input changed');
+                const file = e.target.files[0];
+                if (file && this.isImageFile(file)) {
+                    this.processProductMainImage(file);
+                }
+                // Reset input but don't prevent future uploads
+                setTimeout(() => {
+                    e.target.value = '';
+                }, 100);
+            });
+            // Trong phần Main Image, sau khi có currentMainImageInput
+            const currentChooseMainImageBtn = document.getElementById('chooseMainImageBtn');
+
+            // Choose button (giống brand/category)
+            if (currentChooseMainImageBtn) {
+                currentChooseMainImageBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Choose main image button clicked');
+                    currentMainImageInput.click();
+                });
+            }
+
+            // Trong phần Additional Images, sau khi có currentAdditionalImagesInput  
+            const currentChooseAdditionalImagesBtn = document.getElementById('chooseAdditionalImagesBtn');
+
+            if (currentChooseAdditionalImagesBtn) {
+                currentChooseAdditionalImagesBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Choose additional images button clicked');
+                    currentAdditionalImagesInput.click();
+                });
+            }
+        }
+
+        // Additional Images (tương tự như trên)
+        if (additionalImagesUploadArea && additionalImagesInput) {
+            console.log('✅ Binding product additional images events...');
+
+            // Remove any existing event listeners by cloning
+            const newAdditionalImagesUploadArea = additionalImagesUploadArea.cloneNode(true);
+            additionalImagesUploadArea.parentNode.replaceChild(newAdditionalImagesUploadArea, additionalImagesUploadArea);
+
+            const newAdditionalImagesInput = additionalImagesInput.cloneNode(true);
+            additionalImagesInput.parentNode.replaceChild(newAdditionalImagesInput, additionalImagesInput);
+
+            // Get new references
+            const currentAdditionalImagesUploadArea = document.getElementById('additionalImagesUploadArea');
+            const currentAdditionalImagesInput = document.getElementById('productAdditionalImages');
+
+            const handleAdditionalImagesClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Product additional images area clicked');
+                currentAdditionalImagesInput.click();
+            };
+
+            currentAdditionalImagesUploadArea.addEventListener('click', handleAdditionalImagesClick);
+
+            currentAdditionalImagesUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                currentAdditionalImagesUploadArea.classList.add('dragover');
+            });
+
+            currentAdditionalImagesUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                currentAdditionalImagesUploadArea.classList.remove('dragover');
+            });
+
+            currentAdditionalImagesUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                currentAdditionalImagesUploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(file => this.isImageFile(file));
+                if (files.length > 0) {
+                    this.processProductAdditionalImages(files);
+                }
+            });
+
+            // Input change - FIXED: Only process once
+            currentAdditionalImagesInput.addEventListener('change', (e) => {
+                console.log('📤 Product additional images input changed');
+                const files = Array.from(e.target.files).filter(file => this.isImageFile(file));
+                if (files.length > 0) {
+                    this.processProductAdditionalImages(files);
+                }
+                setTimeout(() => {
+                    e.target.value = '';
+                }, 100);
+            });
+        }
+
+        this.productEventsBound = true;
+    }
+    
+
+    
+    removeProductEventListeners() {
+        const mainImageUploadArea = document.getElementById('mainImageUploadArea');
+        const mainImageInput = document.getElementById('productMainImage');
+        const changeMainImageBtn = document.getElementById('changeMainImageBtn');
+        const additionalImagesUploadArea = document.getElementById('additionalImagesUploadArea');
+        const additionalImagesInput = document.getElementById('productAdditionalImages');
+
+        // Remove main image event listeners
+        if (mainImageUploadArea && this.mainImageClickHandler) {
+            mainImageUploadArea.removeEventListener('click', this.mainImageClickHandler);
+            this.mainImageClickHandler = null;
+        }
+
+        if (changeMainImageBtn && this.mainImageChangeHandler) {
+            changeMainImageBtn.removeEventListener('click', this.mainImageChangeHandler);
+            this.mainImageChangeHandler = null;
+        }
+
+        if (mainImageInput && this.mainImageInputHandler) {
+            mainImageInput.removeEventListener('change', this.mainImageInputHandler);
+            this.mainImageInputHandler = null;
+        }
+
+        // Remove additional images event listeners
+        if (additionalImagesUploadArea && this.additionalImagesClickHandler) {
+            additionalImagesUploadArea.removeEventListener('click', this.additionalImagesClickHandler);
+            this.additionalImagesClickHandler = null;
+        }
+
+        if (additionalImagesInput && this.additionalImagesInputHandler) {
+            additionalImagesInput.removeEventListener('change', this.additionalImagesInputHandler);
+            this.additionalImagesInputHandler = null;
+        }
+
+        console.log('🧹 Removed product event listeners');
+    }
+
+    // Process Product Images
+    processProductMainImage(file) {
+        if (this.validateImageFile(file)) {
+            console.log('✅ Processing product main image preview:', file.name);
+            this.productMainImageFile = file;
+            this.displayProductMainImagePreview(file);
+        }
+    }
+
+    processProductAdditionalImages(files) {
+        const validFiles = files.filter(file => this.validateImageFile(file));
+        const remainingSlots = 10 - this.productAdditionalImages.length;
+        
+        if (validFiles.length > remainingSlots) {
+            this.showError(`Chỉ có thể thêm tối đa 10 ảnh. Bạn đã chọn ${validFiles.length} nhưng chỉ còn ${remainingSlots} chỗ trống.`);
+            validFiles.splice(remainingSlots);
+        }
+
+        validFiles.forEach(file => {
+            if (this.productAdditionalImages.length < 10) {
+                this.productAdditionalImages.push(file);
+                this.displayProductAdditionalImagePreview(file);
+                // KHÔNG gọi upload ở đây - chỉ upload khi save
+            }
+        });
+        
+        console.log(`✅ Added ${validFiles.length} additional images, total: ${this.productAdditionalImages.length}`);
+    }
+
+    // Display Product Image Previews
+    displayProductMainImagePreview(file) {
+        const previewArea = document.getElementById('mainImageUploadArea');
+        const placeholder = previewArea?.querySelector('.upload-placeholder');
+        const preview = document.getElementById('mainImagePreview');
+        const previewImg = document.getElementById('mainImagePreviewImg');
+
+        if (!previewArea || !previewImg) {
+            console.error('❌ Product main image preview elements not found');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            console.log('🖼️ Product main image preview loaded');
+            previewImg.src = e.target.result;
+            if (placeholder) placeholder.style.display = 'none';
+            if (preview) preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    displayProductAdditionalImagePreview(file) {
+        const previewContainer = document.getElementById('additionalImagesPreview');
+        const placeholder = document.querySelector('#additionalImagesUploadArea .upload-placeholder');
+
+        // Hide placeholder when first image is added
+        if (this.productAdditionalImages.length === 1) {
+            placeholder.style.display = 'none';
+            previewContainer.style.display = 'grid';
+        }
+
+        const imageItem = document.createElement('div');
+        imageItem.className = 'additional-image-item';
+        
+        const img = document.createElement('img');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-image-btn';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.title = 'Xóa ảnh';
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.removeProductAdditionalImage(file, imageItem);
+        });
+
+        imageItem.appendChild(img);
+        imageItem.appendChild(removeBtn);
+        previewContainer.appendChild(imageItem);
+    }
+
+    removeProductAdditionalImage(file, element) {
+        const index = this.productAdditionalImages.indexOf(file);
+        if (index > -1) {
+            this.productAdditionalImages.splice(index, 1);
+        }
+        element.remove();
+
+        // Show placeholder if no images left
+        const previewContainer = document.getElementById('additionalImagesPreview');
+        const placeholder = document.querySelector('#additionalImagesUploadArea .upload-placeholder');
+        
+        if (this.productAdditionalImages.length === 0) {
+            previewContainer.style.display = 'none';
+            placeholder.style.display = 'block';
+        }
+    }
     
 
     // Brand Image Upload - Fixed single click
@@ -4947,7 +5417,7 @@ class SimpleImageUploadManager {
         }
     }
 
-    // Upload ảnh chính sản phẩm
+    // Upload Product Main Image
     async uploadProductMainImage(oldImageUrl = null) {
         if (!this.productMainImageFile) {
             console.log('ℹ️ No new product main image to upload');
@@ -4990,7 +5460,7 @@ class SimpleImageUploadManager {
         }
     }
 
-    // Upload ảnh phụ sản phẩm
+    // Upload Product Additional Images
     async uploadProductAdditionalImages() {
         if (!this.productAdditionalImages || this.productAdditionalImages.length === 0) {
             console.log('ℹ️ No additional images to upload');
@@ -5032,6 +5502,7 @@ class SimpleImageUploadManager {
         }
     }
 
+
     // Reset ảnh sản phẩm
     resetProductImages() {
         this.productMainImageFile = null;
@@ -5054,10 +5525,17 @@ class SimpleImageUploadManager {
             additionalImagesPlaceholder.style.display = 'block';
         }
 
+        // Reset file inputs
+        const mainImageInput = document.getElementById('productMainImage');
+        const additionalImagesInput = document.getElementById('productAdditionalImages');
+        
+        if (mainImageInput) mainImageInput.value = '';
+        if (additionalImagesInput) additionalImagesInput.value = '';
+
         document.getElementById('productImage').value = '';
+        
+        console.log('🔄 Reset product images');
     }
-
-
 
 
 
@@ -5194,13 +5672,14 @@ class SimpleImageUploadManager {
         return this.categoryImageFile;
     }
 
-    // Reinitialize when modals are opened
     reinitialize() {
         console.log('🔄 Reinitializing upload manager...');
         this.brandEventsBound = false;
         this.categoryEventsBound = false;
+        this.productEventsBound = false; // ← THÊM DÒNG NÀY
         this.bindBrandEvents();
         this.bindCategoryEvents();
+        this.bindProductEvents(); // ← THÊM DÒNG NÀY
     }
 }
 
@@ -5450,6 +5929,28 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    // Reinitialize when product modal is shown
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+        productModal.addEventListener('show.bs.modal', () => {
+            console.log('📦 Product modal shown - initializing upload events');
+            setTimeout(() => {
+                if (window.simpleImageUploadManager) {
+                    window.simpleImageUploadManager.removeProductEventListeners();
+                    window.simpleImageUploadManager.productEventsBound = false;
+                    window.simpleImageUploadManager.bindProductEvents();
+                }
+            }, 300); // Tăng delay để đảm bảo DOM đã render xong
+        });
+        
+        productModal.addEventListener('hidden.bs.modal', () => {
+            console.log('📦 Product modal hidden - resetting product images');
+            // Reset product images when modal is closed
+            if (window.simpleImageUploadManager) {
+                window.simpleImageUploadManager.resetProductImages();
+            }
+        });
+    }
 });
 // JavaScript để quản lý thông số sản phẩm với kéo thả
 class ProductSpecsManager {
@@ -5749,6 +6250,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return formData;
     };
 });
+
 </script>
 
 
@@ -5890,10 +6392,6 @@ document.addEventListener('DOMContentLoaded', function() {
         height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
         transition: left 0.5s;
-    }
-
-        width: 65%;
-        left: 100%;
     }
 
 
@@ -9007,4 +9505,113 @@ document.addEventListener('DOMContentLoaded', function() {
     animation: pulse 0.5s ease-in-out infinite;
 }
     
+/* Product Image Upload Styles */
+#mainImageUploadArea, #additionalImagesUploadArea {
+    border: 2px dashed var(--gray-300);
+    border-radius: 10px;
+    padding: 20px;
+    background: var(--gray-50);
+    transition: var(--transition);
+    cursor: pointer;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#mainImageUploadArea:hover, #additionalImagesUploadArea:hover {
+    border-color: var(--primary);
+    background: var(--gray-100);
+}
+
+#mainImageUploadArea.dragover, #additionalImagesUploadArea.dragover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.upload-placeholder i {
+    font-size: 2rem;
+    color: var(--gray-400);
+    margin-bottom: 10px;
+}
+
+.upload-placeholder span {
+    display: block;
+    font-weight: 500;
+    color: var(--dark);
+    margin-bottom: 5px;
+}
+
+.upload-placeholder small {
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+/* Additional Images Preview */
+.additional-images-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.additional-image-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.additional-image-item img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.remove-image-btn:hover {
+    background: rgb(239, 68, 68);
+}
+/* Product Choose Buttons - giống brand/category */
+#chooseMainImageBtn, #chooseAdditionalImagesBtn {
+    pointer-events: all !important;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    background: var(--gray-100);
+    color: var(--dark);
+    border: 1px solid var(--gray-300);
+    white-space: nowrap;
+}
+
+#chooseMainImageBtn i, #chooseAdditionalImagesBtn i {
+    font-size: 0.85rem;
+}
+
+/* Fix pointer events for product upload areas */
+#mainImageUploadArea *, #additionalImagesUploadArea * {
+    pointer-events: none;
+}
+
+#chooseMainImageBtn, #chooseAdditionalImagesBtn, 
+#changeMainImageBtn, .remove-image-btn {
+    pointer-events: all !important;
+}
 </style>

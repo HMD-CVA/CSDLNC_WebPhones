@@ -313,7 +313,7 @@ app.post('/api/upload/product-main-image', upload.single('productMainImage'), ha
         }
 
         // Upload ảnh mới lên Cloudinary
-        const result = await uploadToCloudinary(req.file.path, 'products/main');
+        const result = await uploadToCloudinary(req.file.path, 'products');
         
         res.json({
             success: true,
