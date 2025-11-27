@@ -777,6 +777,52 @@
                                 </div>
                             </div>
 
+                            <!-- Product Variants -->
+                            <div class="form-section">
+                                <h4 class="section-title">
+                                    <i class="fas fa-boxes"></i>
+                                    Biến thể sản phẩm
+                                    <small class="text-muted">(Màu sắc, dung lượng, kích thước...)</small>
+                                </h4>
+                                <div class="variants-management">
+                                    <div class="variants-toolbar">
+                                        <button type="button" class="btn btn-sm btn-primary" id="addVariantTypeBtn">
+                                            <i class="fas fa-plus"></i> Thêm loại biến thể
+                                        </button>
+                                        <div class="variants-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Ví dụ: Màu sắc (Đen, Trắng), Dung lượng (128GB, 256GB)
+                                        </div>
+                                    </div>
+                                    <div class="variants-container" id="variantsContainer">
+                                        <!-- Variant types will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Info (Thông tin khác) -->
+                            <div class="form-section">
+                                <h4 class="section-title">
+                                    <i class="fas fa-list"></i>
+                                    Thông tin khác
+                                    <small class="text-muted">(Thông tin bổ sung tùy chọn)</small>
+                                </h4>
+                                <div class="additional-info-management">
+                                    <div class="additional-info-toolbar">
+                                        <button type="button" class="btn btn-sm btn-success" id="addAdditionalInfoBtn">
+                                            <i class="fas fa-plus"></i> Thêm thông tin
+                                        </button>
+                                        <div class="specs-hint">
+                                            <i class="fas fa-info-circle"></i>
+                                            Ví dụ: Bảo hành (12 tháng), Xuất xứ (Việt Nam)
+                                        </div>
+                                    </div>
+                                    <div id="additionalInfoContainer" class="additional-info-container">
+                                        <!-- Additional info items will be added here -->
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Media -->
                             <div class="form-section">
                                 <h4 class="section-title">
@@ -856,6 +902,39 @@
                                         </div>
                                         <p class="empty-message">Chưa có video nào được chọn</p>
                                         <p class="empty-hint">Nhấn nút "Chọn video" ở trên để thêm video</p>
+                                    </div>
+                                </div>
+
+                                <!-- PHẦN 3: LINK VIDEO TỪ CÁC NẾN TẢNG KHÁC -->
+                                <div class="video-links-section">
+                                    <div class="video-links-header">
+                                        <h5 class="section-subtitle">
+                                            <i class="fas fa-link"></i>
+                                            Video từ nền tảng khác
+                                        </h5>
+                                        <p class="section-description">Thêm link video từ YouTube, Vimeo, TikTok, Facebook...</p>
+                                    </div>
+                                    
+                                    <div class="video-link-input-group">
+                                        <input 
+                                            type="url" 
+                                            class="form-control video-link-input" 
+                                            id="videoLinkInput" 
+                                            placeholder="Nhập link video (VD: https://www.youtube.com/watch?v=...)"
+                                        >
+                                        <button type="button" class="btn btn-success btn-add-link" id="addVideoLinkBtn">
+                                            <i class="fas fa-plus-circle"></i>
+                                            Thêm link
+                                        </button>
+                                    </div>
+
+                                    <div class="video-links-list" id="videoLinksList">
+                                        <!-- Danh sách link video sẽ được hiển thị ở đây -->
+                                    </div>
+
+                                    <div class="video-links-empty hidden" id="videoLinksEmpty">
+                                        <i class="fas fa-link"></i>
+                                        <p>Chưa có link video nào</p>
                                     </div>
                                 </div>
                             </div>
@@ -1240,7 +1319,7 @@
         }
         // Tạo document MongoDB mới
         // Trong ProductAPIService, sửa hàm createProductMongoDetail
-        static async createProductMongoDetail(sql_product_id, specsData, mo_ta_chi_tiet, slug, hinh_anh, link_avatar = '', videos = []) {
+        static async createProductMongoDetail(sql_product_id, specsData, mo_ta_chi_tiet, slug, hinh_anh, link_avatar = '', videos = [], variants = [], video_links = [], trang_thai = 1, san_pham_noi_bat = false) {
             try {
                 console.log('📤 Creating MongoDB document with:', {
                     sql_product_id,
@@ -1249,7 +1328,9 @@
                     slug,
                     hinh_anh,
                     link_avatar,
-                    videos
+                    videos,
+                    variants,
+                    video_links
                 });
 
                 const requestBody = {
@@ -1257,8 +1338,12 @@
                     thong_so_ky_thuat: specsData,
                     hinh_anh: hinh_anh || [],
                     videos: videos || [],
+                    variants: variants || [],
+                    video_links: video_links || [],
                     link_avatar: link_avatar,
                     mo_ta_chi_tiet: mo_ta_chi_tiet,
+                    trang_thai: trang_thai,
+                    san_pham_noi_bat: san_pham_noi_bat,
                     slug: slug
                 };
 
@@ -1888,6 +1973,8 @@
                     if (mongoResult.success && mongoResult.data) {
                         const mongoData = mongoResult.data;
                         console.log('📥 Loaded MongoDB data:', mongoData);
+                        console.log('🔍 Debug - video_links:', mongoData.video_links);
+                        console.log('🔍 Debug - variants:', mongoData.variants);
                         
                         // Load thông số kỹ thuật
                         if (window.productSpecsManager && mongoData.thong_so_ky_thuat) {
@@ -1916,11 +2003,57 @@
                                 });
                             }
                         }
+
+                        // 🔗 LOAD VIDEO LINKS NẾU CÓ
+                        if (mongoData.video_links && mongoData.video_links.length > 0) {
+                            console.log('🔗 Loading existing video links from MongoDB:', mongoData.video_links);
+                            if (window.videoLinksManager) {
+                                window.videoLinksManager.loadVideoLinksData(mongoData.video_links);
+                            }
+                        }
+
+                        // 📦 LOAD VARIANTS NẾU CÓ
+                        if (mongoData.variants && mongoData.variants.length > 0) {
+                            console.log('📦 Loading existing variants from MongoDB:', mongoData.variants);
+                            if (window.productVariantsManager) {
+                                window.productVariantsManager.loadVariantsData(mongoData.variants);
+                            }
+                        }
+
+                        // 📋 LOAD THÔNG TIN KHÁC NẾU CÓ
+                        if (mongoData.thong_tin_khac && Object.keys(mongoData.thong_tin_khac).length > 0) {
+                            console.log('📋 Loading existing additional info from MongoDB:', mongoData.thong_tin_khac);
+                            if (window.additionalInfoManager) {
+                                window.additionalInfoManager.loadInfoData(mongoData.thong_tin_khac);
+                            }
+                        }
+
+                        // 📄 LOAD MÔ TẢ, TRẠNG THÁI, NỔI BẬT
+                        if (mongoData.mo_ta_chi_tiet) {
+                            document.getElementById('productDescription').value = mongoData.mo_ta_chi_tiet;
+                        }
+                        
+                        if (mongoData.trang_thai !== undefined) {
+                            document.getElementById('productStatus').value = mongoData.trang_thai;
+                        }
+                        
+                        if (mongoData.san_pham_noi_bat !== undefined) {
+                            document.getElementById('productFeatured').checked = mongoData.san_pham_noi_bat;
+                        }
                     }
                 } catch (error) {
                     console.warn('⚠️ Could not load MongoDB data:', error.message);
                     if (window.productSpecsManager) {
                         window.productSpecsManager.clearSpecs();
+                    }
+                    if (window.productVariantsManager) {
+                        window.productVariantsManager.clearVariants();
+                    }
+                    if (window.additionalInfoManager) {
+                        window.additionalInfoManager.clearInfo();
+                    }
+                    if (window.videoLinksManager) {
+                        window.videoLinksManager.clearVideoLinks();
                     }
                     if (window.simpleImageUploadManager) {
                         window.simpleImageUploadManager.resetProductImages();
@@ -1930,6 +2063,15 @@
             } else {
                 if (window.productSpecsManager) {
                     window.productSpecsManager.clearSpecs();
+                }
+                if (window.productVariantsManager) {
+                    window.productVariantsManager.clearVariants();
+                }
+                if (window.additionalInfoManager) {
+                    window.additionalInfoManager.clearInfo();
+                }
+                if (window.videoLinksManager) {
+                    window.videoLinksManager.clearVideoLinks();
                 }
 
                 // Reset ảnh và video nếu không có dữ liệu MongoDB
@@ -1986,9 +2128,15 @@
 
                 const formData = this.getProductFormData();
                 const specsData = window.productSpecsManager ? window.productSpecsManager.getSpecsData() : {};
+                const variantsData = window.productVariantsManager ? window.productVariantsManager.getVariantsData() : [];
+                const additionalInfoData = window.additionalInfoManager ? window.additionalInfoManager.getInfoData() : {};
+                const videoLinksData = window.videoLinksManager ? window.videoLinksManager.getVideoLinksData() : [];
 
                 console.log('📦 Product Data for SQL:', formData);
                 console.log('🔧 Technical Specs for MongoDB:', specsData);
+                console.log('📦 Variants for MongoDB:', variantsData);
+                console.log('📋 Additional Info for MongoDB:', additionalInfoData);
+                console.log('🔗 Video Links for MongoDB:', videoLinksData);
 
                 const validSQLFields = [
                     'id', 'ma_sku', 'ten_san_pham', 'danh_muc_id', 'thuong_hieu_id',
@@ -2076,10 +2224,15 @@
                     const mongoUpdateData = {
                         sql_product_id: productId,
                         thong_so_ky_thuat: specsData,
+                        variants: variantsData,
+                        thong_tin_khac: additionalInfoData,
+                        video_links: videoLinksData,
                         hinh_anh: hinhAnhArray,
                         videos: videoUrls,
                         link_avatar: link_avatar,
                         mo_ta_chi_tiet: document.getElementById('productDescription').value.trim(),
+                        trang_thai: parseInt(document.getElementById('productStatus').value),
+                        san_pham_noi_bat: document.getElementById('productFeatured').checked,
                         slug: Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku)
                     };
 
@@ -2098,7 +2251,11 @@
                             Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
                             hinhAnhArray,
                             link_avatar,
-                            videoUrls
+                            videoUrls,
+                            variantsData,
+                            videoLinksData,
+                            parseInt(document.getElementById('productStatus').value),
+                            document.getElementById('productFeatured').checked
                         );
                         mongoDetailId = mongoResult.data._id;
                         console.log('✅ New MongoDB document created:', mongoDetailId);
@@ -2126,7 +2283,11 @@
                             Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
                             hinhAnhArray,
                             link_avatar,
-                            videoUrls
+                            videoUrls,
+                            variantsData,
+                            videoLinksData,
+                            parseInt(document.getElementById('productStatus').value),
+                            document.getElementById('productFeatured').checked
                         );
                         mongoDetailId = mongoResult.data._id;
                         console.log('✅ MongoDB document created:', mongoDetailId);
@@ -7474,11 +7635,663 @@ class ProductSpecsManager {
     }
 }
 
+// =============================================
+// PRODUCT VARIANTS MANAGER
+// =============================================
+class ProductVariantsManager {
+    constructor() {
+        this.variantTypes = []; // [{ id, name, values: [] }]
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.renderEmpty();
+    }
+
+    bindEvents() {
+        // Thêm loại biến thể mới
+        document.getElementById('addVariantTypeBtn')?.addEventListener('click', () => {
+            this.addVariantType();
+        });
+    }
+
+    addVariantType(name = '', values = []) {
+        const variantId = 'variant_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        const newVariant = {
+            id: variantId,
+            name: name,
+            values: values || []
+        };
+
+        this.variantTypes.push(newVariant);
+        this.renderVariants();
+        
+        console.log('➕ Added new variant type:', newVariant);
+    }
+
+    removeVariantType(variantId) {
+        this.variantTypes = this.variantTypes.filter(v => v.id !== variantId);
+        this.renderVariants();
+        console.log('🗑️ Removed variant type:', variantId);
+    }
+
+    addVariantValue(variantId, value) {
+        const variant = this.variantTypes.find(v => v.id === variantId);
+        if (variant && value.trim()) {
+            if (!variant.values.includes(value.trim())) {
+                variant.values.push(value.trim());
+                this.renderVariants();
+                console.log('➕ Added value to variant:', variantId, value);
+            }
+        }
+    }
+
+    removeVariantValue(variantId, valueIndex) {
+        const variant = this.variantTypes.find(v => v.id === variantId);
+        if (variant) {
+            variant.values.splice(valueIndex, 1);
+            this.renderVariants();
+            console.log('🗑️ Removed value from variant:', variantId, valueIndex);
+        }
+    }
+
+    updateVariantName(variantId, newName) {
+        const variant = this.variantTypes.find(v => v.id === variantId);
+        if (variant) {
+            variant.name = newName.trim();
+            console.log('✏️ Updated variant name:', variantId, newName);
+        }
+    }
+
+    renderEmpty() {
+        const container = document.getElementById('variantsContainer');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="variants-empty-state">
+                <i class="fas fa-boxes"></i>
+                <p>Chưa có biến thể nào. Nhấn "Thêm loại biến thể" để bắt đầu.</p>
+            </div>
+        `;
+    }
+
+    renderVariants() {
+        const container = document.getElementById('variantsContainer');
+        if (!container) return;
+
+        if (this.variantTypes.length === 0) {
+            this.renderEmpty();
+            return;
+        }
+
+        container.innerHTML = '';
+
+        this.variantTypes.forEach(variant => {
+            const card = document.createElement('div');
+            card.className = 'variant-type-card';
+            card.setAttribute('data-variant-id', variant.id);
+
+            // Tạo HTML cho values
+            const valuesHTML = variant.values.map(function(value, index) {
+                return '<div class="variant-value-tag">' +
+                    '<span class="variant-value-text">' + value + '</span>' +
+                    '<button type="button" class="btn-remove-value" ' +
+                        'data-variant-id="' + variant.id + '" ' +
+                        'data-value-index="' + index + '">' +
+                        '<i class="fas fa-times"></i>' +
+                    '</button>' +
+                '</div>';
+            }).join('');
+
+            card.innerHTML = 
+                '<div class="variant-type-header">' +
+                    '<div class="variant-type-name">' +
+                        '<input type="text" ' +
+                            'class="variant-name-input" ' +
+                            'value="' + (variant.name || '') + '" ' +
+                            'placeholder="Tên loại biến thể (VD: Màu sắc, Dung lượng)" ' +
+                            'data-variant-id="' + variant.id + '">' +
+                    '</div>' +
+                    '<button type="button" class="btn-remove-variant-type" data-variant-id="' + variant.id + '">' +
+                        '<i class="fas fa-trash"></i> Xóa' +
+                    '</button>' +
+                '</div>' +
+                '<div class="variant-values-container" id="values-' + variant.id + '">' +
+                    valuesHTML +
+                '</div>' +
+                '<div class="variant-input-group">' +
+                    '<input type="text" ' +
+                        'class="variant-value-input" ' +
+                        'placeholder="Nhập giá trị (VD: Đen, Trắng, 128GB...)" ' +
+                        'data-variant-id="' + variant.id + '">' +
+                    '<button type="button" class="btn-add-value" data-variant-id="' + variant.id + '">' +
+                        '<i class="fas fa-plus"></i> Thêm' +
+                    '</button>' +
+                '</div>';
+
+            container.appendChild(card);
+        });
+
+        // Bind events sau khi render
+        this.bindCardEvents();
+    }
+
+    bindCardEvents() {
+        // Update variant name
+        document.querySelectorAll('.variant-name-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const variantId = e.target.getAttribute('data-variant-id');
+                this.updateVariantName(variantId, e.target.value);
+            });
+        });
+
+        // Remove variant type
+        document.querySelectorAll('.btn-remove-variant-type').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const variantId = e.currentTarget.getAttribute('data-variant-id');
+                this.removeVariantType(variantId);
+            });
+        });
+
+        // Add variant value
+        document.querySelectorAll('.btn-add-value').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const variantId = e.currentTarget.getAttribute('data-variant-id');
+                const input = document.querySelector(`.variant-value-input[data-variant-id="${variantId}"]`);
+                if (input && input.value.trim()) {
+                    this.addVariantValue(variantId, input.value);
+                    input.value = '';
+                }
+            });
+        });
+
+        // Add value on Enter key
+        document.querySelectorAll('.variant-value-input').forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const variantId = e.target.getAttribute('data-variant-id');
+                    if (e.target.value.trim()) {
+                        this.addVariantValue(variantId, e.target.value);
+                        e.target.value = '';
+                    }
+                }
+            });
+        });
+
+        // Remove variant value
+        document.querySelectorAll('.btn-remove-value').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const variantId = e.currentTarget.getAttribute('data-variant-id');
+                const valueIndex = parseInt(e.currentTarget.getAttribute('data-value-index'));
+                this.removeVariantValue(variantId, valueIndex);
+            });
+        });
+    }
+
+    getVariantsData() {
+        console.log('📦 Getting variants data...');
+        
+        const variants = this.variantTypes
+            .filter(v => v.name && v.name.trim() !== '' && v.values.length > 0)
+            .map(v => ({
+                name: v.name.trim(),
+                values: v.values
+            }));
+
+        console.log('✅ Variants data:', variants);
+        return variants;
+    }
+
+    loadVariantsData(variantsData) {
+        console.log('📥 Loading variants data:', variantsData);
+        
+        if (!variantsData || !Array.isArray(variantsData)) {
+            console.warn('⚠️ Invalid variants data:', variantsData);
+            return;
+        }
+        
+        if (variantsData.length === 0) {
+            console.log('ℹ️ Variants data is empty array');
+            return;
+        }
+        
+        this.variantTypes = [];
+        variantsData.forEach(variant => {
+            if (variant.name && variant.values) {
+                console.log('➕ Adding variant type:', variant.name, 'with values:', variant.values);
+                this.addVariantType(variant.name, variant.values);
+            }
+        });
+        
+        console.log('✅ Loaded variants data:', this.variantTypes);
+    }
+
+    clearVariants() {
+        this.variantTypes = [];
+        this.renderEmpty();
+        console.log('🧹 Cleared all variants');
+    }
+}
+
+// =============================================
+// ADDITIONAL INFO MANAGER CLASS
+// =============================================
+
+class AdditionalInfoManager {
+    constructor() {
+        this.infoItems = [];
+        this.nextId = 1;
+        this.init();
+    }
+
+    init() {
+        console.log('📋 Initializing AdditionalInfoManager...');
+        this.bindEvents();
+        this.renderEmpty();
+    }
+
+    bindEvents() {
+        const addBtn = document.getElementById('addAdditionalInfoBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => this.addInfoItem());
+        }
+    }
+
+    addInfoItem(key = '', value = '') {
+        const id = this.nextId++;
+        this.infoItems.push({ id, key, value });
+        this.render();
+        console.log('➕ Added info item:', { id, key, value });
+    }
+
+    removeInfoItem(id) {
+        const index = this.infoItems.findIndex(item => item.id === id);
+        if (index === -1) return;
+
+        const item = this.infoItems[index];
+        
+        Swal.fire({
+            title: 'Xóa thông tin?',
+            text: item.key || 'Thông tin này',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#e53e3e'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.infoItems.splice(index, 1);
+                this.render();
+                console.log('🗑️ Removed info item:', item);
+            }
+        });
+    }
+
+    updateInfoItem(id, key, value) {
+        const item = this.infoItems.find(i => i.id === id);
+        if (item) {
+            item.key = key;
+            item.value = value;
+        }
+    }
+
+    render() {
+        const container = document.getElementById('additionalInfoContainer');
+        if (!container) return;
+
+        if (this.infoItems.length === 0) {
+            this.renderEmpty();
+            return;
+        }
+
+        container.innerHTML = this.infoItems.map(item => {
+            return '<div class="additional-info-item" data-id="' + item.id + '">' +
+                '<input type="text" class="info-key-input" data-id="' + item.id + '" ' +
+                    'placeholder="Nhập tên (VD: Bảo hành)" value="' + (item.key || '') + '">' +
+                '<input type="text" class="info-value-input" data-id="' + item.id + '" ' +
+                    'placeholder="Nhập giá trị (VD: 12 tháng)" value="' + (item.value || '') + '">' +
+                '<button type="button" class="btn-remove-info" data-id="' + item.id + '" title="Xóa">' +
+                    '<i class="fas fa-trash"></i>' +
+                '</button>' +
+            '</div>';
+        }).join('');
+
+        this.bindItemEvents();
+    }
+
+    bindItemEvents() {
+        // Input events
+        document.querySelectorAll('.info-key-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const id = parseInt(e.target.getAttribute('data-id'));
+                const valueInput = document.querySelector(`.info-value-input[data-id="${id}"]`);
+                this.updateInfoItem(id, e.target.value, valueInput ? valueInput.value : '');
+            });
+        });
+
+        document.querySelectorAll('.info-value-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const id = parseInt(e.target.getAttribute('data-id'));
+                const keyInput = document.querySelector(`.info-key-input[data-id="${id}"]`);
+                this.updateInfoItem(id, keyInput ? keyInput.value : '', e.target.value);
+            });
+        });
+
+        // Remove button events
+        document.querySelectorAll('.btn-remove-info').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                this.removeInfoItem(id);
+            });
+        });
+    }
+
+    renderEmpty() {
+        const container = document.getElementById('additionalInfoContainer');
+        if (!container) return;
+
+        container.innerHTML = '<div class="additional-info-empty">' +
+            '<i class="fas fa-info-circle"></i>' +
+            '<p>Chưa có thông tin bổ sung nào</p>' +
+            '<p style="font-size: 0.85rem; margin-top: 8px; color: var(--gray-500);">Nhấn nút "Thêm thông tin" để thêm</p>' +
+        '</div>';
+    }
+
+    getInfoData() {
+        console.log('📦 Getting additional info data...');
+        const data = {};
+        this.infoItems.forEach(item => {
+            if (item.key && item.key.trim()) {
+                data[item.key.trim()] = item.value || '';
+            }
+        });
+        console.log('✅ Additional info data:', data);
+        return data;
+    }
+
+    loadInfoData(data) {
+        console.log('📥 Loading additional info data:', data);
+        
+        if (!data || typeof data !== 'object') {
+            console.warn('⚠️ Invalid additional info data:', data);
+            return;
+        }
+
+        const entries = Object.entries(data);
+        if (entries.length === 0) {
+            console.log('ℹ️ Additional info data is empty');
+            return;
+        }
+
+        this.infoItems = [];
+        this.nextId = 1;
+
+        entries.forEach(([key, value]) => {
+            console.log('➕ Adding info:', key, '=', value);
+            this.infoItems.push({
+                id: this.nextId++,
+                key: key,
+                value: value
+            });
+        });
+
+        this.render();
+        console.log('✅ Loaded additional info:', this.infoItems);
+    }
+
+    clearInfo() {
+        this.infoItems = [];
+        this.nextId = 1;
+        this.renderEmpty();
+        console.log('🧹 Cleared all additional info');
+    }
+}
+
+// =============================================
+// VIDEO LINKS MANAGER CLASS
+// =============================================
+
+class VideoLinksManager {
+    constructor() {
+        this.videoLinks = [];
+        this.init();
+    }
+
+    init() {
+        console.log('🎬 Initializing VideoLinksManager...');
+        this.bindEvents();
+        this.renderEmpty();
+    }
+
+    bindEvents() {
+        const addBtn = document.getElementById('addVideoLinkBtn');
+        const input = document.getElementById('videoLinkInput');
+
+        if (addBtn) {
+            addBtn.addEventListener('click', () => this.addVideoLink());
+        }
+
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addVideoLink();
+                }
+            });
+        }
+    }
+
+    addVideoLink() {
+        const input = document.getElementById('videoLinkInput');
+        const url = input.value.trim();
+
+        if (!url) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Thiếu thông tin',
+                text: 'Vui lòng nhập link video',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (!this.isValidUrl(url)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Link không hợp lệ',
+                text: 'Vui lòng nhập một URL hợp lệ',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        const platform = this.detectPlatform(url);
+        const linkData = {
+            id: Date.now(),
+            url: url,
+            platform: platform
+        };
+
+        this.videoLinks.push(linkData);
+        input.value = '';
+        this.render();
+
+        console.log('✅ Added video link:', linkData);
+    }
+
+    removeVideoLink(id) {
+        const index = this.videoLinks.findIndex(link => link.id === id);
+        if (index === -1) return;
+
+        const link = this.videoLinks[index];
+
+        Swal.fire({
+            title: 'Xóa link video?',
+            html: '<div style="word-break: break-all; margin-top: 10px; font-size: 0.9rem; color: #666;">' + link.url + '</div>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#e53e3e'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.videoLinks.splice(index, 1);
+                this.render();
+                console.log('🗑️ Removed video link:', link);
+            }
+        });
+    }
+
+    isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    detectPlatform(url) {
+        const lowerUrl = url.toLowerCase();
+        
+        if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+            return 'YouTube';
+        } else if (lowerUrl.includes('vimeo.com')) {
+            return 'Vimeo';
+        } else if (lowerUrl.includes('tiktok.com')) {
+            return 'TikTok';
+        } else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.watch')) {
+            return 'Facebook';
+        } else if (lowerUrl.includes('instagram.com')) {
+            return 'Instagram';
+        } else if (lowerUrl.includes('dailymotion.com')) {
+            return 'Dailymotion';
+        } else {
+            return 'Video';
+        }
+    }
+
+    getPlatformIcon(platform) {
+        const icons = {
+            'YouTube': 'fab fa-youtube',
+            'Vimeo': 'fab fa-vimeo-v',
+            'TikTok': 'fab fa-tiktok',
+            'Facebook': 'fab fa-facebook',
+            'Instagram': 'fab fa-instagram',
+            'Dailymotion': 'fas fa-video',
+            'Video': 'fas fa-link'
+        };
+        return icons[platform] || 'fas fa-link';
+    }
+
+    render() {
+        const container = document.getElementById('videoLinksList');
+        const emptyState = document.getElementById('videoLinksEmpty');
+
+        if (!container) return;
+
+        if (this.videoLinks.length === 0) {
+            container.innerHTML = '';
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+            }
+            return;
+        }
+
+        if (emptyState) {
+            emptyState.classList.add('hidden');
+        }
+
+        container.innerHTML = this.videoLinks.map(link => {
+            const icon = this.getPlatformIcon(link.platform);
+            return '<div class="video-link-item" data-id="' + link.id + '">' +
+                '<div class="video-link-icon">' +
+                    '<i class="' + icon + '"></i>' +
+                '</div>' +
+                '<div class="video-link-content">' +
+                    '<div class="video-link-platform">' + link.platform + '</div>' +
+                    '<div class="video-link-url" title="' + link.url + '">' + link.url + '</div>' +
+                '</div>' +
+                '<div class="video-link-actions">' +
+                    '<button type="button" class="btn-open-link" onclick="window.open(\'' + link.url + '\', \'_blank\')" title="Mở link">' +
+                        '<i class="fas fa-external-link-alt"></i>' +
+                    '</button>' +
+                    '<button type="button" class="btn-remove-link" data-id="' + link.id + '" title="Xóa link">' +
+                        '<i class="fas fa-trash"></i>' +
+                    '</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+
+        this.bindItemEvents();
+    }
+
+    bindItemEvents() {
+        document.querySelectorAll('.btn-remove-link').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                this.removeVideoLink(id);
+            });
+        });
+    }
+
+    renderEmpty() {
+        const emptyState = document.getElementById('videoLinksEmpty');
+        if (emptyState) {
+            emptyState.classList.remove('hidden');
+        }
+    }
+
+    getVideoLinksData() {
+        console.log('📦 Getting video links data...');
+        const links = this.videoLinks.map(link => link.url);
+        console.log('✅ Video links:', links);
+        return links;
+    }
+
+    loadVideoLinksData(linksData) {
+        console.log('📥 Loading video links data:', linksData);
+        
+        if (!linksData || !Array.isArray(linksData)) {
+            console.warn('⚠️ Invalid video links data:', linksData);
+            return;
+        }
+        
+        if (linksData.length === 0) {
+            console.log('ℹ️ Video links data is empty array');
+            return;
+        }
+        
+        this.videoLinks = linksData.map((url, index) => {
+            console.log('➕ Adding video link:', url);
+            return {
+                id: Date.now() + index,
+                url: url,
+                platform: this.detectPlatform(url)
+            };
+        });
+        
+        this.render();
+        console.log('✅ Loaded video links:', this.videoLinks);
+    }
+
+    clearVideoLinks() {
+        this.videoLinks = [];
+        this.render();
+        console.log('🧹 Cleared all video links');
+    }
+}
+
 // Khởi tạo khi DOM sẵn sàng
 document.addEventListener('DOMContentLoaded', function() {
     window.productSpecsManager = new ProductSpecsManager();
+    window.productVariantsManager = new ProductVariantsManager();
+    window.additionalInfoManager = new AdditionalInfoManager();
+    window.videoLinksManager = new VideoLinksManager();
     
-    // Cập nhật ProductManager để tích hợp với thông số
+    // Cập nhật ProductManager để tích hợp với thông số và biến thể
     const originalSaveProduct = ProductManager.prototype.saveProduct;
     ProductManager.prototype.saveProduct = async function() {
         try {
@@ -7487,6 +8300,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // Thêm thông số kỹ thuật vào formData
             if (window.productSpecsManager) {
                 formData.chi_tiet = window.productSpecsManager.getSpecsData();
+            }
+            
+            // Thêm biến thể vào formData
+            if (window.productVariantsManager) {
+                formData.variants = window.productVariantsManager.getVariantsData();
+            }
+            
+            // Thêm thông tin khác vào formData
+            if (window.additionalInfoManager) {
+                formData.thong_tin_khac = window.additionalInfoManager.getInfoData();
+            }
+            
+            // Thêm video links vào formData
+            if (window.videoLinksManager) {
+                formData.video_links = window.videoLinksManager.getVideoLinksData();
             }
             
             // Phần còn lại của logic lưu sản phẩm...
@@ -7511,15 +8339,42 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.productSpecsManager && product.chi_tiet) {
             window.productSpecsManager.loadSpecsData(product.chi_tiet);
         }
+        
+        // Load biến thể nếu có
+        if (window.productVariantsManager && product.variants) {
+            window.productVariantsManager.loadVariantsData(product.variants);
+        }
+
+        // Load thông tin khác nếu có
+        if (window.additionalInfoManager && product.thong_tin_khac) {
+            window.additionalInfoManager.loadInfoData(product.thong_tin_khac);
+        }
+
+        // Load video links nếu có
+        if (window.videoLinksManager && product.video_links) {
+            window.videoLinksManager.loadVideoLinksData(product.video_links);
+        }
     };
     
-    // Reset thông số khi mở modal thêm mới
+    // Reset thông số và biến thể khi mở modal thêm mới
     const originalResetProductForm = ProductManager.prototype.resetProductForm;
     ProductManager.prototype.resetProductForm = function() {
         originalResetProductForm.call(this);
         
         if (window.productSpecsManager) {
             window.productSpecsManager.clearSpecs();
+        }
+        
+        if (window.productVariantsManager) {
+            window.productVariantsManager.clearVariants();
+        }
+
+        if (window.additionalInfoManager) {
+            window.additionalInfoManager.clearInfo();
+        }
+
+        if (window.videoLinksManager) {
+            window.videoLinksManager.clearVideoLinks();
         }
     };
     
@@ -11272,4 +12127,565 @@ document.addEventListener('DOMContentLoaded', function() {
         gap: 8px;
     }
 }
+
+/* ===============================================
+   ADDITIONAL INFO (THÔNG TIN KHÁC) STYLES
+   =============================================== */
+
+.additional-info-management {
+    margin-top: 16px;
+}
+
+.additional-info-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: 8px;
+}
+
+.additional-info-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.additional-info-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.additional-info-item:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.additional-info-item input {
+    padding: 10px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.additional-info-item input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.additional-info-item input::placeholder {
+    color: var(--gray-400);
+}
+
+.btn-remove-info {
+    width: 36px;
+    height: 36px;
+    background: var(--gray-100);
+    color: var(--danger);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    align-self: center;
+}
+
+.btn-remove-info:hover {
+    background: var(--danger);
+    color: white;
+    transform: scale(1.1);
+}
+
+.additional-info-empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--gray-400);
+    background: var(--gray-50);
+    border-radius: 8px;
+    border: 2px dashed var(--gray-300);
+}
+
+.additional-info-empty i {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.additional-info-empty p {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* ===============================================
+   PRODUCT VARIANTS STYLES
+   =============================================== */
+
+.variants-management {
+    margin-top: 16px;
+}
+
+.variants-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: 8px;
+}
+
+.variants-hint {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.variants-hint i {
+    color: var(--primary);
+}
+
+.variants-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.variant-type-card {
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+.variant-type-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.variant-type-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.variant-type-name {
+    flex: 1;
+    margin-right: 12px;
+}
+
+.variant-type-name input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.variant-type-name input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-remove-variant-type {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-variant-type:hover {
+    background: #dc2626;
+    transform: scale(1.05);
+}
+
+.variant-values-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    min-height: 40px;
+    padding: 8px;
+    background: var(--gray-50);
+    border-radius: 6px;
+}
+
+.variant-value-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: white;
+    border: 1px solid var(--gray-300);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.variant-value-tag:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.variant-value-text {
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+.btn-remove-value {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-value:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.variant-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.variant-input-group input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.variant-input-group input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-add-value {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-add-value:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.variants-empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--gray-400);
+    background: var(--gray-50);
+    border-radius: 8px;
+    border: 2px dashed var(--gray-300);
+}
+
+.variants-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.variants-empty-state p {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .variants-toolbar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .variant-type-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .variant-type-name {
+        margin-right: 0;
+        width: 100%;
+    }
+
+    .variant-input-group {
+        flex-direction: column;
+    }
+
+    .btn-add-value {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* =============================================
+   VIDEO LINKS SECTION STYLES
+   ============================================= */
+
+.video-links-section {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--gray-50);
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+}
+
+.video-links-header {
+    margin-bottom: 16px;
+}
+
+.section-subtitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0 0 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-subtitle i {
+    color: var(--primary);
+}
+
+.section-description {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin: 0;
+}
+
+.video-link-input-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.video-link-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.video-link-input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.video-link-input::placeholder {
+    color: var(--gray-400);
+}
+
+.btn-add-link {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn-add-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.video-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.video-link-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.video-link-item:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.video-link-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.video-link-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.video-link-platform {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.video-link-url {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.video-link-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-open-link,
+.btn-remove-link {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.btn-open-link {
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+.btn-open-link:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-remove-link {
+    background: var(--gray-100);
+    color: var(--danger);
+}
+
+.btn-remove-link:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.video-links-empty {
+    text-align: center;
+    padding: 30px;
+    color: var(--gray-400);
+    background: white;
+    border-radius: 8px;
+    border: 2px dashed var(--gray-300);
+}
+
+.video-links-empty i {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    display: block;
+    opacity: 0.5;
+}
+
+.video-links-empty p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .video-link-input-group {
+        flex-direction: column;
+    }
+
+    .btn-add-link {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .video-link-item {
+        flex-wrap: wrap;
+    }
+
+    .video-link-content {
+        flex-basis: 100%;
+        order: 2;
+    }
+
+    .video-link-actions {
+        order: 3;
+    }
+}
+
 </style>

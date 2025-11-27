@@ -1731,7 +1731,7 @@ app.put('/api/sanpham/:id/status', async (req, res) => {
 // POST /api/mongo/sanpham - Tạo document mới trong MongoDB
 app.post('/api/mongo/sanpham', async (req, res) => {
     try {
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, link_avatar, mo_ta_chi_tiet, slug } = req.body;
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, video_links, variants, thong_tin_khac, link_avatar, mo_ta_chi_tiet, trang_thai, san_pham_noi_bat, slug, chi_tiet } = req.body;
 
         console.log('🔄 API: Tạo document MongoDB mới');
         console.log('📝 Request data:', {
@@ -1739,8 +1739,13 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             has_specs: !!thong_so_ky_thuat,
             has_images: !!hinh_anh,
             has_videos: !!videos,
+            has_video_links: !!video_links,
+            has_variants: !!variants,
             has_link_avatar: !!link_avatar,
             has_description: !!mo_ta_chi_tiet,
+            trang_thai,
+            san_pham_noi_bat,
+            has_chi_tiet: !!chi_tiet,
             slug
         });
 
@@ -1783,6 +1788,25 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             documentData.videos = [];
         }
 
+        // Thêm video links nếu có (từ YouTube, Vimeo, etc.)
+        if (video_links && Array.isArray(video_links)) {
+            documentData.video_links = video_links;
+        } else {
+            documentData.video_links = [];
+        }
+
+        // Thêm variants (biến thể) nếu có
+        if (variants && Array.isArray(variants)) {
+            documentData.variants = variants;
+        } else {
+            documentData.variants = [];
+        }
+
+        // Thêm chi tiết bổ sung nếu có (object tự do)
+        if (chi_tiet && typeof chi_tiet === 'object') {
+            documentData.chi_tiet = chi_tiet;
+        }
+
         // Thêm link_avatar nếu có
         if (link_avatar) {
             documentData.link_avatar = link_avatar;
@@ -1793,14 +1817,35 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             documentData.mo_ta_chi_tiet = mo_ta_chi_tiet;
         }
 
+        // Thêm trạng thái và sản phẩm nổi bật
+        if (trang_thai !== undefined) {
+            documentData.trang_thai = trang_thai;
+        }
+
+        if (san_pham_noi_bat !== undefined) {
+            documentData.san_pham_noi_bat = san_pham_noi_bat;
+        }
+
+        // Thêm thông tin khác (key-value pairs tự do)
+        if (thong_tin_khac && typeof thong_tin_khac === 'object') {
+            documentData.thong_tin_khac = thong_tin_khac;
+        } else {
+            documentData.thong_tin_khac = {};
+        }
+
         console.log('📊 Document data to save:', {
             sql_product_id: documentData.sql_product_id,
             slug: documentData.slug,
             specs_count: documentData.thong_so_ky_thuat.length,
             images_count: documentData.hinh_anh.length,
             videos_count: documentData.videos ? documentData.videos.length : 0,
+            video_links_count: documentData.video_links ? documentData.video_links.length : 0,
+            variants_count: documentData.variants ? documentData.variants.length : 0,
+            trang_thai: documentData.trang_thai,
+            san_pham_noi_bat: documentData.san_pham_noi_bat,
             has_link_avatar: !!documentData.link_avatar,
-            has_description: !!documentData.mo_ta_chi_tiet
+            has_description: !!documentData.mo_ta_chi_tiet,
+            has_chi_tiet: !!documentData.chi_tiet
         });
 
         // Tạo và lưu document
@@ -1887,7 +1932,7 @@ app.get('/api/check-mongodb', async (req, res) => {
 app.put('/api/mongo/sanpham/:id', async (req, res) => {
     try {
         const mongoId = req.params.id;
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, link_avatar, mo_ta_chi_tiet, slug } = req.body;
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, video_links, variants, thong_tin_khac, link_avatar, mo_ta_chi_tiet, trang_thai, san_pham_noi_bat, slug, chi_tiet } = req.body;
 
         console.log(`🔄 API: Cập nhật document MongoDB ${mongoId}`);
         console.log('📝 Update data:', { 
@@ -1896,7 +1941,13 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
             thong_so_ky_thuat: thong_so_ky_thuat ? Object.keys(thong_so_ky_thuat).length : 0, 
             hinh_anh: hinh_anh ? hinh_anh.length : 0,
             videos: videos ? videos.length : 0,
-            link_avatar: link_avatar ? 'yes' : 'no'
+            video_links: video_links ? video_links.length : 0,
+            variants: variants ? variants.length : 0,
+            thong_tin_khac: thong_tin_khac ? Object.keys(thong_tin_khac).length : 0,
+            trang_thai,
+            san_pham_noi_bat,
+            link_avatar: link_avatar ? 'yes' : 'no',
+            chi_tiet: chi_tiet ? 'yes' : 'no'
         });
 
         // Chuyển đổi thông số kỹ thuật từ object sang array
@@ -1918,9 +1969,15 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         if (thong_so_ky_thuat !== undefined) updateData.thong_so_ky_thuat = thongSoKyThuatArray;
         if (hinh_anh !== undefined) updateData.hinh_anh = hinh_anh;
         if (videos !== undefined) updateData.videos = videos;
+        if (video_links !== undefined) updateData.video_links = video_links;
+        if (variants !== undefined) updateData.variants = variants;
+        if (chi_tiet !== undefined) updateData.chi_tiet = chi_tiet;
         if (link_avatar !== undefined) updateData.link_avatar = link_avatar;
         if (mo_ta_chi_tiet !== undefined) updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
+        if (trang_thai !== undefined) updateData.trang_thai = trang_thai;
+        if (san_pham_noi_bat !== undefined) updateData.san_pham_noi_bat = san_pham_noi_bat;
         if (slug !== undefined) updateData.slug = slug;
+        if (thong_tin_khac !== undefined) updateData.thong_tin_khac = thong_tin_khac;
 
         const updatedDetail = await DataModel.Mongo.ProductDetail.findByIdAndUpdate(
             mongoId,
@@ -1987,15 +2044,28 @@ app.get('/api/mongo/sanpham/sql/:sql_product_id', async (req, res) => {
             thong_so_ky_thuat: thongSoKyThuatObject,
             hinh_anh: productDetail.hinh_anh || [],
             videos: productDetail.videos || [],
+            video_links: productDetail.video_links || [],
+            variants: productDetail.variants || [],
+            thong_tin_khac: productDetail.thong_tin_khac || {},
+            chi_tiet: productDetail.chi_tiet || {},
             link_avatar: productDetail.link_avatar || '',
-            mo_ta_chi_tiet: productDetail.mo_ta_chi_tiet,
+            mo_ta_chi_tiet: productDetail.mo_ta_chi_tiet || '',
+            trang_thai: productDetail.trang_thai !== undefined ? productDetail.trang_thai : 1,
+            san_pham_noi_bat: productDetail.san_pham_noi_bat || false,
             createdAt: productDetail.createdAt,
             updatedAt: productDetail.updatedAt
         };
 
-        console.log('✅ Returning MongoDB data with videos:', {
+        console.log('✅ Returning MongoDB data:', {
             videos_count: responseData.videos.length,
-            has_link_avatar: !!responseData.link_avatar
+            video_links_count: responseData.video_links.length,
+            variants_count: responseData.variants.length,
+            thong_tin_khac_count: Object.keys(responseData.thong_tin_khac).length,
+            trang_thai: responseData.trang_thai,
+            san_pham_noi_bat: responseData.san_pham_noi_bat,
+            has_link_avatar: !!responseData.link_avatar,
+            has_chi_tiet: !!responseData.chi_tiet,
+            has_mo_ta: !!responseData.mo_ta_chi_tiet
         });
 
         res.json({
