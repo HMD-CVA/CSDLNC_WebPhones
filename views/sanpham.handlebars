@@ -1807,6 +1807,10 @@
         }
 
         async fillProductForm(product) {
+
+            this.resetProductForm();
+            this.currentEditId = product.id;
+
             console.log('Filling product form with data:', product);
 
             document.getElementById('productId').value = product.id || '';
@@ -1873,19 +1877,26 @@
 
 
         resetProductForm() {
+            console.log('🔄 Resetting product form - clearing all data');
             this.currentEditId = null;
+            
+            // RESET ẢNH ĐẦU TIÊN VÀ LUÔN LUÔN
+            if (window.simpleImageUploadManager) {
+                console.log('🗑️ Force resetting product images');
+                window.simpleImageUploadManager.productImages = [];
+                window.simpleImageUploadManager.mainImageIndex = 0;
+                window.simpleImageUploadManager.renderProductImagesPreview();
+            }
+            
+            // Sau đó reset form và specs
             document.getElementById('productForm').reset();
             document.getElementById('productStatus').value = '1';
             
-            // Reset ảnh sản phẩm
-            if (window.simpleImageUploadManager) {
-                window.simpleImageUploadManager.resetProductImages();
-            }
-            
-            // Reset specs
             if (window.productSpecsManager) {
                 window.productSpecsManager.clearSpecs();
             }
+            
+            console.log('✅ Product form reset complete');
         }
 
         // Sửa lại hàm saveProduct trong ProductManager

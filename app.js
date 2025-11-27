@@ -2091,7 +2091,59 @@ app.delete('/api/mongo/sanpham/:id', async (req, res) => {
     }
 });
 
+// PUT /api/sanpham/:id/image - Cập nhật ảnh sản phẩm
+app.put('/api/sanpham/:id/image', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        const { link_anh } = req.body;
 
+        console.log(`🔄 API: Cập nhật ảnh sản phẩm ${productId}`);
+
+        if (!link_anh) {
+            return res.status(400).json({
+                success: false,
+                message: 'URL ảnh là bắt buộc'
+            });
+        }
+
+        const product = await DataModel.SQL.Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+
+        // Nếu có ảnh cũ và ảnh cũ khác ảnh mới, xóa ảnh cũ khỏi Cloudinary
+        if (product.link_anh && product.link_anh !== link_anh && product.link_anh.includes('cloudinary.com')) {
+            try {
+                console.log('🗑️ Deleting old product image:', product.link_anh);
+                await deleteFromCloudinary(product.link_anh);
+            } catch (delErr) {
+                console.warn('⚠️ Failed to delete old product image:', delErr.message);
+            }
+        }
+
+        const updatedProduct = await DataModel.SQL.Product.update(productId, {
+            link_anh: link_anh,
+            ngay_cap_nhat: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: 'Cập nhật ảnh sản phẩm thành công',
+            product: updatedProduct
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi cập nhật ảnh sản phẩm:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi cập nhật ảnh sản phẩm',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
 
 
 
