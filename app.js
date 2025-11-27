@@ -207,7 +207,8 @@ const deleteFromCloudinary = async (imageUrl) => {
 const extractPublicIdFromUrl = (url) => {
     try {
         // Ví dụ: https://res.cloudinary.com/cloudname/image/upload/v1234567/karaoke/products/image.jpg
-        const matches = url.match(/\/upload\/(?:v\d+\/)?(.+)\.(?:jpg|jpeg|png|gif|webp)/i);
+        // Hoặc: https://res.cloudinary.com/cloudname/video/upload/v1234567/karaoke/products/video.mp4
+        const matches = url.match(/\/upload\/(?:v\d+\/)?(.+)\.(?:jpg|jpeg|png|gif|webp|mp4|mov|avi|webm)/i);
         return matches ? matches[1] : null;
     } catch (error) {
         console.error('Error extracting public_id:', error);
