@@ -5320,8 +5320,16 @@ class SimpleImageUploadManager {
             try {
                 console.log('📤 Uploading main image via API...');
                 
+                // Lấy thông tin sản phẩm
+                const productName = document.getElementById('productName')?.value || '';
+                // Nếu đang edit, lấy ID từ hidden field
+                const productId = document.getElementById('mongoDetailId')?.value || '';
+                const productSku = productId || Date.now().toString(); // Dùng ID hoặc timestamp
+                
                 const formData = new FormData();
                 formData.append('productMainImage', file);
+                formData.append('productName', productName);
+                formData.append('productSku', productSku);
 
                 const response = await fetch('/api/upload/product-main-image', {
                     method: 'POST',
@@ -5353,10 +5361,17 @@ class SimpleImageUploadManager {
             try {
                 console.log(`📤 Uploading ${files.length} additional images via API`);
                 
+                // Lấy thông tin sản phẩm
+                const productName = document.getElementById('productName')?.value || '';
+                const productId = document.getElementById('mongoDetailId')?.value || '';
+                const productSku = productId || Date.now().toString();
+                
                 const formData = new FormData();
                 files.forEach(file => {
                     formData.append('productAdditionalImages', file);
                 });
+                formData.append('productName', productName);
+                formData.append('productSku', productSku);
 
                 const response = await fetch('/api/upload/product-additional-images', {
                     method: 'POST',
@@ -6626,6 +6641,13 @@ class SimpleImageUploadManager {
             newVideos.forEach((file, index) => {
                 formData.append('productVideos', file);
             });
+            
+            // Thêm thông tin sản phẩm
+            const productName = document.getElementById('productName')?.value || '';
+            const productId = document.getElementById('mongoDetailId')?.value || '';
+            const productSku = productId || Date.now().toString();
+            formData.append('productName', productName);
+            formData.append('productSku', productSku);
 
             const response = await fetch('/api/upload/product-videos', {
                 method: 'POST',

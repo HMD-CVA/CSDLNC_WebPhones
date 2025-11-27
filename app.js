@@ -316,8 +316,22 @@ app.post('/api/upload/product-main-image', upload.single('productMainImage'), ha
             });
         }
 
+        // Lấy thông tin sản phẩm để tạo folder
+        const { productName, productSku, oldImageUrl } = req.body;
+        
+        console.log('📦 Product info received:', { productName, productSku });
+        
+        // Tạo tên folder: products/ten-san-pham_ma-sku/images
+        let folderPath = 'products';
+        if (productName && productSku) {
+            const folderName = generateSlug(`${productName}_${productSku}`);
+            folderPath = `products/${folderName}/images`;
+            console.log(`📁 Using folder path: ${folderPath}`);
+        } else {
+            console.warn('⚠️ Missing productName or productSku, using default folder: products');
+        }
+
         // Kiểm tra nếu có oldImageUrl trong body thì xóa ảnh cũ
-        const { oldImageUrl } = req.body;
         if (oldImageUrl) {
             try {
                 await deleteFromCloudinary(oldImageUrl);
@@ -327,7 +341,7 @@ app.post('/api/upload/product-main-image', upload.single('productMainImage'), ha
         }
 
         // Upload ảnh mới lên Cloudinary
-        const result = await uploadToCloudinary(req.file.path, 'products');
+        const result = await uploadToCloudinary(req.file.path, folderPath);
         
         res.json({
             success: true,
@@ -359,8 +373,23 @@ app.post('/api/upload/product-additional-images', upload.array('productAdditiona
             });
         }
 
+        // Lấy thông tin sản phẩm để tạo folder
+        const { productName, productSku } = req.body;
+        
+        console.log('📦 Product info received:', { productName, productSku });
+        
+        // Tạo tên folder: products/ten-san-pham_ma-sku/images
+        let folderPath = 'products/images';
+        if (productName && productSku) {
+            const folderName = generateSlug(`${productName}_${productSku}`);
+            folderPath = `products/${folderName}/images`;
+            console.log(`📁 Using folder path: ${folderPath}`);
+        } else {
+            console.warn('⚠️ Missing productName or productSku, using default folder: products/images');
+        }
+
         const uploadPromises = req.files.map(file => 
-            uploadToCloudinary(file.path, 'products/additional')
+            uploadToCloudinary(file.path, folderPath)
         );
 
         const results = await Promise.all(uploadPromises);
@@ -2192,8 +2221,23 @@ app.post('/api/upload/product-videos', uploadWithVideos.array('productVideos', 5
 
         console.log(`⬆️ Starting upload for ${req.files.length} videos...`);
 
+        // Lấy thông tin sản phẩm để tạo folder
+        const { productName, productSku } = req.body;
+        
+        console.log('📦 Product info received:', { productName, productSku });
+        
+        // Tạo tên folder: products/ten-san-pham_ma-sku/videos
+        let folderPath = 'products/videos';
+        if (productName && productSku) {
+            const folderName = generateSlug(`${productName}_${productSku}`);
+            folderPath = `products/${folderName}/videos`;
+            console.log(`📁 Using folder path: ${folderPath}`);
+        } else {
+            console.warn('⚠️ Missing productName or productSku, using default folder: products/videos');
+        }
+
         const uploadPromises = req.files.map(file => 
-            uploadVideoToCloudinary(file.path, 'products/videos')
+            uploadVideoToCloudinary(file.path, folderPath)
         );
 
         const results = await Promise.all(uploadPromises);
@@ -2236,8 +2280,17 @@ app.post('/api/upload/product-video', uploadWithVideos.single('productVideo'), h
 
         console.log('⬆️ Starting single video upload...');
 
+        // Lấy thông tin sản phẩm để tạo folder
+        const { productName, productSku, oldVideoUrl } = req.body;
+        
+        // Tạo tên folder: products/ten-san-pham_ma-sku/videos
+        let folderPath = 'products/videos';
+        if (productName && productSku) {
+            const folderName = generateSlug(`${productName}_${productSku}`);
+            folderPath = `products/${folderName}/videos`;
+        }
+
         // Kiểm tra nếu có oldVideoUrl trong body thì xóa video cũ
-        const { oldVideoUrl } = req.body;
         if (oldVideoUrl) {
             try {
                 await deleteVideoFromCloudinary(oldVideoUrl);
@@ -2247,7 +2300,7 @@ app.post('/api/upload/product-video', uploadWithVideos.single('productVideo'), h
         }
 
         // Upload video mới lên Cloudinary
-        const result = await uploadVideoToCloudinary(req.file.path, 'products/videos');
+        const result = await uploadVideoToCloudinary(req.file.path, folderPath);
         
         res.json({
             success: true,
