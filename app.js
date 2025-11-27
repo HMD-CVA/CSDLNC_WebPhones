@@ -15,7 +15,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-import fs, { link } from 'fs';
+import fs from 'fs';
 // import cors from 'cors';
 
 import dotenv from 'dotenv';
@@ -98,11 +98,13 @@ const storage = multer.diskStorage({
 // File filter
 const fileFilter = (req, file, cb) => {
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime', 'video/webm'];
     
-    if (allowedImageTypes.includes(file.mimetype)) {
+    // Cho phép cả ảnh và video
+    if (allowedImageTypes.includes(file.mimetype) || allowedVideoTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error(`Định dạng file không được hỗ trợ: ${file.mimetype}. Chỉ chấp nhận JPG, PNG, GIF, WebP`), false);
+        cb(new Error(`Định dạng file không được hỗ trợ: ${file.mimetype}. Chỉ chấp nhận JPG, PNG, GIF, WebP, MP4, MOV, AVI, WebM`), false);
     }
 };
 
@@ -118,9 +120,11 @@ const upload = multer({
 const handleUploadError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
+            const isVideo = req.originalUrl.includes('video');
+            const maxSize = isVideo ? '100MB' : '10MB';
             return res.status(400).json({
                 success: false,
-                message: 'Kích thước file quá lớn. Tối đa 10MB'
+                message: `Kích thước file quá lớn. Tối đa ${maxSize}`
             });
         }
         if (err.code === 'LIMIT_FILE_COUNT') {
@@ -130,6 +134,15 @@ const handleUploadError = (err, req, res, next) => {
             });
         }
     }
+    
+    // Xử lý lỗi file filter
+    if (err.message.includes('Định dạng file không được hỗ trợ')) {
+        return res.status(400).json({
+            success: false,
+            message: err.message
+        });
+    }
+    
     res.status(400).json({
         success: false,
         message: err.message
@@ -1717,17 +1730,17 @@ app.put('/api/sanpham/:id/status', async (req, res) => {
 // POST /api/mongo/sanpham - Tạo document mới trong MongoDB
 app.post('/api/mongo/sanpham', async (req, res) => {
     try {
-        // THÊM link_avatar vào destructuring
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug, link_avatar } = req.body;
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, link_avatar, mo_ta_chi_tiet, slug } = req.body;
 
         console.log('🔄 API: Tạo document MongoDB mới');
         console.log('📝 Request data:', {
             sql_product_id,
             has_specs: !!thong_so_ky_thuat,
             has_images: !!hinh_anh,
+            has_videos: !!videos,
+            has_link_avatar: !!link_avatar,
             has_description: !!mo_ta_chi_tiet,
-            slug,
-            link_avatar // THÊM VÀO LOG
+            slug
         });
 
         // Kiểm tra kết nối MongoDB
@@ -1738,7 +1751,7 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             throw new Error(`MongoDB connection is not ready. State: ${dbState}`);
         }
 
-        // Tạo document data - THÊM link_avatar
+        // Tạo document data - với strict: false, chúng ta có thể thêm bất kỳ trường nào
         const documentData = {
             sql_product_id: sql_product_id.toLowerCase() || null,
             slug: slug || `temp-${Date.now()}`
@@ -1762,22 +1775,21 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             documentData.hinh_anh = [];
         }
 
+        // Thêm videos nếu có
+        if (videos && Array.isArray(videos)) {
+            documentData.videos = videos;
+        } else {
+            documentData.videos = [];
+        }
+
+        // Thêm link_avatar nếu có
+        if (link_avatar) {
+            documentData.link_avatar = link_avatar;
+        }
+
         // Thêm mô tả chi tiết nếu có
         if (mo_ta_chi_tiet) {
             documentData.mo_ta_chi_tiet = mo_ta_chi_tiet;
-        }
-
-        // QUAN TRỌNG: THÊM link_avatar vào document
-        if (link_avatar) {
-            documentData.link_avatar = link_avatar;
-            console.log('✅ Added link_avatar to document:', link_avatar);
-        } else if (hinh_anh && hinh_anh.length > 0) {
-            // Fallback: nếu không có link_avatar nhưng có hình ảnh, dùng ảnh đầu tiên
-            documentData.link_avatar = hinh_anh[0];
-            console.log('🔄 Using first image as link_avatar:', hinh_anh[0]);
-        } else {
-            documentData.link_avatar = '';
-            console.log('⚠️ No link_avatar provided and no images available');
         }
 
         console.log('📊 Document data to save:', {
@@ -1785,8 +1797,9 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             slug: documentData.slug,
             specs_count: documentData.thong_so_ky_thuat.length,
             images_count: documentData.hinh_anh.length,
-            has_description: !!documentData.mo_ta_chi_tiet,
-            link_avatar: documentData.link_avatar // THÊM VÀO LOG
+            videos_count: documentData.videos ? documentData.videos.length : 0,
+            has_link_avatar: !!documentData.link_avatar,
+            has_description: !!documentData.mo_ta_chi_tiet
         });
 
         // Tạo và lưu document
@@ -1794,7 +1807,6 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         const savedDetail = await newProductDetail.save();
         
         console.log('✅ MongoDB document created successfully:', savedDetail._id);
-        console.log('✅ link_avatar saved:', savedDetail.link_avatar);
 
         res.status(201).json({
             success: true,
@@ -1843,7 +1855,6 @@ app.post('/api/mongo/sanpham', async (req, res) => {
     }
 });
 
-
 // GET /api/check-mongodb - Kiểm tra kết nối MongoDB
 app.get('/api/check-mongodb', async (req, res) => {
     try {
@@ -1871,79 +1882,47 @@ app.get('/api/check-mongodb', async (req, res) => {
 });
 
 
-// PUT /api/mongo/sanpham/:id - Cập nhật document MongoDB bằng _id
+// PUT /api/mongo/sanpham/:id - Cập nhật document MongoDB bằng _id (hỗ trợ videos và link_avatar)
 app.put('/api/mongo/sanpham/:id', async (req, res) => {
     try {
-        const { id } = req.params;
-        // THÊM link_avatar vào destructuring
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug, link_avatar } = req.body;
+        const mongoId = req.params.id;
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, link_avatar, mo_ta_chi_tiet, slug } = req.body;
 
-        console.log('🔄 API: Cập nhật document MongoDB');
-        console.log('📝 Request data:', {
-            id,
-            sql_product_id,
-            has_specs: !!thong_so_ky_thuat,
-            has_images: !!hinh_anh,
-            has_description: !!mo_ta_chi_tiet,
-            slug,
-            link_avatar // THÊM VÀO LOG
+        console.log(`🔄 API: Cập nhật document MongoDB ${mongoId}`);
+        console.log('📝 Update data:', { 
+            sql_product_id, 
+            slug, 
+            thong_so_ky_thuat: thong_so_ky_thuat ? Object.keys(thong_so_ky_thuat).length : 0, 
+            hinh_anh: hinh_anh ? hinh_anh.length : 0,
+            videos: videos ? videos.length : 0,
+            link_avatar: link_avatar ? 'yes' : 'no'
         });
 
-        // Kiểm tra kết nối MongoDB
-        const dbState = mongoose.connection.readyState;
-        console.log('🔌 MongoDB connection state:', dbState);
-        
-        if (dbState !== 1) {
-            throw new Error(`MongoDB connection is not ready. State: ${dbState}`);
-        }
-
-        // Tạo object cập nhật
-        const updateData = {};
-
-        // Cập nhật sql_product_id nếu có
-        if (sql_product_id) {
-            updateData.sql_product_id = sql_product_id.toLowerCase();
-        }
-
-        // Cập nhật thông số kỹ thuật nếu có
+        // Chuyển đổi thông số kỹ thuật từ object sang array
+        const thongSoKyThuatArray = [];
         if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
-            // Chuyển đổi từ object sang array format
-            updateData.thong_so_ky_thuat = Object.entries(thong_so_ky_thuat).map(([ten, gia_tri]) => ({
-                ten: ten.trim(),
-                gia_tri: gia_tri
-            }));
+            Object.entries(thong_so_ky_thuat).forEach(([ten, gia_tri]) => {
+                thongSoKyThuatArray.push({
+                    ten: ten.trim(),
+                    gia_tri: gia_tri
+                });
+            });
         }
 
-        // Cập nhật hình ảnh nếu có
-        if (hinh_anh && Array.isArray(hinh_anh)) {
-            updateData.hinh_anh = hinh_anh;
-        }
+        const updateData = {
+            updatedAt: new Date()
+        };
 
-        // Cập nhật mô tả chi tiết nếu có
-        if (mo_ta_chi_tiet !== undefined) {
-            updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
-        }
+        if (sql_product_id !== undefined) updateData.sql_product_id = sql_product_id;
+        if (thong_so_ky_thuat !== undefined) updateData.thong_so_ky_thuat = thongSoKyThuatArray;
+        if (hinh_anh !== undefined) updateData.hinh_anh = hinh_anh;
+        if (videos !== undefined) updateData.videos = videos;
+        if (link_avatar !== undefined) updateData.link_avatar = link_avatar;
+        if (mo_ta_chi_tiet !== undefined) updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
+        if (slug !== undefined) updateData.slug = slug;
 
-        // Cập nhật slug nếu có
-        if (slug) {
-            updateData.slug = slug;
-        }
-
-        // QUAN TRỌNG: Cập nhật link_avatar
-        if (link_avatar !== undefined) {
-            updateData.link_avatar = link_avatar;
-            console.log('✅ Updating link_avatar:', link_avatar);
-        } else if (hinh_anh && hinh_anh.length > 0) {
-            // Fallback: nếu không có link_avatar nhưng có hình ảnh, dùng ảnh đầu tiên
-            updateData.link_avatar = hinh_anh[0];
-            console.log('🔄 Using first image as link_avatar:', hinh_anh[0]);
-        }
-
-        console.log('📊 Update data to save:', updateData);
-
-        // Tìm và cập nhật document
         const updatedDetail = await DataModel.Mongo.ProductDetail.findByIdAndUpdate(
-            id,
+            mongoId,
             { $set: updateData },
             { new: true, runValidators: true }
         );
@@ -1951,12 +1930,11 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         if (!updatedDetail) {
             return res.status(404).json({
                 success: false,
-                message: 'Không tìm thấy document MongoDB để cập nhật'
+                message: 'Không tìm thấy document MongoDB'
             });
         }
 
-        console.log('✅ MongoDB document updated successfully:', updatedDetail._id);
-        console.log('✅ link_avatar after update:', updatedDetail.link_avatar);
+        console.log('✅ MongoDB document updated:', mongoId);
 
         res.json({
             success: true,
@@ -1966,41 +1944,10 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Lỗi khi cập nhật document MongoDB:', error);
-        
-        // Log chi tiết lỗi
-        console.error('📛 Error details:', {
-            name: error.name,
-            message: error.message,
-            code: error.code,
-            keyPattern: error.keyPattern,
-            keyValue: error.keyValue
-        });
-
-        // Xử lý các loại lỗi cụ thể
-        if (error.name === 'ValidationError') {
-            const errors = Object.values(error.errors).map(err => err.message);
-            return res.status(400).json({
-                success: false,
-                message: 'Lỗi validation: ' + errors.join(', '),
-                errors: errors
-            });
-        }
-        
-        if (error.name === 'MongoError' && error.code === 11000) {
-            return res.status(400).json({
-                success: false,
-                message: 'Lỗi trùng lặp: sql_product_id đã tồn tại trong MongoDB',
-                errorCode: error.code
-            });
-        }
-
         res.status(500).json({
             success: false,
-            message: 'Lỗi server khi cập nhật document MongoDB: ' + error.message,
-            error: process.env.NODE_ENV === 'development' ? {
-                name: error.name,
-                message: error.message
-            } : undefined
+            message: 'Lỗi server khi cập nhật document MongoDB',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
@@ -2038,10 +1985,17 @@ app.get('/api/mongo/sanpham/sql/:sql_product_id', async (req, res) => {
             slug: productDetail.slug,
             thong_so_ky_thuat: thongSoKyThuatObject,
             hinh_anh: productDetail.hinh_anh || [],
+            videos: productDetail.videos || [],
+            link_avatar: productDetail.link_avatar || '',
             mo_ta_chi_tiet: productDetail.mo_ta_chi_tiet,
             createdAt: productDetail.createdAt,
             updatedAt: productDetail.updatedAt
         };
+
+        console.log('✅ Returning MongoDB data with videos:', {
+            videos_count: responseData.videos.length,
+            has_link_avatar: !!responseData.link_avatar
+        });
 
         res.json({
             success: true,
@@ -2091,21 +2045,368 @@ app.delete('/api/mongo/sanpham/:id', async (req, res) => {
     }
 });
 
-// PUT /api/sanpham/:id/image - Cập nhật ảnh sản phẩm
-app.put('/api/sanpham/:id/image', async (req, res) => {
-    try {
-        const productId = req.params.id;
-        const { link_anh } = req.body;
 
-        console.log(`🔄 API: Cập nhật ảnh sản phẩm ${productId}`);
 
-        if (!link_anh) {
+
+
+
+
+
+
+
+
+
+
+
+// =============================================
+// MULTER CONFIGURATION FOR VIDEOS (Must be before routes)
+// =============================================
+
+// File filter hỗ trợ cả video
+const fileFilterWithVideos = (req, file, cb) => {
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime', 'video/webm'];
+    
+    if (allowedImageTypes.includes(file.mimetype) || allowedVideoTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Định dạng file không được hỗ trợ: ${file.mimetype}. Chỉ chấp nhận JPG, PNG, GIF, WebP, MP4, MOV, AVI, WebM`), false);
+    }
+};
+
+// Multer instance cho video
+const uploadWithVideos = multer({
+    storage: storage,
+    fileFilter: fileFilterWithVideos,
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB cho video
+    }
+});
+
+// Middleware xử lý lỗi upload video
+const handleVideoUploadError = (err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
                 success: false,
-                message: 'URL ảnh là bắt buộc'
+                message: 'Kích thước file video quá lớn. Tối đa 50MB'
+            });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({
+                success: false,
+                message: 'Quá nhiều file video được chọn'
+            });
+        }
+    }
+    res.status(400).json({
+        success: false,
+        message: err.message
+    });
+};
+
+// =============================================
+// VIDEO UPLOAD ROUTES
+// =============================================
+
+// Upload multiple product videos
+app.post('/api/upload/product-videos', uploadWithVideos.array('productVideos', 5), handleVideoUploadError, async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file video'
             });
         }
 
+        console.log(`⬆️ Starting upload for ${req.files.length} videos...`);
+
+        const uploadPromises = req.files.map(file => 
+            uploadVideoToCloudinary(file.path, 'products/videos')
+        );
+
+        const results = await Promise.all(uploadPromises);
+        
+        const uploadedVideos = results.map(result => ({
+            url: result.secure_url,
+            public_id: result.public_id,
+            format: result.format,
+            bytes: result.bytes,
+            duration: result.duration,
+            resource_type: result.resource_type
+        }));
+
+        console.log(`✅ Uploaded ${uploadedVideos.length} videos successfully`);
+
+        res.json({
+            success: true,
+            message: `Upload ${uploadedVideos.length} video thành công`,
+            data: uploadedVideos
+        });
+
+    } catch (error) {
+        console.error('❌ Product videos upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi upload video: ' + error.message
+        });
+    }
+});
+
+// Upload single product video (nếu cần)
+app.post('/api/upload/product-video', uploadWithVideos.single('productVideo'), handleVideoUploadError, async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file video'
+            });
+        }
+
+        console.log('⬆️ Starting single video upload...');
+
+        // Kiểm tra nếu có oldVideoUrl trong body thì xóa video cũ
+        const { oldVideoUrl } = req.body;
+        if (oldVideoUrl) {
+            try {
+                await deleteVideoFromCloudinary(oldVideoUrl);
+            } catch (deleteError) {
+                console.warn('⚠️ Could not delete old video:', deleteError.message);
+            }
+        }
+
+        // Upload video mới lên Cloudinary
+        const result = await uploadVideoToCloudinary(req.file.path, 'products/videos');
+        
+        res.json({
+            success: true,
+            message: 'Upload video thành công',
+            data: {
+                url: result.secure_url,
+                public_id: result.public_id,
+                format: result.format,
+                bytes: result.bytes,
+                duration: result.duration,
+                resource_type: result.resource_type
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Product video upload error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi upload video: ' + error.message
+        });
+    }
+});
+
+// API để xóa video từ Cloudinary
+app.delete('/api/upload/video', async (req, res) => {
+    try {
+        const { videoUrl } = req.body;
+
+        if (!videoUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu URL video'
+            });
+        }
+
+        console.log('🗑️ Received delete request for video:', videoUrl);
+        const result = await deleteVideoFromCloudinary(videoUrl);
+
+        res.json({
+            success: true,
+            message: 'Xóa video thành công',
+            data: result
+        });
+
+    } catch (error) {
+        console.error('❌ Video delete error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa video: ' + error.message
+        });
+    }
+});
+
+// =============================================
+// CLOUDINARY VIDEO UTILITY FUNCTIONS
+// =============================================
+
+// Hàm upload video lên Cloudinary
+const uploadVideoToCloudinary = async (filePath, folder = 'products/videos') => {
+    try {
+        console.log(`🎬 Uploading video to Cloudinary folder: ${folder}`);
+        
+        const result = await cloudinary.uploader.upload(filePath, {
+            folder: `webPhone/${folder}`,
+            resource_type: 'video',
+            chunk_size: 6000000, // 6MB chunks for better upload
+            eager: [
+                { 
+                    format: 'mp4',
+                    quality: 'auto'
+                },
+            ],
+            eager_async: true
+        });
+
+        // Xóa file tạm sau khi upload
+        fs.unlinkSync(filePath);
+        
+        console.log(`✅ Video upload successful: ${result.secure_url}`);
+        console.log(`📊 Video details: ${result.duration}s, ${result.bytes} bytes`);
+        return result;
+    } catch (error) {
+        // Vẫn xóa file tạm dù upload thất bại
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        throw new Error(`Cloudinary video upload failed: ${error.message}`);
+    }
+};
+
+// Hàm xóa video từ Cloudinary
+const deleteVideoFromCloudinary = async (videoUrl) => {
+    try {
+        if (!videoUrl || !videoUrl.includes('cloudinary.com')) {
+            return { result: 'not_cloudinary' };
+        }
+
+        // Extract public_id từ URL Cloudinary
+        const publicId = extractPublicIdFromUrl(videoUrl);
+        if (!publicId) {
+            throw new Error('Could not extract public_id from video URL');
+        }
+
+        console.log(`🗑️ Deleting video from Cloudinary: ${publicId}`);
+        const result = await cloudinary.uploader.destroy(publicId, {
+            resource_type: 'video'
+        });
+        return result;
+    } catch (error) {
+        console.error('❌ Cloudinary video delete failed:', error);
+        throw error;
+    }
+};
+
+// =============================================
+// CẬP NHẬT MONGODB PRODUCT DETAILS API ĐỂ HỖ TRỢ VIDEO
+// =============================================
+
+// Cập nhật POST /api/mongo/sanpham để hỗ trợ video
+app.post('/api/mongo/sanpham', async (req, res) => {
+    try {
+        // THÊM videos vào destructuring
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, mo_ta_chi_tiet, slug, link_avatar } = req.body;
+
+        console.log('🔄 API: Tạo document MongoDB mới với video support');
+        console.log('📝 Request data:', {
+            sql_product_id,
+            has_specs: !!thong_so_ky_thuat,
+            has_images: !!hinh_anh,
+            has_videos: !!videos, // THÊM DÒNG NÀY
+            has_description: !!mo_ta_chi_tiet,
+            slug,
+            link_avatar
+        });
+
+        // ... existing MongoDB connection check ...
+
+        // Tạo document data - THÊM videos
+        const documentData = {
+            sql_product_id: sql_product_id.toLowerCase() || null,
+            slug: slug || `temp-${Date.now()}`
+        };
+
+        // ... existing specs and images processing ...
+
+        // Thêm video nếu có - THÊM PHẦN NÀY
+        if (videos && Array.isArray(videos)) {
+            documentData.videos = videos;
+        } else {
+            documentData.videos = [];
+        }
+
+        // ... existing description and link_avatar processing ...
+
+        console.log('📊 Document data to save:', {
+            sql_product_id: documentData.sql_product_id,
+            slug: documentData.slug,
+            specs_count: documentData.thong_so_ky_thuat.length,
+            images_count: documentData.hinh_anh.length,
+            videos_count: documentData.videos.length, // THÊM DÒNG NÀY
+            has_description: !!documentData.mo_ta_chi_tiet,
+            link_avatar: documentData.link_avatar
+        });
+
+        // ... existing save logic ...
+
+    } catch (error) {
+        // ... existing error handling ...
+    }
+});
+
+
+
+// =============================================
+// UTILITY FUNCTION ĐỂ XÓA VIDEO KHI XÓA SẢN PHẨM
+// =============================================
+
+// Hàm utility để xóa tất cả video của sản phẩm
+const deleteProductVideos = async (productId) => {
+    try {
+        console.log(`🎬 Deleting all videos for product: ${productId}`);
+        
+        // Tìm document MongoDB để lấy danh sách video
+        const productDetail = await DataModel.Mongo.ProductDetail.findOne({ 
+            sql_product_id: productId 
+        });
+
+        if (!productDetail || !productDetail.videos || productDetail.videos.length === 0) {
+            console.log('ℹ️ No videos found for product');
+            return;
+        }
+
+        // Xóa từng video từ Cloudinary
+        const deletePromises = productDetail.videos.map(videoUrl => 
+            deleteVideoFromCloudinary(videoUrl)
+        );
+
+        const results = await Promise.allSettled(deletePromises);
+        
+        // Log kết quả xóa
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                console.log(`✅ Deleted video: ${productDetail.videos[index]}`);
+            } else {
+                console.error(`❌ Failed to delete video: ${productDetail.videos[index]}`, result.reason);
+            }
+        });
+
+        console.log(`✅ Completed deleting ${productDetail.videos.length} videos for product ${productId}`);
+        
+    } catch (error) {
+        console.error('❌ Error deleting product videos:', error);
+        throw error;
+    }
+};
+
+// =============================================
+// CẬP NHẬT API XÓA SẢN PHẨM ĐỂ XÓA VIDEO
+// =============================================
+
+// Cập nhật DELETE /api/sanpham/:id để xóa video
+app.delete('/api/sanpham/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        
+        console.log(`🗑️ API: Xóa sản phẩm ${productId} (with video support)`);
+
+        // ... existing validation ...
+
+        // Tìm sản phẩm để lấy thông tin
         const product = await DataModel.SQL.Product.findById(productId);
         if (!product) {
             return res.status(404).json({
@@ -2114,46 +2415,152 @@ app.put('/api/sanpham/:id/image', async (req, res) => {
             });
         }
 
-        // Nếu có ảnh cũ và ảnh cũ khác ảnh mới, xóa ảnh cũ khỏi Cloudinary
-        if (product.link_anh && product.link_anh !== link_anh && product.link_anh.includes('cloudinary.com')) {
+        // Xóa ảnh chính từ Cloudinary nếu có
+        if (product.link_anh && product.link_anh.includes('cloudinary.com')) {
             try {
-                console.log('🗑️ Deleting old product image:', product.link_anh);
+                console.log('🗑️ Deleting product main image from Cloudinary:', product.link_anh);
                 await deleteFromCloudinary(product.link_anh);
             } catch (delErr) {
-                console.warn('⚠️ Failed to delete old product image:', delErr.message);
+                console.warn('⚠️ Failed to delete product main image:', delErr.message);
             }
         }
 
-        const updatedProduct = await DataModel.SQL.Product.update(productId, {
-            link_anh: link_anh,
-            ngay_cap_nhat: new Date()
+        // Xóa document MongoDB nếu có
+        if (product.mongo_detail_id) {
+            try {
+                // Xóa ảnh phụ từ Cloudinary
+                const mongoDoc = await DataModel.Mongo.ProductDetail.findOne({ 
+                    sql_product_id: productId 
+                });
+                
+                if (mongoDoc) {
+                    // Xóa ảnh phụ
+                    if (mongoDoc.hinh_anh && Array.isArray(mongoDoc.hinh_anh)) {
+                        for (const imageUrl of mongoDoc.hinh_anh) {
+                            if (imageUrl && imageUrl.includes('cloudinary.com')) {
+                                try {
+                                    await deleteFromCloudinary(imageUrl);
+                                    console.log('🗑️ Deleted additional image:', imageUrl);
+                                } catch (imgErr) {
+                                    console.warn('⚠️ Failed to delete additional image:', imgErr.message);
+                                }
+                            }
+                        }
+                    }
+
+                    // THÊM: Xóa video từ Cloudinary
+                    if (mongoDoc.videos && Array.isArray(mongoDoc.videos)) {
+                        for (const videoUrl of mongoDoc.videos) {
+                            if (videoUrl && videoUrl.includes('cloudinary.com')) {
+                                try {
+                                    await deleteVideoFromCloudinary(videoUrl);
+                                    console.log('🎬 Deleted video:', videoUrl);
+                                } catch (videoErr) {
+                                    console.warn('⚠️ Failed to delete video:', videoErr.message);
+                                }
+                            }
+                        }
+                    }
+
+                    // Xóa document MongoDB
+                    await DataModel.Mongo.ProductDetail.findByIdAndDelete(product.mongo_detail_id);
+                    console.log('✅ MongoDB document deleted:', product.mongo_detail_id);
+                }
+            } catch (mongoError) {
+                console.warn('⚠️ Could not delete MongoDB document:', mongoError.message);
+            }
+        }
+
+        // Xóa sản phẩm từ SQL
+        const result = await DataModel.SQL.Product.destroy({
+            where: { id: productId }
         });
+
+        console.log(`✅ Đã xóa sản phẩm: ${product.ten_san_pham}`);
 
         res.json({
             success: true,
-            message: 'Cập nhật ảnh sản phẩm thành công',
-            product: updatedProduct
+            message: 'Xóa sản phẩm thành công',
+            data: result
         });
-
+        
     } catch (error) {
-        console.error('❌ Lỗi khi cập nhật ảnh sản phẩm:', error);
+        console.error('❌ Lỗi khi xóa sản phẩm:', error);
+        
         res.status(500).json({
             success: false,
-            message: 'Lỗi server khi cập nhật ảnh sản phẩm',
+            message: 'Lỗi server khi xóa sản phẩm',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
 
+// =============================================
+// API ĐỂ LẤY THÔNG TIN VIDEO (Nếu cần)
+// =============================================
 
+// GET /api/sanpham/:id/videos - Lấy danh sách video của sản phẩm
+app.get('/api/sanpham/:id/videos', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        console.log(`🎬 API: Lấy danh sách video sản phẩm ${productId}`);
 
+        const productDetail = await DataModel.Mongo.ProductDetail.findOne({ 
+            sql_product_id: productId 
+        });
 
+        if (!productDetail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy thông tin sản phẩm'
+            });
+        }
 
+        const videos = productDetail.videos || [];
 
+        res.json({
+            success: true,
+            data: {
+                product_id: productId,
+                videos: videos,
+                total_videos: videos.length
+            }
+        });
 
+    } catch (error) {
+        console.error('❌ Lỗi khi lấy danh sách video:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi lấy danh sách video',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
 
+// =============================================
+// CẬP NHẬT MULTER CONFIG CHÍNH ĐỂ HỖ TRỢ VIDEO
+// =============================================
 
+// Cập nhật file filter chính để hỗ trợ cả video
+const updatedFileFilter = (req, file, cb) => {
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime', 'video/webm'];
+    
+    if (allowedImageTypes.includes(file.mimetype) || allowedVideoTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error(`Định dạng file không được hỗ trợ: ${file.mimetype}. Chỉ chấp nhận JPG, PNG, GIF, WebP, MP4, MOV, AVI, WebM`), false);
+    }
+};
 
+// Cập nhật multer instance chính
+const updatedUpload = multer({
+    storage: storage,
+    fileFilter: updatedFileFilter,
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB cho cả ảnh và video
+    }
+});
 
-
+// Start server
 app.listen(3000, () => console.log('Server running on port 3000'));
