@@ -688,6 +688,7 @@
                                     <i class="fas fa-info-circle"></i>
                                     Thông tin cơ bản
                                 </h4>
+                                <input type="hidden" id="mongoDetailId" name="mongoDetailId">
                                 <div class="form-grid-3">
                                     <div class="form-group">
                                         <label for="productName" class="form-label">Tên sản phẩm *</label>
@@ -780,46 +781,32 @@
                             <div class="form-section">
                                 <h4 class="section-title">
                                     <i class="fas fa-image"></i>
-                                    Hình ảnh & Video
+                                    Hình ảnh sản phẩm
                                 </h4>
                                 
-                                <!-- Trong phần Main Image của product modal -->
-                                    <div class="file-upload-container">
-                                        <input type="file" class="form-control" id="productMainImage" accept="image/*" style="display: none;">
-                                        <div class="file-upload-area" id="mainImageUploadArea">
-                                            <div class="upload-placeholder">
-                                                <!-- THÊM NÚT CHỌN HÌNH GIỐNG BRAND/CATEGORY -->
-                                                <button type="button" class="btn btn-secondary" id="chooseMainImageBtn">
-                                                    <i class="fas fa-upload"></i>
-                                                    &nbsp;Chọn hình chính
-                                                </button>
-                                                <div class="form-text mt-2">Định dạng: JPG, PNG, GIF (Tối đa 5MB)</div>
-                                            </div>
-                                            <div class="upload-preview" id="mainImagePreview" style="display: none;">
-                                                <img id="mainImagePreviewImg" src="" alt="Preview">
-                                                <button type="button" class="btn-change-image" id="changeMainImageBtn">
-                                                    <i class="fas fa-sync-alt"></i> Thay đổi
-                                                </button>
-                                            </div>
+                                <!-- Upload ảnh -->
+                                <div class="file-upload-container">
+                                    <input type="file" class="form-control" id="productImages" accept="image/*" multiple style="display: none;">
+                                    <div class="file-upload-area" id="productImagesUploadArea">
+                                        <div class="upload-placeholder">
+                                            <button type="button" class="btn btn-secondary" id="chooseProductImagesBtn">
+                                                <i class="fas fa-images"></i>
+                                                &nbsp;Chọn hình ảnh
+                                            </button>
+                                            <div class="form-text mt-2">Có thể chọn nhiều ảnh (Tối đa 10 ảnh, mỗi ảnh 5MB)</div>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <!-- Trong phần Additional Images của product modal -->
-                                    <div class="file-upload-container">
-                                        <input type="file" class="form-control" id="productAdditionalImages" accept="image/*" multiple style="display: none;">
-                                        <div class="file-upload-area" id="additionalImagesUploadArea">
-                                            <div class="upload-placeholder">
-                                                <!-- THÊM NÚT CHỌN HÌNH GIỐNG BRAND/CATEGORY -->
-                                                <button type="button" class="btn btn-secondary" id="chooseAdditionalImagesBtn">
-                                                    <i class="fas fa-images"></i>
-                                                    &nbsp;Chọn hình phụ
-                                                </button>
-                                                <div class="form-text mt-2">Có thể chọn nhiều ảnh (Tối đa 10 ảnh, mỗi ảnh 5MB)</div>
-                                            </div>
-                                            <div class="additional-images-preview" id="additionalImagesPreview" style="display: none;"></div>
-                                        </div>
+                                <!-- Preview ảnh đã upload -->
+                                <div class="images-preview-container mt-3" id="productImagesPreview" style="display: none;">
+                                    <div class="preview-title">Ảnh đã chọn: <span id="selectedMainImageHint">(Chọn ảnh chính bằng cách tích vào checkbox)</span></div>
+                                    <div class="images-preview-grid" id="productImagesPreviewGrid">
+                                        <!-- Các ảnh preview sẽ được thêm vào đây -->
                                     </div>
+                                </div>
                             </div>
+
 
                             <!-- Status & Features -->
                             <div class="form-section">
@@ -1028,7 +1015,7 @@
                 }
                 const img = new Image();
                 img.onload = () => resolve(true);
-                img.onerror = () => resolve(false);
+               
                 img.src = url;
             });
         },
@@ -1199,56 +1186,92 @@
             }
         }
         // Tạo document MongoDB mới
-        static async createProductMongoDetail(sql_product_id, specsData, additionalImages, mo_ta_chi_tiet, slug) {
+        // Trong ProductAPIService, sửa hàm createProductMongoDetail
+        static async createProductMongoDetail(sql_product_id, specsData, mo_ta_chi_tiet, slug, hinh_anh, link_avartar = '') {
             try {
+                console.log('📤 Creating MongoDB document with:', {
+                    sql_product_id,
+                    specsData,
+                    mo_ta_chi_tiet,
+                    slug,
+                    hinh_anh,
+                    link_avartar
+                });
+
+                const requestBody = {
+                    sql_product_id: sql_product_id,
+                    thong_so_ky_thuat: specsData,
+                    hinh_anh: hinh_anh || [], // Đảm bảo luôn là array
+                    link_avartar: link_avartar,
+                    mo_ta_chi_tiet: mo_ta_chi_tiet,
+                    slug: slug
+                };
+
+                console.log('🚀 Sending MongoDB create request:', requestBody);
+
                 const response = await fetch('/api/mongo/sanpham', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sql_product_id: sql_product_id,
-                        thong_so_ky_thuat: specsData,
-                        hinh_anh: additionalImages,
-                        mo_ta_chi_tiet: mo_ta_chi_tiet,
-                        slug: slug
-                    })
+                    body: JSON.stringify(requestBody)
                 });
+
+                console.log('📨 MongoDB create response status:', response.status);
 
                 if (!response.ok) {
                     const errorData = await response.json();
+                    console.error('❌ MongoDB create error:', errorData);
                     throw new Error(errorData.message || 'Lỗi khi tạo document MongoDB');
                 }
 
-                return await response.json();
+                const result = await response.json();
+                console.log('✅ MongoDB create result:', result);
+                return result;
+
             } catch (error) {
-                console.error('API Error creating MongoDB document:', error);
+                console.error('❌ API Error creating MongoDB document:', error);
                 throw error;
             }
         }
 
+
         // Cập nhật document MongoDB
-        static async updateProductMongoDetail(mongoId, sql_product_id, specsData, additionalImages, mo_ta_chi_tiet, slug) {
+        static async updateProductMongoDetail(mongoId, updateData) {
             try {
+                console.log('🔧 API: Updating MongoDB document with ID:', mongoId);
+                console.log('📤 Update data being sent:', JSON.stringify(updateData, null, 2));
+
                 const response = await fetch(`/api/mongo/sanpham/${mongoId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sql_product_id: sql_product_id,
-                        thong_so_ky_thuat: specsData,
-                        hinh_anh: additionalImages,
-                        mo_ta_chi_tiet: mo_ta_chi_tiet,
-                        slug: slug
-                    })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
                 });
 
+                console.log('📨 Response status:', response.status);
+                
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Lỗi khi cập nhật document MongoDB');
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                        console.error('❌ Server error response:', errorData);
+                    } catch (e) {
+                        const errorText = await response.text();
+                        errorMessage = errorText || errorMessage;
+                        console.error('❌ Server error text:', errorText);
+                    }
+                    throw new Error(errorMessage);
                 }
 
-                return await response.json();
+                const result = await response.json();
+                console.log('✅ MongoDB update successful:', result);
+                return result;
+
             } catch (error) {
-                console.error('API Error updating MongoDB document:', error);
-                throw error;
+                console.error('❌ API Error updating MongoDB document:', error);
+                throw new Error('Lỗi server khi cập nhật document MongoDB: ' + error.message);
             }
         }
 
@@ -1297,6 +1320,7 @@
             this.currentSpecsProductId = null;
             this.currentSpecsProduct = null;
             this.currentEditingSpecKey = null;
+            this.isSaving = false;
             this.init();
         }
 
@@ -1311,6 +1335,7 @@
             try {
                 this.showLoading(true);
                 this.products = await ProductAPIService.getProducts();
+                
                 this.showLoading(false);
                 this.updateStats();
                 this.filterProducts();
@@ -1350,8 +1375,7 @@
                 row.innerHTML = `
                     <td class="col-image">
                         <div class="product-table-image">
-                            <img src="${product.link_anh}" alt="${product.ten_san_pham}" 
-                                onerror="this.src='/images/placeholder.jpg'">
+                            <img src="${product.link_anh}" alt="${product.ten_san_pham}">
                         </div>
                     </td>
                     <td class="col-name">
@@ -1406,26 +1430,28 @@
             this.updateTableInfo(this.products.length);
         }
 
+
         async refreshProducts() {
             const refreshBtn = document.getElementById('refreshBtn');
-            const originalHtml = refreshBtn ? refreshBtn.innerHTML : null;
+            const originalHtml = refreshBtn?.innerHTML || '<i class="fas fa-sync-alt"></i> Làm mới';
             
             try {
                 console.log('🔄 Refreshing products data...');
                 
-                // Hiển thị trạng thái loading trên nút refresh
+                // 🆕 QUAN TRỌNG: Đóng tất cả modal đang mở trước khi refresh
+                this.closeAllModals();
+                
+                // Set trạng thái loading
                 if (refreshBtn) {
                     refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang làm mới...';
                     refreshBtn.disabled = true;
                 }
                 
-                // Hiển thị trạng thái loading toàn trang
+                // Reset và reload
+                this.clearFilters();
                 this.showLoading(true);
-                
-                // Load lại dữ liệu từ server
                 await this.loadProducts();
-                
-                // Cập nhật bộ lọc và hiển thị
+                this.renderProductsTable();
                 this.filterProducts();
                 this.updateStats();
                 
@@ -1435,17 +1461,61 @@
                 console.error('❌ Error refreshing products:', error);
                 this.showError('Không thể làm mới dữ liệu: ' + error.message);
             } finally {
-                this.showLoading(false);
-                
-                // Khôi phục nút refresh sau 500ms
+                // Reset nút refresh
                 if (refreshBtn) {
-                    setTimeout(() => {
-                        refreshBtn.innerHTML = originalHtml;
-                        refreshBtn.disabled = false;
-                    }, 500);
+                    refreshBtn.innerHTML = originalHtml;
+                    refreshBtn.disabled = false;
                 }
+                
+                this.showLoading(false);
             }
         }
+
+        // 🆕 Thêm phương thức đóng tất cả modal
+        closeAllModals() {
+            // Đóng modal sản phẩm
+            const productModal = document.getElementById('productModal');
+            if (productModal) {
+                const modalInstance = bootstrap.Modal.getInstance(productModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+            
+            // Đóng modal thông số
+            const specsModal = document.getElementById('specsModal');
+            if (specsModal) {
+                const modalInstance = bootstrap.Modal.getInstance(specsModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+            
+            // Đóng modal edit spec
+            const specEditModal = document.getElementById('specEditModal');
+            if (specEditModal) {
+                const modalInstance = bootstrap.Modal.getInstance(specEditModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            }
+            
+            console.log('🚪 Đã đóng tất cả modal');
+        }
+
+        // Phương thức reset nút refresh
+        resetRefreshButton(refreshBtn, originalHtml) {
+            if (refreshBtn) {
+                // Reset ngay lập tức, không cần setTimeout
+                refreshBtn.innerHTML = originalHtml || '<i class="fas fa-sync-alt"></i> Làm mới';
+                refreshBtn.disabled = false;
+                
+                console.log('🔄 Reset refresh button completed');
+            }
+        }
+
+
+
 
         bindEvents() {
             // Product Management
@@ -1482,12 +1552,12 @@
                 if (e.target.closest('#addNewSpecBtn') || e.target.closest('#addSpecsBtn')) {
                     this.showAddSpecModal();
                 }
-                if (e.target.closest('.btn-edit-spec')) {
+                {{!-- if (e.target.closest('.btn-edit-spec')) {
                     const row = e.target.closest('tr');
                     const key = row.getAttribute('data-spec-key');
                     const value = row.querySelector('.spec-value').textContent;
                     this.showEditSpecModal(key, value);
-                }
+                } --}}
                 if (e.target.closest('.btn-delete-spec')) {
                     const row = e.target.closest('tr');
                     const key = row.getAttribute('data-spec-key');
@@ -1609,11 +1679,17 @@
         }
 
         clearFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('categoryFilter').value = '';
-            document.getElementById('brandFilter').value = '';
-            this.filterProducts();
+            const searchInput = document.getElementById('searchInput');
+            const statusFilter = document.getElementById('statusFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const brandFilter = document.getElementById('brandFilter');
+
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (categoryFilter) categoryFilter.value = '';
+            if (brandFilter) brandFilter.value = '';
+
+            console.log('🧹 Đã xóa tất cả bộ lọc');
         }
 
         toggleEmptyState(show) {
@@ -1663,87 +1739,167 @@
 
         // Product Modal Methods
         openProductModal(product = null) {
-            this.currentEditId = product ? product.id : null;
+            try {
+                this.currentEditId = product ? product.id : null;
 
-            const modal = new bootstrap.Modal(document.getElementById('productModal'));
-            const title = document.getElementById('modalTitle');
-            const saveText = document.getElementById('saveButtonText');
+                // 🆕 Đảm bảo modal tồn tại trong DOM
+                let modalElement = document.getElementById('productModal');
+                if (!modalElement) {
+                    console.error('❌ Product modal không tồn tại trong DOM');
+                    this.showError('Lỗi: Modal không tồn tại. Vui lòng tải lại trang.');
+                    return;
+                }
 
-            if (product) {
-                title.textContent = 'Chỉnh sửa sản phẩm';
-                saveText.textContent = 'Cập nhật sản phẩm';
-                this.fillProductForm(product);
-            } else {
-                title.textContent = 'Thêm sản phẩm mới';
-                saveText.textContent = 'Thêm sản phẩm';
-                this.resetProductForm();
+                // 🆕 Luôn tạo modal instance mới để đảm bảo fresh state
+                const modal = new bootstrap.Modal(modalElement);
+                
+                // 🆕 Tìm các element với fallback
+                let titlez = document.getElementById('modalTitle');
+                let saveText = document.getElementById('saveButtonText');
+
+                const title = modalElement.querySelector('.modal-title');
+                const saveBtn = document.getElementById('saveProductBtn');
+
+                // Nếu không tìm thấy element, thử tìm bằng cách khác
+                if (!title) {
+                    title = modalElement.querySelector('.modal-title');
+                    if (title) title.id = 'modalTitle';
+                }
+                
+                if (!saveText) {
+                    const saveBtn = modalElement.querySelector('#saveProductBtn');
+                    if (saveBtn) {
+                        saveText = saveBtn.querySelector('span') || document.createElement('span');
+                        saveText.id = 'saveButtonText';
+                        if (!saveBtn.contains(saveText)) {
+                            saveBtn.appendChild(saveText);
+                        }
+                    }
+                }
+
+                if (!title || !saveText) {
+                    console.error('❌ Không thể tìm thấy element modal sau nhiều lần thử');
+                    this.showError('Lỗi hiển thị form. Vui lòng tải lại trang.');
+                    return;
+                }
+
+                if (product) {
+                    title.textContent = 'Chỉnh sửa sản phẩm';
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Cập nhật sản phẩm';
+                    this.fillProductForm(product);
+                } else {
+                    title.textContent = 'Thêm sản phẩm mới';
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Thêm sản phẩm';
+                    this.resetProductForm();
+                }
+
+                // 🆕 Xử lý sự kiện khi modal hoàn toàn hiển thị
+                modalElement.addEventListener('shown.bs.modal', () => {
+                    console.log('✅ Modal đã hiển thị hoàn toàn');
+                }, { once: true });
+
+                modal.show();
+                
+            } catch (error) {
+                console.error('❌ Lỗi nghiêm trọng trong openProductModal:', error);
+                this.showError('Lỗi hệ thống: ' + error.message);
             }
-
-            modal.show();
         }
 
-        // Thêm vào class ProductManager
         async fillProductForm(product) {
             console.log('Filling product form with data:', product);
 
             document.getElementById('productId').value = product.id || '';
+            document.getElementById('mongoDetailId').value = product.mongo_detail_id || '';
             document.getElementById('productName').value = product.ten_san_pham || '';
             document.getElementById('productPrice').value = product.gia_ban || '';
             document.getElementById('productOriginalPrice').value = product.gia_niem_yet || '';
             document.getElementById('productCategory').value = product.danh_muc_id || '';
             document.getElementById('productBrand').value = product.thuong_hieu_id || '';
             document.getElementById('productStatus').value = product.trang_thai || '1';
-            document.getElementById('productImage').value = product.link_anh || '';
             document.getElementById('productDescription').value = product.mo_ta || '';
             document.getElementById('productFeatured').checked = product.san_pham_noi_bat || false;
 
-            // Update image preview
-            this.updateImagePreview(product.link_anh);
-
+            console.log ('Đã vào đc: ', product.mongo_detail_id);
             // Load thông tin từ MongoDB nếu có mongo_detail_id
             if (product.mongo_detail_id) {
                 try {
+                    console.log ('Đã vào đc');
                     const mongoResult = await ProductAPIService.getProductMongoDetail(product.id);
                     if (mongoResult.success && mongoResult.data) {
                         const mongoData = mongoResult.data;
                         console.log('📥 Loaded MongoDB data:', mongoData);
                         
-                        // Load thông số kỹ thuật vào productSpecsManager
+                        // Load thông số kỹ thuật
                         if (window.productSpecsManager && mongoData.thong_so_ky_thuat) {
                             window.productSpecsManager.loadSpecsData(mongoData.thong_so_ky_thuat);
                         }
 
-                        // Có thể xử lý ảnh phụ và mô tả chi tiết ở đây nếu cần
-                        // mongoData.hinh_anh, mongoData.mo_ta_chi_tiet
+                        // 🟢 LOAD ẢNH HIỆN CÓ TỪ MONGODB
+                        if (mongoData.hinh_anh && mongoData.hinh_anh.length > 0) {
+                            console.log('🖼️ Loading existing images from MongoDB with avatar:', {
+                                hinh_anh: mongoData.hinh_anh,
+                                link_avatar: mongoData.link_avatar
+                            });
+                            if (window.simpleImageUploadManager) {
+                                window.simpleImageUploadManager.loadExistingImages({
+                                    hinh_anh: mongoData.hinh_anh,
+                                    link_avatar: mongoData.link_avatar
+                                });
+                            }
+                        }
                     }
                 } catch (error) {
                     console.warn('⚠️ Could not load MongoDB data:', error.message);
-                    // Nếu không load được, vẫn tiếp tục hiển thị form
                     if (window.productSpecsManager) {
                         window.productSpecsManager.clearSpecs();
                     }
+                    if (window.simpleImageUploadManager) {
+                        window.simpleImageUploadManager.resetProductImages();
+                    }
                 }
             } else {
-                // Nếu không có mongo_detail_id, clear specs
                 if (window.productSpecsManager) {
                     window.productSpecsManager.clearSpecs();
+                }
+
+                // Reset ảnh nếu không có dữ liệu MongoDB
+                if (window.simpleImageUploadManager) {
+                    window.simpleImageUploadManager.resetProductImages();
                 }
             }
         }
 
+
+
         resetProductForm() {
+            this.currentEditId = null;
             document.getElementById('productForm').reset();
             document.getElementById('productStatus').value = '1';
-            this.updateImagePreview('');
+            
+            // Reset ảnh sản phẩm
+            if (window.simpleImageUploadManager) {
+                window.simpleImageUploadManager.resetProductImages();
+            }
+            
+            // Reset specs
+            if (window.productSpecsManager) {
+                window.productSpecsManager.clearSpecs();
+            }
         }
 
         // Sửa lại hàm saveProduct trong ProductManager
         async saveProduct() {
+            if (this.isSaving) {
+                console.log('🛑 Đang trong quá trình lưu, bỏ qua');
+                return;
+            }
+
+            this.isSaving = true;
             try {
                 const saveBtn = document.getElementById('saveProductBtn');
                 const originalText = saveBtn ? saveBtn.innerHTML : null;
                 
-                // Show loading state
                 if (saveBtn) {
                     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
                     saveBtn.disabled = true;
@@ -1758,186 +1914,142 @@
                 const validSQLFields = [
                     'id', 'ma_sku', 'ten_san_pham', 'danh_muc_id', 'thuong_hieu_id',
                     'gia_niem_yet', 'gia_ban', 'mongo_detail_id', 'trang_thai',
-                    'luot_xem', 'so_luong_ban', 'ngay_tao', 'ngay_cap_nhat'
+                    'luot_xem', 'so_luong_ban', 'ngay_tao', 'ngay_cap_nhat', 'link_anh'
                 ];
 
                 const sqlData = {};
-                    Object.keys(formData).forEach(key => {
-                        if (validSQLFields.includes(key)) {
-                            sqlData[key] = formData[key];
-                        }
+                Object.keys(formData).forEach(key => {
+                    if (validSQLFields.includes(key)) {
+                        sqlData[key] = formData[key];
+                    }
                 });
+
 
                 if (!this.validateProductForm(formData)) {
                     if (saveBtn) {
                         saveBtn.innerHTML = originalText;
                         saveBtn.disabled = false;
                     }
+                    this.isSaving = false;
                     return;
                 }
 
                 let result, productId, mongoDetailId;
 
-                // BƯỚC 1: Upload ảnh chính nếu có file mới
-                let mainImageUrl = '';
-                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productMainImageFile) {
+                // BƯỚC 1: UPLOAD ẢNH TRƯỚC (nếu có)
+                let hinhAnhArray = [];
+                let link_avatar = '';
+
+                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
                     try {
-                        const oldImageUrl = this.currentEditId ? 
-                            this.products.find(p => p.id === this.currentEditId)?.link_anh : null;
-                        mainImageUrl = await window.simpleImageUploadManager.uploadProductMainImage(oldImageUrl);
-                        console.log('✅ Main image uploaded:', mainImageUrl);
-                    } catch (uploadError) {
-                        this.showError('Lỗi upload ảnh chính: ' + uploadError.message);
-                        if (saveBtn) {
-                            saveBtn.innerHTML = originalText;
-                            saveBtn.disabled = false;
+                        console.log('🖼️ Starting image upload...');
+                        const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
+                        
+                        if (uploadResult.mainImageUrl) {
+                            hinhAnhArray.push(uploadResult.mainImageUrl);
+                            link_avatar = uploadResult.mainImageUrl;
+                            console.log('✅ Main image uploaded:', link_avatar);
                         }
-                        return;
-                    }
-                }
-
-                // BƯỚC 2: Upload ảnh phụ nếu có (lưu vào MongoDB)
-                let additionalImages = [];
-                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productAdditionalImages.length > 0) {
-                    try {
-                        additionalImages = await window.simpleImageUploadManager.uploadProductAdditionalImages();
-                        console.log('✅ Additional images uploaded:', additionalImages);
+                        if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
+                            hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
+                            console.log('✅ Additional images uploaded:', uploadResult.additionalImages.length);
+                        }
+                        
+                        console.log('✅ Final images array:', hinhAnhArray);
                     } catch (uploadError) {
-                        console.warn('⚠️ Lỗi upload ảnh phụ:', uploadError.message);
+                        console.error('❌ Lỗi upload ảnh:', uploadError);
+                        this.showError('Lỗi upload ảnh: ' + uploadError.message);
+                        // Vẫn tiếp tục tạo sản phẩm dù ảnh lỗi
                     }
                 }
 
-                // BƯỚC 3: XỬ LÝ THEO THỨ TỰ ĐÚNG
+                // Cập nhật link_anh cho SQL
+                sqlData.link_anh = link_avatar;
+                console.log('📦 Final SQL Data:', sqlData);
+                console.log('🖼️ Final images for MongoDB:', hinhAnhArray);
 
+                // BƯỚC 2: XỬ LÝ SQL VÀ MONGODB
                 if (this.currentEditId) {
-                    // 🟡 TRƯỜNG HỢP CẬP NHẬT SẢN PHẨM
+                    // 🟡 CẬP NHẬT SẢN PHẨM
                     productId = this.currentEditId;
-
                     console.log('🔄 Updating Product ID:', productId);
                     
-                    // 3.1: Kiểm tra xem đã có document MongoDB chưa
-                    const product = this.products.find(p => p.id === this.currentEditId);
-                    mongoDetailId = product.mongo_detail_id;
+                    mongoDetailId = document.getElementById('mongoDetailId').value;
+                    console.log('📝 MongoDB Detail ID:', mongoDetailId);
+
+                    // Cập nhật SQL trước
+                    result = await ProductAPIService.updateProduct(productId, sqlData);
+                    console.log('✅ Product updated in SQL:', productId);
+
+                    // Chuẩn bị dữ liệu cho MongoDB
+                    const mongoUpdateData = {
+                        sql_product_id: productId,
+                        thong_so_ky_thuat: specsData,
+                        hinh_anh: hinhAnhArray,
+                        link_avatar: link_avatar,
+                        mo_ta_chi_tiet: document.getElementById('productDescription').value.trim(),
+                        slug: Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku)
+                    };
+
+                    console.log('📤 MongoDB Update Data:', mongoUpdateData);
 
                     if (mongoDetailId) {
-                        // Đã có: cập nhật document MongoDB
-                        try {
-                            await ProductAPIService.updateProductMongoDetail(
-                                mongoDetailId, 
-                                productId,
-                                specsData, 
-                                additionalImages,
-                                document.getElementById('productDescription').value.trim(),
-                                Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                                mainImageUrl
-                            );
-                            console.log('✅ MongoDB document updated:', mongoDetailId);
-                            
-                            // Cập nhật sản phẩm trong SQL
-                            result = await ProductAPIService.updateProduct(productId, sqlData);
-                            console.log('✅ Product updated in SQL:', productId);
-                        } catch (mongoError) {
-                            console.error('❌ Error updating MongoDB:', mongoError);
-                            this.showError('Lỗi cập nhật thông tin chi tiết: ' + mongoError.message);
-                        }
+                        // Cập nhật document MongoDB hiện có
+                        await ProductAPIService.updateProductMongoDetail(mongoDetailId, mongoUpdateData);
+                        console.log('✅ MongoDB document updated:', mongoDetailId);
                     } else {
-                        // Chưa có: thử tìm document MongoDB bằng sql_product_id
-                        try {
-                            // Thử lấy document MongoDB đã tồn tại bằng sql_product_id
-                            const existingMongoDoc = await ProductAPIService.getProductMongoDetail(productId);
-                            if (existingMongoDoc.success && existingMongoDoc.data) {
-                                // Nếu tìm thấy, sử dụng _id của document đó
-                                mongoDetailId = existingMongoDoc.data._id;
-                                console.log('✅ Found existing MongoDB document:', mongoDetailId);
-                                
-                                // Cập nhật document MongoDB
-                                await ProductAPIService.updateProductMongoDetail(
-                                    mongoDetailId, 
-                                    productId,
-                                    specsData, 
-                                    additionalImages,
-                                    document.getElementById('productDescription').value.trim(),
-                                    Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                                    mainImageUrl
-                                );
-                                console.log('✅ MongoDB document updated:', mongoDetailId);
-                            } else {
-                                // Nếu không tìm thấy, tạo mới
-                                const mongoResult = await ProductAPIService.createProductMongoDetail(
-                                    productId,
-                                    specsData, 
-                                    additionalImages,
-                                    document.getElementById('productDescription').value.trim(),
-                                    Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                                    mainImageUrl
-                                );
-                                mongoDetailId = mongoResult.data._id;
-                                console.log('✅ MongoDB document created:', mongoDetailId);
-                            }
+                        // Tạo document MongoDB mới
+                        const mongoResult = await ProductAPIService.createProductMongoDetail(
+                            productId,
+                            specsData,
+                            document.getElementById('productDescription').value.trim(),
+                            Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                            hinhAnhArray,
+                            link_avatar
+                        );
+                        mongoDetailId = mongoResult.data._id;
+                        console.log('✅ New MongoDB document created:', mongoDetailId);
 
-                            // Cập nhật sản phẩm SQL với mongo_detail_id
-                            result = await ProductAPIService.updateProduct(productId, {
-                                ...sqlData,
-                                mongo_detail_id: mongoDetailId
-                            });
-                            console.log('✅ SQL product updated with MongoDB ID:', mongoDetailId);
-                            
-                        } catch (mongoError) {
-                            console.error('❌ Error handling MongoDB document:', mongoError);
-                            
-                            // Xử lý lỗi duplicate key
-                            if (mongoError.message.includes('duplicate key')) {
-                                this.showError('Đã tồn tại thông tin chi tiết cho sản phẩm này. Vui lòng thử lại.');
-                            } else {
-                                this.showError('Lỗi xử lý thông tin chi tiết: ' + mongoError.message);
-                            }
-                        }
+                        // Cập nhật SQL với MongoDB ID
+                        await ProductAPIService.updateProduct(productId, {
+                            mongo_detail_id: mongoDetailId
+                        });
                     }
+
                 } else {
-                    // 🟢 TRƯỜNG HỢP THÊM SẢN PHẨM MỚI
+                    // 🟢 THÊM SẢN PHẨM MỚI
                     
-                    // 3.1: Tạo sản phẩm trong SQL TRƯỚC (chưa có mongo_detail_id)
-                    result = await ProductAPIService.createProduct(formData);
+                    // Tạo sản phẩm trong SQL trước
+                    result = await ProductAPIService.createProduct(sqlData);
                     if (result.success && result.product && result.product.id) {
                         productId = result.product.id;
                         console.log('✅ Product created in SQL:', productId);
                         
-                        // 3.2: Tạo document trong MongoDB VỚI productId đã có
-                        try {
-                            const mongoResult = await ProductAPIService.createProductMongoDetail(
-                                productId,
-                                specsData, 
-                                additionalImages,
-                                document.getElementById('productDescription').value.trim(),
-                                Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                                mainImageUrl
-                            );
-                            mongoDetailId = mongoResult.data._id;
-                            console.log('✅ MongoDB document created:', mongoDetailId);
-                            
-                            // 3.3: Cập nhật ngược lại SQL với mongo_detail_id
-                            await ProductAPIService.updateProduct(productId, { 
-                                mongo_detail_id: mongoDetailId 
-                            });
-                            console.log('✅ SQL product updated with MongoDB ID:', mongoDetailId);
-                            
-                        } catch (mongoError) {
-                            console.error('❌ Error creating MongoDB document:', mongoError);
-                            this.showError('Lỗi tạo thông tin chi tiết: ' + mongoError.message);
-                        }
+                        // Tạo document MongoDB
+                        const mongoResult = await ProductAPIService.createProductMongoDetail(
+                            productId,
+                            specsData,
+                            document.getElementById('productDescription').value.trim(),
+                            Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                            hinhAnhArray,
+                            link_avatar
+                        );
+                        mongoDetailId = mongoResult.data._id;
+                        console.log('✅ MongoDB document created:', mongoDetailId);
+                        
+                        // Cập nhật SQL với MongoDB ID
+                        await ProductAPIService.updateProduct(productId, { 
+                            mongo_detail_id: mongoDetailId 
+                        });
                     } else {
                         throw new Error('Không nhận được ID sản phẩm sau khi tạo');
                     }
                 }
 
-                // BƯỚC 4: Hiển thị thông báo thành công
-                if (this.currentEditId) {
-                    this.showSuccess('Cập nhật sản phẩm thành công');
-                } else {
-                    this.showSuccess('Thêm sản phẩm thành công');
-                }
+                // BƯỚC 3: HIỂN THỊ THÔNG BÁO VÀ ĐÓNG MODAL
+                this.showSuccess(this.currentEditId ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công');
 
-                // BƯỚC 5: Đóng modal và làm mới dữ liệu
+                // Đóng modal và làm mới dữ liệu
                 bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
                 await this.refreshProducts();
 
@@ -1945,7 +2057,7 @@
                 console.error('❌ Error saving product:', error);
                 this.showError('Không thể lưu sản phẩm: ' + error.message);
             } finally {
-                // Khôi phục nút lưu
+                this.isSaving = false;  
                 const saveBtn = document.getElementById('saveProductBtn');
                 if (saveBtn) {
                     saveBtn.innerHTML = this.currentEditId ? 
@@ -1955,7 +2067,8 @@
                 }
             }
         }
-        
+
+
         getProductFormData() {
             const productName = document.getElementById('productName').value.trim();
             
@@ -2005,13 +2118,7 @@
                 errors.push('Vui lòng chọn thương hiệu');
             }
 
-            // Validate ảnh chính
-            {{!-- const hasExistingImage = formData.link_anh && formData.link_anh.trim() !== '';
-            const hasNewImage = window.simpleImageUploadManager && window.simpleImageUploadManager.productMainImageFile;
-            
-            if (!hasExistingImage && !hasNewImage) {
-                errors.push('Vui lòng chọn ảnh chính cho sản phẩm');
-            } --}}
+
 
             if (errors.length > 0) {
                 this.showError(errors.join('<br>'));
@@ -2167,7 +2274,7 @@
                 actionCell.className = 'spec-actions';
 
                 const editButton = document.createElement('button');
-                editButton.className = 'btn-spec-action btn-edit-spec';
+                {{!-- editButton.className = 'btn-spec-action btn-edit-spec'; --}}
                 editButton.innerHTML = '<i class="fas fa-edit"></i>';
                 editButton.title = 'Sửa thông số';
 
@@ -2558,10 +2665,7 @@
                         img.onload = () => {
                             previewElement.appendChild(img);
                             previewElement.parentElement.classList.add('has-logo');
-                        };
-                        img.onerror = () => {
-                            this.showLogoError(previewElement);
-                        };
+                        };                 
                     } else {
                         this.showLogoError(previewElement);
                     }
@@ -2889,8 +2993,7 @@
                 <td>
                     ${brand.logo_url ? `
                         <div class="product-table-image">
-                            <img src="${brand.logo_url}" alt="${Utils.escapeHtml(brand.ten_thuong_hieu)}" 
-                                onerror="this.style.display='none'; this.parentElement.innerHTML='---';">
+                            <img src="${brand.logo_url}" alt="${Utils.escapeHtml(brand.ten_thuong_hieu)}">
                         </div>
                     ` : '---'}
                 </td>
@@ -3352,9 +3455,6 @@
                             previewElement.appendChild(img);
                             previewElement.parentElement.classList.add('has-logo');
                             previewElement.style.display = '';
-                        };
-                        img.onerror = () => {
-                            this.showImageError(previewElement);
                         };
                     } else {
                         this.showImageError(previewElement);
@@ -3829,8 +3929,7 @@
                     <td>
                         ${category.anh_url ? `
                             <div class="product-table-image">
-                                <img src="${category.anh_url}" alt="${Utils.escapeHtml(category.ten_danh_muc)}" 
-                                    onerror="this.style.display='none'; this.parentElement.innerHTML='---';">
+                                <img src="${category.anh_url}" alt="${Utils.escapeHtml(category.ten_danh_muc)}">
                             </div>
                         ` : '---'}
                     </td>
@@ -4200,11 +4299,12 @@
         
     // Khởi tạo managers
     document.addEventListener('DOMContentLoaded', function () {
-        new BrandManager();
+        
         // Always create and assign the global instance for category image upload
         if (!window.simpleImageUploadManager) {
             window.simpleImageUploadManager = new SimpleImageUploadManager();
         }
+        new BrandManager();
         new CategoryManager();
     });
     // File Upload Manager
@@ -4662,6 +4762,8 @@ class SimpleImageUploadManager {
     constructor() {
         this.brandImageFile = null;
         this.categoryImageFile = null;
+        this.productImages = []; // Mảng chứa tất cả ảnh sản phẩm
+        this.mainImageIndex = 0; // Index của ảnh chính
         this.isProcessing = false;
         
         // Event binding flags
@@ -4696,170 +4798,170 @@ class SimpleImageUploadManager {
         this.bindProductEvents();
     }
 
+    showSuccess(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: message,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    showError(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: message,
+            confirmButtonColor: '#667eea'
+        });
+    }
+
     // Product Image Upload Events
     bindProductEvents() {
-        if (this.productEventsBound) {
-            console.log('ℹ️ Product events already bound, skipping...');
+        if (this.productEventsBound) return;
+
+        const imagesUploadArea = document.getElementById('productImagesUploadArea');
+        const imagesInput = document.getElementById('productImages');
+        const chooseBtn = document.getElementById('chooseProductImagesBtn');
+
+        if (imagesUploadArea && imagesInput) {
+            console.log('✅ Binding product events...');
+
+            // Remove any existing event listeners by cloning
+            const newImagesUploadArea = imagesUploadArea.cloneNode(true);
+            imagesUploadArea.parentNode.replaceChild(newImagesUploadArea, imagesUploadArea);
+
+            const newImagesInput = imagesInput.cloneNode(true);
+            imagesInput.parentNode.replaceChild(newImagesInput, imagesInput);
+
+            // Get new references
+            const currentImagesUploadArea = document.getElementById('productImagesUploadArea');
+            const currentImagesInput = document.getElementById('productImages');
+            const currentChooseBtn = document.getElementById('chooseProductImagesBtn');
+
+            // Single click handler
+            const handleImagesClick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Product images area clicked');
+                currentImagesInput.click();
+            };
+
+            currentImagesUploadArea.addEventListener('click', handleImagesClick);
+
+            currentImagesUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                currentImagesUploadArea.classList.add('dragover');
+            });
+
+            currentImagesUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                currentImagesUploadArea.classList.remove('dragover');
+            });
+
+            currentImagesUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                currentImagesUploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(file => this.isImageFile(file));
+                if (files.length > 0) {
+                    this.processProductImages(files);
+                }
+            });
+
+            // Choose button
+            if (currentChooseBtn) {
+                currentChooseBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔘 Choose product images button clicked');
+                    currentImagesInput.click();
+                });
+            }
+
+            // Input change
+            currentImagesInput.addEventListener('change', (e) => {
+                console.log('📤 Product images input changed');
+                const files = Array.from(e.target.files).filter(file => this.isImageFile(file));
+                if (files.length > 0) {
+                    this.processProductImages(files);
+                }
+                setTimeout(() => {
+                    e.target.value = '';
+                }, 100);
+            });
+
+            this.productEventsBound = true;
+        }
+    }
+
+    processProductImages(files) {
+        const validFiles = files.filter(file => this.validateImageFile(file));
+        const remainingSlots = 10 - this.productImages.length;
+        
+        if (validFiles.length > remainingSlots) {
+            this.showError(`Chỉ có thể thêm tối đa 10 ảnh. Bạn đã chọn ${validFiles.length} nhưng chỉ còn ${remainingSlots} chỗ trống.`);
+            validFiles.splice(remainingSlots);
+        }
+
+        validFiles.forEach(file => {
+            if (this.productImages.length < 10) {
+                this.productImages.push(file);
+            }
+        });
+
+        this.renderProductImagesPreview();
+        console.log(`✅ Added ${validFiles.length} images, total: ${this.productImages.length}`);
+    }
+    
+
+    renderProductImagesPreview() {
+        const previewContainer = document.getElementById('productImagesPreview');
+        const previewGrid = document.getElementById('productImagesPreviewGrid');
+        const placeholder = document.querySelector('#productImagesUploadArea .upload-placeholder');
+
+        if (!previewGrid) return;
+
+        previewGrid.innerHTML = '';
+
+        if (this.productImages.length === 0) {
+            previewContainer.style.display = 'none';
+            if (placeholder) placeholder.style.display = 'block';
             return;
         }
 
-        const mainImageUploadArea = document.getElementById('mainImageUploadArea');
-        const mainImageInput = document.getElementById('productMainImage');
-        const changeMainImageBtn = document.getElementById('changeMainImageBtn');
-        const additionalImagesUploadArea = document.getElementById('additionalImagesUploadArea');
-        const additionalImagesInput = document.getElementById('productAdditionalImages');
+        previewContainer.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
 
-        if (mainImageUploadArea && mainImageInput) {
-            console.log('✅ Binding product events (first time)...');
-
-            // Remove any existing event listeners by cloning (giống brand/category)
-            const newMainImageUploadArea = mainImageUploadArea.cloneNode(true);
-            mainImageUploadArea.parentNode.replaceChild(newMainImageUploadArea, mainImageUploadArea);
-
-            const newMainImageInput = mainImageInput.cloneNode(true);
-            mainImageInput.parentNode.replaceChild(newMainImageInput, mainImageInput);
-
-            // Get new references
-            const currentMainImageUploadArea = document.getElementById('mainImageUploadArea');
-            const currentMainImageInput = document.getElementById('productMainImage');
-            const currentChangeBtn = document.getElementById('changeMainImageBtn');
-
-            // Single click handler (giống brand)
-            const handleMainImageClick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🖱️ Product main image area clicked');
-                currentMainImageInput.click();
-            };
-
-            currentMainImageUploadArea.addEventListener('click', handleMainImageClick);
-
-            currentMainImageUploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                currentMainImageUploadArea.classList.add('dragover');
-            });
-
-            currentMainImageUploadArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                currentMainImageUploadArea.classList.remove('dragover');
-            });
-
-            currentMainImageUploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                currentMainImageUploadArea.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0 && this.isImageFile(files[0])) {
-                    this.processProductMainImage(files[0]);
-                }
-            });
-
-            // Change button (giống brand)
-            if (currentChangeBtn) {
-                currentChangeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔁 Change product main image button clicked');
-                    currentMainImageInput.click();
-                });
+        this.productImages.forEach((file, index) => {
+            const imageItem = document.createElement('div');
+            imageItem.className = `image-preview-item ${index === this.mainImageIndex ? 'main-image' : ''}`;
+            
+            // 🎯 SỬA: Xử lý cả File thật và mock file từ MongoDB
+            if (file instanceof File) {
+                // Ảnh mới được chọn từ máy tính
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageItem.innerHTML = this.getImagePreviewHTML(e.target.result, index, file);
+                };
+                reader.readAsDataURL(file);
+            } else if (file.url) {
+                // Ảnh hiện có từ MongoDB - sử dụng trực tiếp URL
+                imageItem.innerHTML = this.getImagePreviewHTML(file.url, index, file);
+            } else {
+                console.warn('Invalid file object:', file);
+                return;
             }
-
-            // Input change - FIXED: Only process once (giống brand)
-            currentMainImageInput.addEventListener('change', (e) => {
-                console.log('📤 Product main image input changed');
-                const file = e.target.files[0];
-                if (file && this.isImageFile(file)) {
-                    this.processProductMainImage(file);
-                }
-                // Reset input but don't prevent future uploads
-                setTimeout(() => {
-                    e.target.value = '';
-                }, 100);
-            });
-            // Trong phần Main Image, sau khi có currentMainImageInput
-            const currentChooseMainImageBtn = document.getElementById('chooseMainImageBtn');
-
-            // Choose button (giống brand/category)
-            if (currentChooseMainImageBtn) {
-                currentChooseMainImageBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔘 Choose main image button clicked');
-                    currentMainImageInput.click();
-                });
-            }
-
-            // Trong phần Additional Images, sau khi có currentAdditionalImagesInput  
-            const currentChooseAdditionalImagesBtn = document.getElementById('chooseAdditionalImagesBtn');
-
-            if (currentChooseAdditionalImagesBtn) {
-                currentChooseAdditionalImagesBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🔘 Choose additional images button clicked');
-                    currentAdditionalImagesInput.click();
-                });
-            }
-        }
-
-        // Additional Images (tương tự như trên)
-        if (additionalImagesUploadArea && additionalImagesInput) {
-            console.log('✅ Binding product additional images events...');
-
-            // Remove any existing event listeners by cloning
-            const newAdditionalImagesUploadArea = additionalImagesUploadArea.cloneNode(true);
-            additionalImagesUploadArea.parentNode.replaceChild(newAdditionalImagesUploadArea, additionalImagesUploadArea);
-
-            const newAdditionalImagesInput = additionalImagesInput.cloneNode(true);
-            additionalImagesInput.parentNode.replaceChild(newAdditionalImagesInput, additionalImagesInput);
-
-            // Get new references
-            const currentAdditionalImagesUploadArea = document.getElementById('additionalImagesUploadArea');
-            const currentAdditionalImagesInput = document.getElementById('productAdditionalImages');
-
-            const handleAdditionalImagesClick = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🖱️ Product additional images area clicked');
-                currentAdditionalImagesInput.click();
-            };
-
-            currentAdditionalImagesUploadArea.addEventListener('click', handleAdditionalImagesClick);
-
-            currentAdditionalImagesUploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                currentAdditionalImagesUploadArea.classList.add('dragover');
-            });
-
-            currentAdditionalImagesUploadArea.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                currentAdditionalImagesUploadArea.classList.remove('dragover');
-            });
-
-            currentAdditionalImagesUploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                currentAdditionalImagesUploadArea.classList.remove('dragover');
-                const files = Array.from(e.dataTransfer.files).filter(file => this.isImageFile(file));
-                if (files.length > 0) {
-                    this.processProductAdditionalImages(files);
-                }
-            });
-
-            // Input change - FIXED: Only process once
-            currentAdditionalImagesInput.addEventListener('change', (e) => {
-                console.log('📤 Product additional images input changed');
-                const files = Array.from(e.target.files).filter(file => this.isImageFile(file));
-                if (files.length > 0) {
-                    this.processProductAdditionalImages(files);
-                }
-                setTimeout(() => {
-                    e.target.value = '';
-                }, 100);
-            });
-        }
-
-        this.productEventsBound = true;
+            
+            previewGrid.appendChild(imageItem);
+        });
     }
-    
+
+    setMainImage(index) {
+        this.mainImageIndex = index;
+        this.renderProductImagesPreview();
+        console.log(`✅ Đã chọn ảnh chính: index ${index}`);
+    }
 
     
     removeProductEventListeners() {
@@ -4898,6 +5000,191 @@ class SimpleImageUploadManager {
 
         console.log('🧹 Removed product event listeners');
     }
+
+
+    async uploadProductImages() {
+        if (this.productImages.length === 0) {
+            console.log('ℹ️ No images to upload');
+            return { mainImageUrl: '', additionalImages: [] };
+        }
+
+        try {
+            console.log(`⬆️ Starting upload for ${this.productImages.length} images...`);
+            
+            const mainImage = this.productImages[this.mainImageIndex];
+            const additionalImages = this.productImages.filter((_, index) => index !== this.mainImageIndex);
+
+            let mainImageUrl = '';
+            let additionalImageUrls = [];
+
+            // Upload ảnh chính (nếu là file mới)
+            if (mainImage && mainImage instanceof File) {
+                console.log('📤 Uploading main image:', mainImage.name);
+                mainImageUrl = await this.uploadMainImage(mainImage);
+            } else if (mainImage && mainImage.url) {
+                // Nếu là ảnh hiện có, dùng URL cũ
+                mainImageUrl = mainImage.url;
+                console.log('🔄 Using existing main image:', mainImageUrl);
+            }
+
+            // Upload ảnh phụ (chỉ upload file mới)
+            const newAdditionalImages = additionalImages.filter(img => img instanceof File);
+            if (newAdditionalImages.length > 0) {
+                console.log(`📤 Uploading ${newAdditionalImages.length} additional images`);
+                additionalImageUrls = await this.uploadAdditionalImages(newAdditionalImages);
+            }
+
+            // Thêm ảnh hiện có vào danh sách ảnh phụ
+            const existingAdditionalImages = additionalImages
+                .filter(img => img && img.url && !(img instanceof File))
+                .map(img => img.url);
+            
+            additionalImageUrls = additionalImageUrls.concat(existingAdditionalImages);
+
+            console.log('✅ Upload completed:', {
+                mainImageUrl,
+                additionalImages: additionalImageUrls
+            });
+
+            return {
+                mainImageUrl,
+                additionalImages: additionalImageUrls
+            };
+            
+        } catch (error) {
+            console.error('❌ Error uploading product images:', error);
+            throw error;
+        }
+    }
+
+    async uploadMainImage(file) {
+            try {
+                console.log('📤 Uploading main image via API...');
+                
+                const formData = new FormData();
+                formData.append('productMainImage', file);
+
+                const response = await fetch('/api/upload/product-main-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `Upload failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.url) {
+                    console.log('✅ Main image uploaded successfully:', result.data.url);
+                    return result.data.url;
+                } else {
+                    throw new Error(result.message || 'Upload failed - no URL returned');
+                }
+
+            } catch (error) {
+                console.error('❌ Main image upload error:', error);
+                throw error;
+            }
+        }
+
+        // Hàm upload ảnh phụ
+        async uploadAdditionalImages(files) {
+            try {
+                console.log(`📤 Uploading ${files.length} additional images via API`);
+                
+                const formData = new FormData();
+                files.forEach(file => {
+                    formData.append('productAdditionalImages', file);
+                });
+
+                const response = await fetch('/api/upload/product-additional-images', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `Upload failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data && Array.isArray(result.data)) {
+                    const imageUrls = result.data.map(item => item.url);
+                    console.log('✅ Additional images uploaded successfully:', imageUrls);
+                    return imageUrls;
+                } else {
+                    throw new Error(result.message || 'Upload failed - no URLs returned');
+                }
+
+            } catch (error) {
+                console.error('❌ Additional images upload error:', error);
+                throw error;
+            }
+        }
+
+    
+
+    // Trong SimpleImageUploadManager
+    loadExistingImages(existingData = {}) {
+        const { hinh_anh = [], link_avatar = '' } = existingData;
+        
+        if (hinh_anh.length === 0) return;
+
+        console.log('📥 Loading existing images with avatar:', { hinh_anh, link_avatar });
+        
+        this.productImages = [];
+        this.mainImageIndex = 0;
+
+        // Tìm index của ảnh chính (link_avatar) trong mảng hinh_anh
+        if (link_avatar) {
+            const avatarIndex = hinh_anh.findIndex(url => url === link_avatar);
+            if (avatarIndex !== -1) {
+                this.mainImageIndex = avatarIndex;
+                console.log('✅ Found main image at index:', this.mainImageIndex);
+            } else {
+                console.log('⚠️ Main image not found in images array, using first image');
+                this.mainImageIndex = 0;
+            }
+        }
+
+        // Tạo mock files từ URLs
+        hinh_anh.forEach((url, index) => {
+            const mockFile = {
+                name: `existing_image_${index + 1}.jpg`,
+                type: 'image/jpeg',
+                size: 0,
+                url: url,
+                isExisting: true
+            };
+            this.productImages.push(mockFile);
+        });
+
+        this.renderProductImagesPreview();
+        console.log(`✅ Loaded ${this.productImages.length} images, main image index: ${this.mainImageIndex}`);
+    }
+    
+    resetProductImages() {
+        this.productImages = [];
+        this.mainImageIndex = 0;
+        
+        const previewContainer = document.getElementById('productImagesPreview');
+        const previewGrid = document.getElementById('productImagesPreviewGrid');
+        const placeholder = document.querySelector('#productImagesUploadArea .upload-placeholder');
+
+        if (previewContainer) previewContainer.style.display = 'none';
+        if (previewGrid) previewGrid.innerHTML = '';
+        if (placeholder) placeholder.style.display = 'block';
+
+        const imagesInput = document.getElementById('productImages');
+        if (imagesInput) imagesInput.value = '';
+
+        console.log('🔄 Reset product images');
+    }
+
+
 
     // Process Product Images
     processProductMainImage(file) {
@@ -5532,7 +5819,7 @@ class SimpleImageUploadManager {
         if (mainImageInput) mainImageInput.value = '';
         if (additionalImagesInput) additionalImagesInput.value = '';
 
-        document.getElementById('productImage').value = '';
+        {{!-- document.getElementById('productImage').value = ''; --}}
         
         console.log('🔄 Reset product images');
     }
@@ -5681,7 +5968,238 @@ class SimpleImageUploadManager {
         this.bindCategoryEvents();
         this.bindProductEvents(); // ← THÊM DÒNG NÀY
     }
-}
+
+    // Thêm vào class SimpleImageUploadManager
+    async deleteImageFromCloudinary(imageUrl) {
+        try {
+            console.log('🗑️ Deleting image from Cloudinary:', imageUrl);
+            
+            const response = await fetch('/api/upload/image', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl: imageUrl })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete image');
+            }
+
+            const result = await response.json();
+            console.log('✅ Image deleted from Cloudinary:', result);
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Error deleting image from Cloudinary:', error);
+            throw error;
+        }
+    }
+
+    // Hàm xoá ảnh khỏi MongoDB
+    async deleteImageFromMongoDB(productId, imageUrl) {
+        try {
+            console.log('🗑️ Removing image from MongoDB:', { productId, imageUrl });
+            
+            // Lấy document hiện tại
+            const mongoDoc = await ProductAPIService.getProductMongoDetail(productId);
+            if (!mongoDoc.success || !mongoDoc.data) {
+                throw new Error('Không tìm thấy document MongoDB');
+            }
+
+            const currentData = mongoDoc.data;
+            const currentImages = currentData.hinh_anh || [];
+
+            // Lọc bỏ ảnh cần xoá
+            const updatedImages = currentImages.filter(img => img !== imageUrl);
+
+            // Cập nhật document MongoDB
+            const updateData = {
+                hinh_anh: updatedImages,
+                updatedAt: new Date()
+            };
+
+            const updateResult = await ProductAPIService.updateProductMongoDetail(
+                currentData._id, 
+                updateData
+            );
+
+            console.log('✅ Image removed from MongoDB:', updateResult);
+            return updateResult;
+            
+        } catch (error) {
+            console.error('❌ Error removing image from MongoDB:', error);
+            throw error;
+        }
+    }
+
+    // Hàm xoá ảnh hoàn chỉnh
+    async deleteProductImage(index) {
+        const imageToDelete = this.productImages[index];
+        
+        if (!imageToDelete) {
+            console.error('❌ No image found at index:', index);
+            return;
+        }
+
+        // Hiển thị confirm
+        const result = await Swal.fire({
+            title: 'Xác nhận xóa ảnh',
+            text: imageToDelete.isExisting 
+                ? 'Bạn có chắc muốn xóa ảnh này? Ảnh sẽ bị xóa vĩnh viễn khỏi hệ thống.'
+                : 'Bạn có chắc muốn xóa ảnh này?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy',
+            customClass: {
+                confirmButton: 'btn btn-danger',
+                cancelButton: 'btn btn-secondary'
+            },
+            showLoaderOnConfirm: true, // Thêm dòng này
+            preConfirm: async () => {  // Thêm hàm xử lý async
+                try {
+                    // Nếu là ảnh hiện có, xoá khỏi Cloudinary và MongoDB
+                    if (imageToDelete.isExisting && imageToDelete.url) {
+                        // Lấy productId từ form (nếu đang edit)
+                        const productId = document.getElementById('productId').value;
+                        
+                        if (productId) {
+                            console.log(`🗑️ Deleting existing image for product ${productId}:`, imageToDelete.url);
+                            
+                            // Xoá khỏi Cloudinary
+                            await this.deleteImageFromCloudinary(imageToDelete.url);
+                            
+                            // Xoá khỏi MongoDB
+                            await this.deleteImageFromMongoDB(productId, imageToDelete.url);
+                            
+                            console.log('✅ Image completely deleted from system');
+                        } else {
+                            console.log('⚠️ No product ID found, only removing from preview');
+                        }
+                    }
+
+                    // Xoá ảnh khỏi mảng hiện tại
+                    this.productImages.splice(index, 1);
+
+                    // Điều chỉnh mainImageIndex nếu cần
+                    if (this.mainImageIndex === index) {
+                        this.mainImageIndex = 0;
+                        console.log('🔄 Main image deleted, setting new main image index to 0');
+                    } else if (index < this.mainImageIndex) {
+                        this.mainImageIndex--;
+                        console.log('🔄 Adjusted main image index to:', this.mainImageIndex);
+                    }
+
+                    // Cập nhật preview
+                    this.renderProductImagesPreview();
+                    
+                    console.log(`🗑️ Deleted image index ${index}, remaining: ${this.productImages.length}`);
+                    
+                    return { success: true };
+                    
+                } catch (error) {
+                    console.error('❌ Error deleting image:', error);
+                    Swal.showValidationMessage(`Lỗi khi xóa ảnh: ${error.message}`);
+                    return { success: false };
+                }
+            },
+            allowOutsideClick: () => !Swal.isLoading() // Không cho click bên ngoài khi đang loading
+        });
+
+        // Xử lý kết quả sau khi preConfirm hoàn thành
+        if (result.isConfirmed) {
+            if (result.value && result.value.success) {
+                this.showSuccess('Đã xóa ảnh thành công');
+            } else {
+                this.showError('Không thể xóa ảnh. Vui lòng thử lại.');
+            }
+        }
+    }
+    
+    
+    
+    // Cập nhật hàm getImagePreviewHTML
+    getImagePreviewHTML(imageSrc, index, file) {
+        const isExisting = file.isExisting;
+        
+        return `
+            <img src="${imageSrc}" alt="Preview ${index + 1}">
+            <div class="image-preview-actions">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="mainImage" 
+                        id="mainImage${index}" 
+                        ${index === this.mainImageIndex ? 'checked' : ''}
+                        onchange="window.simpleImageUploadManager.setMainImage(${index})">
+                    <label class="form-check-label" for="mainImage${index}">
+                        Ảnh chính
+                    </label>
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn-view-image" 
+                        onclick="window.simpleImageUploadManager.viewFullImage('${imageSrc}')"
+                        title="Xem ảnh lớn">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button type="button" class="btn-delete-image" 
+                        onclick="window.simpleImageUploadManager.deleteProductImage(${index})"
+                        title="${isExisting ? 'Xóa ảnh vĩnh viễn' : 'Xóa ảnh'}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            ${isExisting ? '<div class="existing-badge">Đang có</div>' : ''}
+        `;
+    }
+    // Thêm hàm xem ảnh lớn
+    viewFullImage(imageUrl) {
+        // Tạo modal xem ảnh lớn
+        const modalHtml = `
+            <div class="modal fade" id="imageViewerModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-image"></i>
+                                Xem ảnh
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <img src="${imageUrl}" alt="Full size" style="max-width: 100%; max-height: 70vh;">
+                        </div>
+                        <div class="modal-footer">
+                            <a href="${imageUrl}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i>
+                                Mở ảnh gốc
+                            </a>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times"></i>
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Thêm modal vào body nếu chưa có
+        let modal = document.getElementById('imageViewerModal');
+        if (!modal) {
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            modal = document.getElementById('imageViewerModal');
+        } else {
+            // Cập nhật ảnh
+            modal.querySelector('img').src = imageUrl;
+            modal.querySelector('a').href = imageUrl;
+        }
+
+        // Hiển thị modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    }
+    }
+
+
 
 // Update HTML structure for Category Modal to fix preview issue
 const categoryModalHTMLFix = `
@@ -5905,6 +6423,123 @@ input[type="file"] {
 /* Ensure preview container sits to the right of upload area when space permits */
 .logo-preview-container { margin-left: 12px; }
 `;
+// Cập nhật CSS - thêm vào phần style hiện có
+const updatedImagePreviewCSS = `
+    .image-preview-item {
+        position: relative;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .image-preview-item:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+
+    .image-preview-item.main-image {
+        border: 2px solid #3b82f6;
+        background: #f0f9ff;
+    }
+
+    .image-preview-item img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .image-preview-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 4px;
+    }
+
+    .btn-view-image, .btn-delete-image {
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view-image {
+        background: #10b981;
+        color: white;
+    }
+
+    .btn-view-image:hover {
+        background: #059669;
+    }
+
+    .btn-delete-image {
+        background: #ef4444;
+        color: white;
+    }
+
+    .btn-delete-image:hover {
+        background: #dc2626;
+    }
+
+    .existing-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(34, 197, 94, 0.9);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: bold;
+        z-index: 10;
+    }
+
+    .image-preview-item.main-image .existing-badge {
+        background: rgba(59, 130, 246, 0.9);
+    }
+
+    .form-check {
+        margin: 0;
+    }
+
+    .form-check-input {
+        margin-right: 4px;
+    }
+
+    .form-check-label {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    /* Modal xem ảnh lớn */
+    #imageViewerModal .modal-body img {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+`;
+
+// Cập nhật CSS
+const styleElement = document.querySelector('style');
+if (styleElement) {
+    styleElement.textContent += updatedImagePreviewCSS;
+} else {
+    const style = document.createElement('style');
+    style.textContent = updatedImagePreviewCSS;
+    document.head.appendChild(style);
+}
 
 // Add CSS to document
 const style = document.createElement('style');
@@ -5973,9 +6608,9 @@ class ProductSpecsManager {
 
         // Event delegation cho các nút xóa và chỉnh sửa
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-edit-spec')) {
+            {{!-- if (e.target.closest('.btn-edit-spec')) {
                 this.editSpec(e.target.closest('.btn-edit-spec'));
-            }
+            } --}}
             if (e.target.closest('.btn-delete-spec')) {
                 this.deleteSpec(e.target.closest('.btn-delete-spec'));
             }
@@ -6099,10 +6734,7 @@ class ProductSpecsManager {
                         placeholder="Nhập giá trị (ví dụ: 6.7 inch, 8GB)">
                 </td>
                 <td>
-                    <div class="d-flex gap-1">
-                        <button type="button" class="btn-action btn-edit-spec" title="Cập nhật">
-                            <i class="fas fa-check"></i>
-                        </button>
+                    <div class="d-flex gap-1 justify-content-center">
                         <button type="button" class="btn-action btn-delete btn-delete-spec" title="Xóa">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -6237,11 +6869,7 @@ document.addEventListener('DOMContentLoaded', function() {
             danh_muc_id: document.getElementById('productCategory').value,
             thuong_hieu_id: document.getElementById('productBrand').value,
             trang_thai: parseInt(document.getElementById('productStatus').value),
-            link_anh: document.getElementById('productImage').value.trim(),
-            mo_ta: document.getElementById('productDescription').value.trim(),
-            san_pham_noi_bat: document.getElementById('productFeatured').checked,
             slug: Utils.generateSlug(productName),
-            mo_ta_ngan: (document.getElementById('productDescription').value.trim() || '').substring(0, 100)
         };
         
         // Tự động sinh SKU
@@ -6251,6 +6879,69 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 
+// ĐÂY LÀ PHẦN CODE CẦN THÊM VÀO FILE CHÍNH CỦA BẠN
+// Thường nằm ở cuối file, trong phần DOMContentLoaded
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ... code hiện tại của bạn (khởi tạo ProductManager, BrandManager, CategoryManager) ...
+    
+    // ==================== THÊM PHẦN NÀY VÀO ====================
+    
+    // Khởi tạo upload manager nếu chưa có
+    if (!window.simpleImageUploadManager) {
+        window.simpleImageUploadManager = new SimpleImageUploadManager();
+    }
+    
+    // Reinitialize khi product modal mở
+    const productModal = document.getElementById('productModal');
+    if (productModal) {
+        productModal.addEventListener('show.bs.modal', () => {
+            console.log('📦 Product modal opened - reinitializing upload events');
+            setTimeout(() => {
+                if (window.simpleImageUploadManager) {
+                    // Đảm bảo events được bind lại
+                    window.simpleImageUploadManager.productEventsBound = false;
+                    window.simpleImageUploadManager.bindProductEvents();
+                }
+            }, 100);
+        });
+        
+        // Reset khi modal đóng (tuỳ chọn)
+        productModal.addEventListener('hidden.bs.modal', () => {
+            console.log('📦 Product modal closed');
+            // Có thể reset ảnh ở đây nếu muốn
+            // if (window.simpleImageUploadManager) {
+            //     window.simpleImageUploadManager.resetProductImages();
+            // }
+        });
+    }
+    
+    // Reinitialize khi brand modal mở (nếu cần)
+    const brandModal = document.getElementById('brandModal');
+    if (brandModal) {
+        brandModal.addEventListener('show.bs.modal', () => {
+            setTimeout(() => {
+                if (window.simpleImageUploadManager) {
+                    window.simpleImageUploadManager.brandEventsBound = false;
+                    window.simpleImageUploadManager.bindBrandEvents();
+                }
+            }, 100);
+        });
+    }
+    
+    // Reinitialize khi category modal mở (nếu cần)
+    const categoryModal = document.getElementById('categoryModal');
+    if (categoryModal) {
+        categoryModal.addEventListener('show.bs.modal', () => {
+            setTimeout(() => {
+                if (window.simpleImageUploadManager) {
+                    window.simpleImageUploadManager.categoryEventsBound = false;
+                    window.simpleImageUploadManager.bindCategoryEvents();
+                }
+            }, 100);
+        });
+    }
+});
 </script>
 
 
@@ -7124,15 +7815,6 @@ document.addEventListener('DOMContentLoaded', function() {
         transition: var(--transition);
         color: white;
         font-size: 0.8rem;
-    }
-
-    .btn-edit-spec {
-        background: var(--warning);
-    }
-
-    .btn-edit-spec:hover {
-        background: #e58e0b;
-        transform: scale(1.1);
     }
 
     .btn-delete-spec {
@@ -9613,5 +10295,96 @@ document.addEventListener('DOMContentLoaded', function() {
 #chooseMainImageBtn, #chooseAdditionalImagesBtn, 
 #changeMainImageBtn, .remove-image-btn {
     pointer-events: all !important;
+}
+/* Thêm vào CSS hiện có */
+.images-preview-container {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f9f9f9;
+}
+
+.preview-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#selectedMainImageHint {
+    font-size: 0.9em;
+    color: #666;
+    font-weight: normal;
+}
+
+.images-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.image-preview-item {
+    position: relative;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 5px;
+    background: white;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.image-preview-item.main-image {
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px #4CAF50;
+}
+
+.image-preview-item img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.image-preview-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+    padding: 0 5px;
+}
+
+.image-preview-actions .form-check {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.image-preview-actions .form-check-input {
+    margin-right: 5px;
+}
+
+.image-preview-actions .form-check-label {
+    font-size: 0.8rem;
+    color: #333;
+}
+
+.btn-remove-image {
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: background 0.3s ease;
+}
+
+.btn-remove-image:hover {
+    background: #ff3742;
+}
+
+.no-images-message {
+    text-align: center;
+    color: #666;
+    padding: 20px;
 }
 </style>

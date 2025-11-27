@@ -3,7 +3,7 @@ import { engine } from 'express-handlebars';
 import db from './server.js';
 import DataModel from './app/model/index.js';
 
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
 
 import multer from 'multer';
 import path from 'path';
@@ -15,7 +15,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-import fs from 'fs';
+import fs, { link } from 'fs';
 // import cors from 'cors';
 
 import dotenv from 'dotenv';
@@ -657,6 +657,7 @@ app.get('/api/sanpham', async (req, res) => {
                 ten_thuong_hieu: sp.ten_thuong_hieu,
                 gia_niem_yet: sp.gia_niem_yet,
                 gia_ban: sp.gia_ban,
+                mongo_detail_id: sp.mongo_detail_id,
                 giam_gia: sp.giam_gia,
                 trang_thai: sp.trang_thai,
                 luot_xem: sp.luot_xem,
@@ -1473,10 +1474,6 @@ app.post('/api/sanpham', async (req, res) => {
             gia_ban: productData.gia_ban,
             giam_gia: productData.giam_gia || 0,
             trang_thai: productData.trang_thai !== undefined ? productData.trang_thai : 1,
-            link_anh: productData.link_anh || '',
-            mo_ta: productData.mo_ta || '',
-            mo_ta_ngan: productData.mo_ta_ngan || '',
-            san_pham_noi_bat: productData.san_pham_noi_bat || false,
             slug: productData.slug,
             so_luong_ton: productData.so_luong_ton || 0,
             luot_xem: productData.luot_xem || 0,
@@ -1720,7 +1717,8 @@ app.put('/api/sanpham/:id/status', async (req, res) => {
 // POST /api/mongo/sanpham - Tạo document mới trong MongoDB
 app.post('/api/mongo/sanpham', async (req, res) => {
     try {
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug } = req.body;
+        // THÊM link_avatar vào destructuring
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug, link_avatar } = req.body;
 
         console.log('🔄 API: Tạo document MongoDB mới');
         console.log('📝 Request data:', {
@@ -1728,7 +1726,8 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             has_specs: !!thong_so_ky_thuat,
             has_images: !!hinh_anh,
             has_description: !!mo_ta_chi_tiet,
-            slug
+            slug,
+            link_avatar // THÊM VÀO LOG
         });
 
         // Kiểm tra kết nối MongoDB
@@ -1739,9 +1738,9 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             throw new Error(`MongoDB connection is not ready. State: ${dbState}`);
         }
 
-        // Tạo document data - với strict: false, chúng ta có thể thêm bất kỳ trường nào
+        // Tạo document data - THÊM link_avatar
         const documentData = {
-            sql_product_id: sql_product_id || null,
+            sql_product_id: sql_product_id.toLowerCase() || null,
             slug: slug || `temp-${Date.now()}`
         };
 
@@ -1768,12 +1767,26 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             documentData.mo_ta_chi_tiet = mo_ta_chi_tiet;
         }
 
+        // QUAN TRỌNG: THÊM link_avatar vào document
+        if (link_avatar) {
+            documentData.link_avatar = link_avatar;
+            console.log('✅ Added link_avatar to document:', link_avatar);
+        } else if (hinh_anh && hinh_anh.length > 0) {
+            // Fallback: nếu không có link_avatar nhưng có hình ảnh, dùng ảnh đầu tiên
+            documentData.link_avatar = hinh_anh[0];
+            console.log('🔄 Using first image as link_avatar:', hinh_anh[0]);
+        } else {
+            documentData.link_avatar = '';
+            console.log('⚠️ No link_avatar provided and no images available');
+        }
+
         console.log('📊 Document data to save:', {
             sql_product_id: documentData.sql_product_id,
             slug: documentData.slug,
             specs_count: documentData.thong_so_ky_thuat.length,
             images_count: documentData.hinh_anh.length,
-            has_description: !!documentData.mo_ta_chi_tiet
+            has_description: !!documentData.mo_ta_chi_tiet,
+            link_avatar: documentData.link_avatar // THÊM VÀO LOG
         });
 
         // Tạo và lưu document
@@ -1781,6 +1794,7 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         const savedDetail = await newProductDetail.save();
         
         console.log('✅ MongoDB document created successfully:', savedDetail._id);
+        console.log('✅ link_avatar saved:', savedDetail.link_avatar);
 
         res.status(201).json({
             success: true,
@@ -1860,35 +1874,76 @@ app.get('/api/check-mongodb', async (req, res) => {
 // PUT /api/mongo/sanpham/:id - Cập nhật document MongoDB bằng _id
 app.put('/api/mongo/sanpham/:id', async (req, res) => {
     try {
-        const mongoId = req.params.id;
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug } = req.body;
+        const { id } = req.params;
+        // THÊM link_avatar vào destructuring
+        const { sql_product_id, thong_so_ky_thuat, hinh_anh, mo_ta_chi_tiet, slug, link_avatar } = req.body;
 
-        console.log(`🔄 API: Cập nhật document MongoDB ${mongoId}`);
-        console.log('📝 Update data:', { sql_product_id, slug, thong_so_ky_thuat: thong_so_ky_thuat ? Object.keys(thong_so_ky_thuat).length : 0, hinh_anh: hinh_anh ? hinh_anh.length : 0 });
+        console.log('🔄 API: Cập nhật document MongoDB');
+        console.log('📝 Request data:', {
+            id,
+            sql_product_id,
+            has_specs: !!thong_so_ky_thuat,
+            has_images: !!hinh_anh,
+            has_description: !!mo_ta_chi_tiet,
+            slug,
+            link_avatar // THÊM VÀO LOG
+        });
 
-        // Chuyển đổi thông số kỹ thuật từ object sang array
-        const thongSoKyThuatArray = [];
-        if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
-            Object.entries(thong_so_ky_thuat).forEach(([ten, gia_tri]) => {
-                thongSoKyThuatArray.push({
-                    ten: ten.trim(),
-                    gia_tri: gia_tri
-                });
-            });
+        // Kiểm tra kết nối MongoDB
+        const dbState = mongoose.connection.readyState;
+        console.log('🔌 MongoDB connection state:', dbState);
+        
+        if (dbState !== 1) {
+            throw new Error(`MongoDB connection is not ready. State: ${dbState}`);
         }
 
-        const updateData = {
-            updatedAt: new Date()
-        };
+        // Tạo object cập nhật
+        const updateData = {};
 
-        if (sql_product_id !== undefined) updateData.sql_product_id = sql_product_id;
-        if (thong_so_ky_thuat !== undefined) updateData.thong_so_ky_thuat = thongSoKyThuatArray;
-        if (hinh_anh !== undefined) updateData.hinh_anh = hinh_anh;
-        if (mo_ta_chi_tiet !== undefined) updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
-        if (slug !== undefined) updateData.slug = slug;
+        // Cập nhật sql_product_id nếu có
+        if (sql_product_id) {
+            updateData.sql_product_id = sql_product_id.toLowerCase();
+        }
 
+        // Cập nhật thông số kỹ thuật nếu có
+        if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
+            // Chuyển đổi từ object sang array format
+            updateData.thong_so_ky_thuat = Object.entries(thong_so_ky_thuat).map(([ten, gia_tri]) => ({
+                ten: ten.trim(),
+                gia_tri: gia_tri
+            }));
+        }
+
+        // Cập nhật hình ảnh nếu có
+        if (hinh_anh && Array.isArray(hinh_anh)) {
+            updateData.hinh_anh = hinh_anh;
+        }
+
+        // Cập nhật mô tả chi tiết nếu có
+        if (mo_ta_chi_tiet !== undefined) {
+            updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
+        }
+
+        // Cập nhật slug nếu có
+        if (slug) {
+            updateData.slug = slug;
+        }
+
+        // QUAN TRỌNG: Cập nhật link_avatar
+        if (link_avatar !== undefined) {
+            updateData.link_avatar = link_avatar;
+            console.log('✅ Updating link_avatar:', link_avatar);
+        } else if (hinh_anh && hinh_anh.length > 0) {
+            // Fallback: nếu không có link_avatar nhưng có hình ảnh, dùng ảnh đầu tiên
+            updateData.link_avatar = hinh_anh[0];
+            console.log('🔄 Using first image as link_avatar:', hinh_anh[0]);
+        }
+
+        console.log('📊 Update data to save:', updateData);
+
+        // Tìm và cập nhật document
         const updatedDetail = await DataModel.Mongo.ProductDetail.findByIdAndUpdate(
-            mongoId,
+            id,
             { $set: updateData },
             { new: true, runValidators: true }
         );
@@ -1896,11 +1951,12 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         if (!updatedDetail) {
             return res.status(404).json({
                 success: false,
-                message: 'Không tìm thấy document MongoDB'
+                message: 'Không tìm thấy document MongoDB để cập nhật'
             });
         }
 
-        console.log('✅ MongoDB document updated:', mongoId);
+        console.log('✅ MongoDB document updated successfully:', updatedDetail._id);
+        console.log('✅ link_avatar after update:', updatedDetail.link_avatar);
 
         res.json({
             success: true,
@@ -1910,10 +1966,41 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
 
     } catch (error) {
         console.error('❌ Lỗi khi cập nhật document MongoDB:', error);
+        
+        // Log chi tiết lỗi
+        console.error('📛 Error details:', {
+            name: error.name,
+            message: error.message,
+            code: error.code,
+            keyPattern: error.keyPattern,
+            keyValue: error.keyValue
+        });
+
+        // Xử lý các loại lỗi cụ thể
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Lỗi validation: ' + errors.join(', '),
+                errors: errors
+            });
+        }
+        
+        if (error.name === 'MongoError' && error.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Lỗi trùng lặp: sql_product_id đã tồn tại trong MongoDB',
+                errorCode: error.code
+            });
+        }
+
         res.status(500).json({
             success: false,
-            message: 'Lỗi server khi cập nhật document MongoDB',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Lỗi server khi cập nhật document MongoDB: ' + error.message,
+            error: process.env.NODE_ENV === 'development' ? {
+                name: error.name,
+                message: error.message
+            } : undefined
         });
     }
 });
@@ -1925,7 +2012,7 @@ app.get('/api/mongo/sanpham/sql/:sql_product_id', async (req, res) => {
         console.log(`🔍 API: Lấy document MongoDB bằng sql_product_id ${sqlProductId}`);
 
         const productDetail = await DataModel.Mongo.ProductDetail.findOne({ 
-            sql_product_id: sqlProductId 
+            sql_product_id: sqlProductId
         });
 
         if (!productDetail) {

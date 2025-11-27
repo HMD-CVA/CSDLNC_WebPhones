@@ -623,10 +623,11 @@ class SQLProductModel {
         .input('gia_niem_yet', sql.Decimal(15, 2), productData.gia_niem_yet)
         .input('gia_ban', sql.Decimal(15, 2), productData.gia_ban)
         .input('mongo_detail_id', sql.NVarChar(50), productData.mongo_detail_id)
+        .input('link_anh', sql.NVarChar(500), productData.link_anh)
         .query(`
-          INSERT INTO products (ma_sku, ten_san_pham, danh_muc_id, thuong_hieu_id, gia_niem_yet, gia_ban, mongo_detail_id)
+          INSERT INTO products (ma_sku, ten_san_pham, danh_muc_id, thuong_hieu_id, gia_niem_yet, gia_ban, mongo_detail_id, link_anh)
           OUTPUT INSERTED.*
-          VALUES (@ma_sku, @ten_san_pham, @danh_muc_id, @thuong_hieu_id, @gia_niem_yet, @gia_ban, @mongo_detail_id)
+          VALUES (@ma_sku, @ten_san_pham, @danh_muc_id, @thuong_hieu_id, @gia_niem_yet, @gia_ban, @mongo_detail_id, @link_anh)
         `);
       return result.recordset[0];
     } catch (error) {
