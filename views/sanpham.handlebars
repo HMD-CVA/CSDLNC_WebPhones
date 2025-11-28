@@ -76,7 +76,6 @@
             <div class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm theo tên, SKU...">
-                <button class="search-btn" id="searchBtn">Tìm kiếm</button>
             </div>
             <div class="filter-controls">
                 <select class="filter-select" id="statusFilter">
@@ -1696,12 +1695,14 @@
             document.getElementById('saveProductBtn')?.addEventListener('click', () => this.saveProduct());
             document.getElementById('refreshBtn')?.addEventListener('click', () => this.refreshProducts());
 
-            // Search and Filter
-            document.getElementById('searchBtn')?.addEventListener('click', () => this.filterProducts());
-            document.getElementById('clearFilters')?.addEventListener('click', () => this.clearFilters());
+            // Search and Filter - Auto search/filter
             document.getElementById('searchInput')?.addEventListener('input',
                 Utils.debounce(() => this.filterProducts(), 300)
             );
+            document.getElementById('statusFilter')?.addEventListener('change', () => this.filterProducts());
+            document.getElementById('categoryFilter')?.addEventListener('change', () => this.filterProducts());
+            document.getElementById('brandFilter')?.addEventListener('change', () => this.filterProducts());
+            document.getElementById('clearFilters')?.addEventListener('click', () => this.clearFilters());
 
             // Event Delegation for Table
             document.addEventListener('click', (e) => {
@@ -1862,6 +1863,9 @@
             if (brandFilter) brandFilter.value = '';
 
             console.log('🧹 Đã xóa tất cả bộ lọc');
+            
+            // Render lại dữ liệu gốc
+            this.filterProducts();
         }
 
         toggleEmptyState(show) {
@@ -2827,9 +2831,11 @@
             // Auto refresh khi đóng modal
             const brandModal = document.getElementById('brandModal');
             if (brandModal) {
-                brandModal.addEventListener('hidden.bs.modal', () => {
-                    document.getElementById('refreshBtn').click();
-                    location.reload();
+                brandModal.addEventListener('hidden.bs.modal', async () => {
+                    // Refresh dropdown thương hiệu trong product form
+                    await this.refreshBrandDropdown();
+                    // Refresh filter dropdown
+                    await this.refreshBrandFilterDropdown();
                 });
             }
 
@@ -2876,6 +2882,64 @@
             } catch (error) {
                 console.error('Lỗi khi làm mới danh sách thương hiệu:', error);
                 this.showError('Không thể làm mới danh sách thương hiệu');
+            }
+        }
+
+        async refreshBrandDropdown() {
+            try {
+                const response = await fetch('/api/thuonghieu');
+                const data = await response.json();
+                
+                if (data && Array.isArray(data)) {
+                    const brandSelect = document.getElementById('productBrand');
+                    if (brandSelect) {
+                        const currentValue = brandSelect.value;
+                        brandSelect.innerHTML = '<option value="">Chọn thương hiệu</option>';
+                        
+                        data.forEach(brand => {
+                            const option = document.createElement('option');
+                            option.value = brand.id;
+                            option.textContent = brand.ten_thuong_hieu;
+                            if (brand.id == currentValue) {
+                                option.selected = true;
+                            }
+                            brandSelect.appendChild(option);
+                        });
+                        
+                        console.log('✅ Refreshed brand dropdown with', data.length, 'brands');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error refreshing brand dropdown:', error);
+            }
+        }
+
+        async refreshBrandFilterDropdown() {
+            try {
+                const response = await fetch('/api/thuonghieu');
+                const data = await response.json();
+                
+                if (data && Array.isArray(data)) {
+                    const brandFilter = document.getElementById('brandFilter');
+                    if (brandFilter) {
+                        const currentValue = brandFilter.value;
+                        brandFilter.innerHTML = '<option value="">Tất cả thương hiệu</option>';
+                        
+                        data.forEach(brand => {
+                            const option = document.createElement('option');
+                            option.value = brand.id;
+                            option.textContent = brand.ten_thuong_hieu;
+                            if (brand.id == currentValue) {
+                                option.selected = true;
+                            }
+                            brandFilter.appendChild(option);
+                        });
+                        
+                        console.log('✅ Refreshed brand filter dropdown with', data.length, 'brands');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error refreshing brand filter dropdown:', error);
             }
         }
 
@@ -3617,9 +3681,11 @@
             // Auto refresh khi đóng modal
             const categoryModal = document.getElementById('categoryModal');
             if (categoryModal) {
-                categoryModal.addEventListener('hidden.bs.modal', () => {
-                    document.getElementById('refreshBtn').click();
-                    location.reload();
+                categoryModal.addEventListener('hidden.bs.modal', async () => {
+                    // Refresh dropdown danh mục trong product form
+                    await this.refreshCategoryDropdown();
+                    // Refresh filter dropdown
+                    await this.refreshCategoryFilterDropdown();
                 });
             }
 
@@ -3807,6 +3873,78 @@
             } catch (error) {
                 console.error('Lỗi khi làm mới danh sách danh mục:', error);
                 this.showError('Không thể làm mới danh sách danh mục');
+            }
+        }
+
+        async refreshCategoryDropdown() {
+            try {
+                const response = await fetch('/api/danhmuc');
+                const data = await response.json();
+                
+                let categories = [];
+                if (Array.isArray(data)) {
+                    categories = data;
+                } else if (data.data && Array.isArray(data.data)) {
+                    categories = data.data;
+                }
+                
+                if (categories.length > 0) {
+                    const categorySelect = document.getElementById('productCategory');
+                    if (categorySelect) {
+                        const currentValue = categorySelect.value;
+                        categorySelect.innerHTML = '<option value="">Chọn danh mục</option>';
+                        
+                        categories.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.id;
+                            option.textContent = category.ten_danh_muc;
+                            if (category.id == currentValue) {
+                                option.selected = true;
+                            }
+                            categorySelect.appendChild(option);
+                        });
+                        
+                        console.log('✅ Refreshed category dropdown with', categories.length, 'categories');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error refreshing category dropdown:', error);
+            }
+        }
+
+        async refreshCategoryFilterDropdown() {
+            try {
+                const response = await fetch('/api/danhmuc');
+                const data = await response.json();
+                
+                let categories = [];
+                if (Array.isArray(data)) {
+                    categories = data;
+                } else if (data.data && Array.isArray(data.data)) {
+                    categories = data.data;
+                }
+                
+                if (categories.length > 0) {
+                    const categoryFilter = document.getElementById('categoryFilter');
+                    if (categoryFilter) {
+                        const currentValue = categoryFilter.value;
+                        categoryFilter.innerHTML = '<option value="">Tất cả danh mục</option>';
+                        
+                        categories.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.id;
+                            option.textContent = category.ten_danh_muc;
+                            if (category.id == currentValue) {
+                                option.selected = true;
+                            }
+                            categoryFilter.appendChild(option);
+                        });
+                        
+                        console.log('✅ Refreshed category filter dropdown with', categories.length, 'categories');
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error refreshing category filter dropdown:', error);
             }
         }
 
