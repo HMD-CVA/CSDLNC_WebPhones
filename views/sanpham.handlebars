@@ -62,11 +62,11 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon premium">
-                    <i class="fas fa-star"></i>
+                    <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="countFeatured">0</h3>
-                    <p>Sản phẩm nổi bật</p>
+                    <h3 id="totalRevenue">0₫</h3>
+                    <p>Tổng doanh số</p>
                 </div>
             </div>
         </div>
@@ -1147,6 +1147,24 @@
             }).format(amount || 0);
         },
 
+        formatCompactCurrency(amount) {
+            if (!amount || amount === 0) return '0₫';
+            
+            const billion = 1000000000;
+            const million = 1000000;
+            const thousand = 1000;
+            
+            if (amount >= billion) {
+                return (amount / billion).toFixed(1) + ' tỷ';
+            } else if (amount >= million) {
+                return (amount / million).toFixed(1) + ' tr';
+            } else if (amount >= thousand) {
+                return (amount / thousand).toFixed(0) + ' K';
+            } else {
+                return amount.toLocaleString('vi-VN') + '₫';
+            }
+        },
+
         debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
@@ -1809,24 +1827,29 @@
 
         updateStats() {
             const total = this.products.length;
-            const active = this.products.filter(p => p.trang_thai == 1).length; // Dùng == thay vì ===
-            const inactive = this.products.filter(p => p.trang_thai == 0).length; // Dùng == thay vì ===
-            const featured = this.products.filter(p => p.san_pham_noi_bat).length;
+            const active = this.products.filter(p => p.trang_thai == 1).length;
+            const inactive = this.products.filter(p => p.trang_thai == 0).length;
+            
+            // Tính tổng doanh số (giá bán × số lượng đã bán)
+            const totalRevenue = this.products.reduce((sum, p) => {
+                const soldQuantity = p.so_luong_ban || 0;
+                const price = p.gia_ban || 0;
+                return sum + (soldQuantity * price);
+            }, 0);
 
-            console.log('📊 Stats:', { total, active, inactive, featured });
-            console.log('📦 Sample product:', this.products[0]);
+            console.log('📊 Stats:', { total, active, inactive, totalRevenue });
 
             document.getElementById('totalProducts').textContent = total;
             document.getElementById('countActive').textContent = active;
             document.getElementById('countInactive').textContent = inactive;
-            document.getElementById('countFeatured').textContent = featured;
+            document.getElementById('totalRevenue').textContent = Utils.formatCompactCurrency(totalRevenue);
         }
 
-        updateStatsWithCounts(total, active, inactive, featured) {
+        updateStatsWithCounts(total, active, inactive, totalRevenue) {
             document.getElementById('totalProducts').textContent = total;
             document.getElementById('countActive').textContent = active;
             document.getElementById('countInactive').textContent = inactive;
-            document.getElementById('countFeatured').textContent = featured;
+            document.getElementById('totalRevenue').textContent = Utils.formatCompactCurrency(totalRevenue);
         }
 
         filterProducts() {
@@ -1839,7 +1862,7 @@
             let visibleCount = 0;
             let visibleActive = 0;
             let visibleInactive = 0;
-            let visibleFeatured = 0;
+            let visibleRevenue = 0;
 
             rows.forEach((row, index) => {
                 const name = row.querySelector('.product-name')?.textContent.toLowerCase() || '';
@@ -1847,13 +1870,7 @@
                 const status = row.getAttribute('data-status') || '';
                 const category = row.getAttribute('data-category') || '';
                 const brand = row.getAttribute('data-brand') || '';
-                const featured = row.getAttribute('data-featured') === 'true';
-
-                if (index === 0) {
-                    console.log('🔍 First row attributes:', { status, category, brand, featured });
-                    console.log('🔍 Status type:', typeof status, 'Value:', status);
-                    console.log('🔍 Comparison: status === "1":', status === '1', 'status === "0":', status === '0');
-                }
+                const productId = row.getAttribute('data-id') || '';
 
                 const matchesSearch = name.includes(searchTerm) || sku.includes(searchTerm);
                 const matchesStatus = !statusFilter || status === statusFilter;
@@ -1865,21 +1882,28 @@
                     visibleCount++;
                     
                     // Đếm stats cho sản phẩm hiển thị
-                    if (status === '1' || status === 'true' || status === '1' || status === true) visibleActive++;
-                    if (status === '0' || status === 'false' || status === '0' || status === false) visibleInactive++;
-                    if (featured) visibleFeatured++;
+                    if (status === '1') visibleActive++;
+                    if (status === '0') visibleInactive++;
+                    
+                    // Tính doanh số của sản phẩm này
+                    const product = this.products.find(p => p.id == productId);
+                    if (product) {
+                        const soldQuantity = product.so_luong_ban || 0;
+                        const price = product.gia_ban || 0;
+                        visibleRevenue += (soldQuantity * price);
+                    }
                 } else {
                     row.style.display = 'none';
                 }
             });
 
-            console.log('🔍 Filter Stats:', { visibleCount, visibleActive, visibleInactive, visibleFeatured });
+            console.log('🔍 Filter Stats:', { visibleCount, visibleActive, visibleInactive, visibleRevenue });
 
             this.toggleEmptyState(visibleCount === 0);
             this.updateTableInfo(visibleCount);
             
             // Cập nhật stats theo dữ liệu đã lọc
-            this.updateStatsWithCounts(visibleCount, visibleActive, visibleInactive, visibleFeatured);
+            this.updateStatsWithCounts(visibleCount, visibleActive, visibleInactive, visibleRevenue);
         }
 
         clearFilters() {
