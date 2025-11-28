@@ -782,20 +782,52 @@
                                 <h4 class="section-title">
                                     <i class="fas fa-boxes"></i>
                                     Biến thể sản phẩm
-                                    <small class="text-muted">(Màu sắc, dung lượng, kích thước...)</small>
+                                    <button type="button" class="btn btn-sm btn-primary ms-2" id="addVariantTypeBtn">
+                                        <i class="fas fa-plus"></i> Thêm loại biến thể
+                                    </button>
                                 </h4>
+                                
                                 <div class="variants-management">
-                                    <div class="variants-toolbar">
-                                        <button type="button" class="btn btn-sm btn-primary" id="addVariantTypeBtn">
-                                            <i class="fas fa-plus"></i> Thêm loại biến thể
-                                        </button>
-                                        <div class="variants-hint">
-                                            <i class="fas fa-info-circle"></i>
-                                            Ví dụ: Màu sắc (Đen, Trắng), Dung lượng (128GB, 256GB)
-                                        </div>
+                                    <!-- Bảng danh sách loại biến thể -->
+                                    <div class="variant-options-table-wrapper" id="variantOptionsSection" style="display: none;">
+                                        <table class="variant-options-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 25%">Tên loại</th>
+                                                    <th style="width: 65%">Giá trị</th>
+                                                    <th style="width: 10%">Xóa</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="variantOptionsBody">
+                                                <!-- Variant options will be added here -->
+                                            </tbody>
+                                        </table>
                                     </div>
-                                    <div class="variants-container" id="variantsContainer">
-                                        <!-- Variant types will be added here -->
+
+                                    <!-- Bảng tổ hợp biến thể -->
+                                    <div class="variant-combinations-section" id="variantCombinationsSection" style="display: none;">
+                                        <div class="combinations-header">
+                                            <h5><i class="fas fa-th"></i> Tổ hợp biến thể & Định giá</h5>
+                                            <span class="combinations-count" id="combinationsCount">0 tổ hợp</span>
+                                        </div>
+                                        <div class="variant-combinations-table-wrapper">
+                                            <table class="variant-combinations-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width: 5%">#</th>
+                                                        <th style="width: 25%">Biến thể</th>
+                                                        <th style="width: 18%">SKU</th>
+                                                        <th style="width: 20%">Giá bán (₫)</th>
+                                                        <th style="width: 15%">Tồn kho</th>
+                                                        <th style="width: 12%">Trạng thái</th>
+                                                        <th style="width: 5%">Xóa</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="variantCombinationsBody">
+                                                    <!-- Combinations will be added here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2013,7 +2045,7 @@
                         }
 
                         // 📦 LOAD VARIANTS NẾU CÓ
-                        if (mongoData.variants && mongoData.variants.length > 0) {
+                        if (mongoData.variants && typeof mongoData.variants === 'object') {
                             console.log('📦 Loading existing variants from MongoDB:', mongoData.variants);
                             if (window.productVariantsManager) {
                                 window.productVariantsManager.loadVariantsData(mongoData.variants);
@@ -7662,17 +7694,16 @@ class ProductSpecsManager {
 // =============================================
 class ProductVariantsManager {
     constructor() {
-        this.variantTypes = []; // [{ id, name, values: [] }]
+        this.variantTypes = [];
+        this.combinations = [];
         this.init();
     }
 
     init() {
         this.bindEvents();
-        this.renderEmpty();
     }
 
     bindEvents() {
-        // Thêm loại biến thể mới
         document.getElementById('addVariantTypeBtn')?.addEventListener('click', () => {
             this.addVariantType();
         });
@@ -7687,14 +7718,16 @@ class ProductVariantsManager {
         };
 
         this.variantTypes.push(newVariant);
-        this.renderVariants();
+        this.renderVariantOptionsTable();
+        this.autoGenerateCombinations(); // Tự động tạo tổ hợp
         
         console.log('➕ Added new variant type:', newVariant);
     }
 
     removeVariantType(variantId) {
         this.variantTypes = this.variantTypes.filter(v => v.id !== variantId);
-        this.renderVariants();
+        this.renderVariantOptionsTable();
+        this.autoGenerateCombinations();
         console.log('🗑️ Removed variant type:', variantId);
     }
 
@@ -7703,7 +7736,13 @@ class ProductVariantsManager {
         if (variant && value.trim()) {
             if (!variant.values.includes(value.trim())) {
                 variant.values.push(value.trim());
-                this.renderVariants();
+                this.renderVariantOptionsTable();
+                // Focus lại vào input sau khi render
+                setTimeout(() => {
+                    const input = document.querySelector(`.chip-input[data-variant-id="${variantId}"]`);
+                    if (input) input.focus();
+                }, 0);
+                this.autoGenerateCombinations(); // Tự động tạo tổ hợp
                 console.log('➕ Added value to variant:', variantId, value);
             }
         }
@@ -7713,8 +7752,23 @@ class ProductVariantsManager {
         const variant = this.variantTypes.find(v => v.id === variantId);
         if (variant) {
             variant.values.splice(valueIndex, 1);
-            this.renderVariants();
+            this.renderVariantOptionsTable();
+            // Focus lại vào input sau khi render
+            setTimeout(() => {
+                const input = document.querySelector(`.chip-input[data-variant-id="${variantId}"]`);
+                if (input) input.focus();
+            }, 0);
+            this.autoGenerateCombinations();
             console.log('🗑️ Removed value from variant:', variantId, valueIndex);
+        }
+    }
+
+    updateVariantValue(variantId, valueIndex, newValue) {
+        const variant = this.variantTypes.find(v => v.id === variantId);
+        if (variant && variant.values[valueIndex] !== undefined) {
+            variant.values[valueIndex] = newValue.trim();
+            this.autoGenerateCombinations();
+            console.log('✏️ Updated value:', variantId, valueIndex, newValue);
         }
     }
 
@@ -7722,84 +7776,78 @@ class ProductVariantsManager {
         const variant = this.variantTypes.find(v => v.id === variantId);
         if (variant) {
             variant.name = newName.trim();
+            this.autoGenerateCombinations(); // Refresh combinations với tên mới
             console.log('✏️ Updated variant name:', variantId, newName);
         }
     }
 
-    renderEmpty() {
-        const container = document.getElementById('variantsContainer');
-        if (!container) return;
-
-        container.innerHTML = `
-            <div class="variants-empty-state">
-                <i class="fas fa-boxes"></i>
-                <p>Chưa có biến thể nào. Nhấn "Thêm loại biến thể" để bắt đầu.</p>
-            </div>
-        `;
-    }
-
-    renderVariants() {
-        const container = document.getElementById('variantsContainer');
-        if (!container) return;
+    renderVariantOptionsTable() {
+        const tbody = document.getElementById('variantOptionsBody');
+        const section = document.getElementById('variantOptionsSection');
+        
+        if (!tbody || !section) return;
 
         if (this.variantTypes.length === 0) {
-            this.renderEmpty();
+            section.style.display = 'none';
             return;
         }
 
-        container.innerHTML = '';
+        section.style.display = 'block';
+        tbody.innerHTML = '';
 
         this.variantTypes.forEach(variant => {
-            const card = document.createElement('div');
-            card.className = 'variant-type-card';
-            card.setAttribute('data-variant-id', variant.id);
+            const row = document.createElement('tr');
+            row.setAttribute('data-variant-id', variant.id);
 
-            // Tạo HTML cho values
-            const valuesHTML = variant.values.map(function(value, index) {
-                return '<div class="variant-value-tag">' +
-                    '<span class="variant-value-text">' + value + '</span>' +
-                    '<button type="button" class="btn-remove-value" ' +
-                        'data-variant-id="' + variant.id + '" ' +
-                        'data-value-index="' + index + '">' +
-                        '<i class="fas fa-times"></i>' +
-                    '</button>' +
-                '</div>';
-            }).join('');
+            // Tạo HTML cho values tags dạng chips inline
+            const valuesHTML = variant.values.map((value, index) => 
+                `<span class="variant-chip" data-variant-id="${variant.id}" data-value-index="${index}">
+                    <span class="chip-text" contenteditable="true" 
+                        data-variant-id="${variant.id}" 
+                        data-value-index="${index}">${value}</span>
+                    <button type="button" class="chip-remove" 
+                        data-variant-id="${variant.id}" 
+                        data-value-index="${index}"
+                        title="Xóa">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </span>`
+            ).join('');
 
-            card.innerHTML = 
-                '<div class="variant-type-header">' +
-                    '<div class="variant-type-name">' +
-                        '<input type="text" ' +
-                            'class="variant-name-input" ' +
-                            'value="' + (variant.name || '') + '" ' +
-                            'placeholder="Tên loại biến thể (VD: Màu sắc, Dung lượng)" ' +
-                            'data-variant-id="' + variant.id + '">' +
-                    '</div>' +
-                    '<button type="button" class="btn-remove-variant-type" data-variant-id="' + variant.id + '">' +
-                        '<i class="fas fa-trash"></i> Xóa' +
-                    '</button>' +
-                '</div>' +
-                '<div class="variant-values-container" id="values-' + variant.id + '">' +
-                    valuesHTML +
-                '</div>' +
-                '<div class="variant-input-group">' +
-                    '<input type="text" ' +
-                        'class="variant-value-input" ' +
-                        'placeholder="Nhập giá trị (VD: Đen, Trắng, 128GB...)" ' +
-                        'data-variant-id="' + variant.id + '">' +
-                    '<button type="button" class="btn-add-value" data-variant-id="' + variant.id + '">' +
-                        '<i class="fas fa-plus"></i> Thêm' +
-                    '</button>' +
-                '</div>';
+            row.innerHTML = `
+                <td>
+                    <input type="text" 
+                        class="form-control form-control-sm variant-name-input" 
+                        value="${variant.name || ''}" 
+                        placeholder="VD: Màu sắc, Dung lượng"
+                        data-variant-id="${variant.id}">
+                </td>
+                <td>
+                    <div class="variant-chips-container" 
+                        data-variant-id="${variant.id}">
+                        ${valuesHTML}
+                        <input type="text" 
+                            class="chip-input" 
+                            placeholder="Nhập giá trị..." 
+                            data-variant-id="${variant.id}">
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-danger btn-remove-variant-type" 
+                        data-variant-id="${variant.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
 
-            container.appendChild(card);
+            tbody.appendChild(row);
         });
 
-        // Bind events sau khi render
-        this.bindCardEvents();
+        // Bind events
+        this.bindVariantOptionEvents();
     }
 
-    bindCardEvents() {
+    bindVariantOptionEvents() {
         // Update variant name
         document.querySelectorAll('.variant-name-input').forEach(input => {
             input.addEventListener('input', (e) => {
@@ -7816,38 +7864,267 @@ class ProductVariantsManager {
             });
         });
 
-        // Add variant value
-        document.querySelectorAll('.btn-add-value').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const variantId = e.currentTarget.getAttribute('data-variant-id');
-                const input = document.querySelector(`.variant-value-input[data-variant-id="${variantId}"]`);
-                if (input && input.value.trim()) {
-                    this.addVariantValue(variantId, input.value);
-                    input.value = '';
-                }
-            });
-        });
-
-        // Add value on Enter key
-        document.querySelectorAll('.variant-value-input').forEach(input => {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
+        // Chip input - Add new chip on Enter or comma
+        document.querySelectorAll('.chip-input').forEach(input => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
                     e.preventDefault();
                     const variantId = e.target.getAttribute('data-variant-id');
-                    if (e.target.value.trim()) {
-                        this.addVariantValue(variantId, e.target.value);
+                    const value = e.target.value.trim().replace(/,$/, '');
+                    if (value) {
+                        this.addVariantValue(variantId, value);
                         e.target.value = '';
+                    }
+                }
+                // Backspace to delete last chip if input is empty
+                if (e.key === 'Backspace' && e.target.value === '') {
+                    const variantId = e.target.getAttribute('data-variant-id');
+                    const variant = this.variantTypes.find(v => v.id === variantId);
+                    if (variant && variant.values.length > 0) {
+                        this.removeVariantValue(variantId, variant.values.length - 1);
                     }
                 }
             });
         });
 
-        // Remove variant value
-        document.querySelectorAll('.btn-remove-value').forEach(btn => {
+        // Edit chip text inline
+        document.querySelectorAll('.chip-text').forEach(span => {
+            span.addEventListener('blur', (e) => {
+                const variantId = e.target.getAttribute('data-variant-id');
+                const valueIndex = parseInt(e.target.getAttribute('data-value-index'));
+                const newValue = e.target.textContent.trim();
+                if (newValue) {
+                    this.updateVariantValue(variantId, valueIndex, newValue);
+                } else {
+                    // If empty, remove the chip
+                    this.removeVariantValue(variantId, valueIndex);
+                }
+            });
+
+            span.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            });
+        });
+
+        // Remove chip
+        document.querySelectorAll('.chip-remove').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const variantId = e.currentTarget.getAttribute('data-variant-id');
                 const valueIndex = parseInt(e.currentTarget.getAttribute('data-value-index'));
                 this.removeVariantValue(variantId, valueIndex);
+            });
+        });
+
+        // Click on container to focus input
+        document.querySelectorAll('.variant-chips-container').forEach(container => {
+            container.addEventListener('click', (e) => {
+                if (e.target === container) {
+                    const input = container.querySelector('.chip-input');
+                    if (input) input.focus();
+                }
+            });
+        });
+    }
+
+    // Tự động tạo tổ hợp khi có thay đổi
+    autoGenerateCombinations() {
+        const validVariants = this.variantTypes.filter(v => v.name && v.values && v.values.length > 0);
+        
+        if (validVariants.length === 0) {
+            this.combinations = [];
+            this.renderCombinations();
+            return;
+        }
+
+        // Cartesian product algorithm
+        const cartesian = (...arrays) => {
+            return arrays.reduce((acc, array) => {
+                return acc.flatMap(x => array.map(y => [...x, y]));
+            }, [[]]);
+        };
+
+        const valueArrays = validVariants.map(v => v.values);
+        const allCombinations = cartesian(...valueArrays);
+
+        // Lấy giá gốc từ form
+        const basePrice = parseInt(document.getElementById('productPrice')?.value) || 0;
+
+        // Giữ lại data của các tổ hợp đã tồn tại (nếu có)
+        const existingCombos = {};
+        this.combinations.forEach(combo => {
+            const key = JSON.stringify(combo.attributes);
+            existingCombos[key] = combo;
+        });
+
+        // Tạo combinations mới
+        this.combinations = allCombinations.map((combo, index) => {
+            const attributes = {};
+            const nameParts = [];
+            
+            validVariants.forEach((variant, i) => {
+                const key = variant.name.toLowerCase().replace(/\s+/g, '_');
+                attributes[key] = combo[i];
+                nameParts.push(combo[i]);
+            });
+
+            const attrKey = JSON.stringify(attributes);
+            const existing = existingCombos[attrKey];
+
+            // Nếu tổ hợp đã tồn tại, giữ nguyên SKU, giá, tồn kho
+            if (existing) {
+                return {
+                    ...existing,
+                    name: nameParts.join(' - '),
+                    attributes: attributes
+                };
+            }
+
+            // Tổ hợp mới
+            const sku = 'VAR-' + Date.now() + '-' + (index + 1);
+            const name = nameParts.join(' - ');
+
+            return {
+                id: 'comb_' + Date.now() + '_' + index,
+                sku: sku,
+                name: name,
+                price: basePrice,
+                stock: 0,
+                active: true,
+                attributes: attributes
+            };
+        });
+
+        console.log('✅ Auto-generated', this.combinations.length, 'combinations');
+        this.renderCombinations();
+    }
+
+    renderCombinations() {
+        const tbody = document.getElementById('variantCombinationsBody');
+        const section = document.getElementById('variantCombinationsSection');
+        const countElem = document.getElementById('combinationsCount');
+        
+        if (!tbody || !section) return;
+
+        if (this.combinations.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        if (countElem) {
+            countElem.textContent = this.combinations.length + ' tổ hợp';
+        }
+
+        tbody.innerHTML = '';
+
+        this.combinations.forEach((combo, index) => {
+            const row = document.createElement('tr');
+            row.setAttribute('data-combo-id', combo.id);
+            
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>
+                    <div class="combo-name">${combo.name}</div>
+                    <div class="combo-attributes">${Object.entries(combo.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')}</div>
+                </td>
+                <td>
+                    <input type="text" 
+                        class="form-control form-control-sm combo-sku" 
+                        value="${combo.sku}"
+                        data-combo-id="${combo.id}">
+                </td>
+                <td>
+                    <input type="number" 
+                        class="form-control form-control-sm combo-price" 
+                        value="${combo.price}"
+                        data-combo-id="${combo.id}"
+                        step="1000"
+                        min="0">
+                </td>
+                <td>
+                    <input type="number" 
+                        class="form-control form-control-sm combo-stock" 
+                        value="${combo.stock}"
+                        data-combo-id="${combo.id}"
+                        min="0">
+                </td>
+                <td>
+                    <div class="form-check form-switch">
+                        <input type="checkbox" 
+                            class="form-check-input combo-active" 
+                            ${combo.active ? 'checked' : ''}
+                            data-combo-id="${combo.id}">
+                    </div>
+                </td>
+                <td>
+                    <button type="button" 
+                        class="btn btn-sm btn-danger btn-remove-combo"
+                        data-combo-id="${combo.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        this.bindCombinationEvents();
+    }
+
+    bindCombinationEvents() {
+        // Update SKU
+        document.querySelectorAll('.combo-sku').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (combo) {
+                    combo.sku = e.target.value;
+                }
+            });
+        });
+
+        // Update Price
+        document.querySelectorAll('.combo-price').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (combo) {
+                    combo.price = parseInt(e.target.value) || 0;
+                }
+            });
+        });
+
+        // Update Stock
+        document.querySelectorAll('.combo-stock').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (combo) {
+                    combo.stock = parseInt(e.target.value) || 0;
+                }
+            });
+        });
+
+        // Update Active
+        document.querySelectorAll('.combo-active').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (combo) {
+                    combo.active = e.target.checked;
+                }
+            });
+        });
+
+        // Remove combination
+        document.querySelectorAll('.btn-remove-combo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const comboId = e.currentTarget.getAttribute('data-combo-id');
+                this.combinations = this.combinations.filter(c => c.id !== comboId);
+                this.renderCombinations();
             });
         });
     }
@@ -7855,44 +8132,74 @@ class ProductVariantsManager {
     getVariantsData() {
         console.log('📦 Getting variants data...');
         
-        const variants = this.variantTypes
+        // Trả về cấu trúc mới: variant_options + variant_combinations
+        const variantOptions = this.variantTypes
             .filter(v => v.name && v.name.trim() !== '' && v.values.length > 0)
             .map(v => ({
                 name: v.name.trim(),
                 values: v.values
             }));
 
-        console.log('✅ Variants data:', variants);
-        return variants;
+        const variantCombinations = this.combinations.map(c => ({
+            sku: c.sku,
+            name: c.name,
+            price: c.price,
+            stock: c.stock,
+            active: c.active,
+            attributes: c.attributes
+        }));
+
+        console.log('✅ Variants data:', { variantOptions, variantCombinations });
+        
+        return {
+            variant_options: variantOptions,
+            variant_combinations: variantCombinations
+        };
     }
 
     loadVariantsData(variantsData) {
         console.log('📥 Loading variants data:', variantsData);
         
-        if (!variantsData || !Array.isArray(variantsData)) {
+        if (!variantsData) {
             console.warn('⚠️ Invalid variants data:', variantsData);
             return;
         }
-        
-        if (variantsData.length === 0) {
-            console.log('ℹ️ Variants data is empty array');
-            return;
+
+        // Load variant options
+        if (variantsData.variant_options && Array.isArray(variantsData.variant_options)) {
+            this.variantTypes = [];
+            variantsData.variant_options.forEach(variant => {
+                if (variant.name && variant.values) {
+                    console.log('➕ Adding variant type:', variant.name, 'with values:', variant.values);
+                    this.addVariantType(variant.name, variant.values);
+                }
+            });
+        }
+
+        // Load variant combinations
+        if (variantsData.variant_combinations && Array.isArray(variantsData.variant_combinations)) {
+            this.combinations = variantsData.variant_combinations.map((combo, index) => ({
+                id: 'comb_' + Date.now() + '_' + index,
+                sku: combo.sku || '',
+                name: combo.name || '',
+                price: combo.price || 0,
+                stock: combo.stock || 0,
+                active: combo.active !== undefined ? combo.active : true,
+                attributes: combo.attributes || {}
+            }));
+            
+            this.renderCombinations();
         }
         
-        this.variantTypes = [];
-        variantsData.forEach(variant => {
-            if (variant.name && variant.values) {
-                console.log('➕ Adding variant type:', variant.name, 'with values:', variant.values);
-                this.addVariantType(variant.name, variant.values);
-            }
-        });
-        
-        console.log('✅ Loaded variants data:', this.variantTypes);
+        console.log('✅ Loaded variants data');
     }
 
     clearVariants() {
         this.variantTypes = [];
-        this.renderEmpty();
+        this.combinations = [];
+        this.renderVariantOptionsTable();
+        this.renderCombinations();
+        
         console.log('🧹 Cleared all variants');
     }
 }
@@ -12279,26 +12586,166 @@ document.addEventListener('DOMContentLoaded', function() {
     color: var(--primary);
 }
 
-.variants-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+/* Variant Options Table */
+.variant-options-table-wrapper {
+    margin-bottom: 20px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.variant-type-card {
+.variant-options-table {
+    width: 100%;
+    border-collapse: collapse;
     background: white;
-    border: 2px solid var(--gray-200);
-    border-radius: 10px;
-    padding: 16px;
-    transition: all 0.3s ease;
 }
 
-.variant-type-card:hover {
+.variant-options-table thead {
+    background: var(--gray-50);
+}
+
+.variant-options-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.variant-options-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.variant-options-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Variant Chips Container (like input with tags inside) */
+.variant-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    min-height: 38px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    background: white;
+    cursor: text;
+    transition: all 0.2s;
+}
+
+.variant-chips-container:focus-within {
     border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.variant-type-header {
+.variant-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: linear-gradient(135deg, var(--primary), #667eea);
+    color: white;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    max-width: 200px;
+}
+
+.variant-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.variant-chip .chip-text {
+    outline: none;
+    border: none;
+    background: transparent;
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+.variant-chip .chip-text:focus {
+    background: rgba(255, 255, 255, 0.2);
+    outline: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.variant-chip .chip-remove {
+    background: transparent;
+    border: none;
+    color: white;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s;
+    opacity: 0.8;
+}
+
+.variant-chip .chip-remove:hover {
+    background: rgba(255, 255, 255, 0.3);
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.variant-chip .chip-remove i {
+    font-size: 0.65rem;
+}
+
+.chip-input {
+    flex: 1;
+    min-width: 120px;
+    border: none;
+    outline: none;
+    padding: 4px;
+    font-size: 0.85rem;
+    background: transparent;
+}
+
+.chip-input::placeholder {
+    color: var(--gray-400);
+}
+
+.btn-remove-variant-type {
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    transition: all 0.2s;
+}
+
+.btn-remove-variant-type:hover {
+    color: #c53030;
+    background: rgba(220, 38, 38, 0.1);
+    border-radius: 4px;
+}
+
+/* Variant Combinations Section */
+.variant-combinations-section {
+    margin-top: 20px;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    padding: 16px;
+    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.03), transparent);
+}
+
+.combinations-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -12307,151 +12754,89 @@ document.addEventListener('DOMContentLoaded', function() {
     border-bottom: 1px solid var(--gray-200);
 }
 
-.variant-type-name {
-    flex: 1;
-    margin-right: 12px;
+.combinations-header h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.variant-type-name input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid var(--gray-300);
-    border-radius: 6px;
-    font-size: 0.95rem;
+.combinations-count {
+    background: var(--primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
     font-weight: 600;
 }
 
-.variant-type-name input:focus {
-    border-color: var(--primary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.btn-remove-variant-type {
-    background: var(--danger);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-}
-
-.btn-remove-variant-type:hover {
-    background: #dc2626;
-    transform: scale(1.05);
-}
-
-.variant-values-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-    min-height: 40px;
-    padding: 8px;
-    background: var(--gray-50);
-    border-radius: 6px;
-}
-
-.variant-value-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: white;
-    border: 1px solid var(--gray-300);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-}
-
-.variant-value-tag:hover {
-    border-color: var(--primary);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.variant-value-text {
-    color: var(--gray-700);
-    font-weight: 500;
-}
-
-.btn-remove-value {
-    background: none;
-    border: none;
-    color: var(--danger);
-    cursor: pointer;
-    padding: 0;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    transition: all 0.2s ease;
-}
-
-.btn-remove-value:hover {
-    background: var(--danger);
-    color: white;
-}
-
-.variant-input-group {
-    display: flex;
-    gap: 8px;
-}
-
-.variant-input-group input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--gray-300);
-    border-radius: 6px;
-    font-size: 0.9rem;
-}
-
-.variant-input-group input:focus {
-    border-color: var(--primary);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.btn-add-value {
-    background: var(--success);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-add-value:hover {
-    background: #059669;
-    transform: translateY(-1px);
-}
-
-.variants-empty-state {
-    text-align: center;
-    padding: 40px;
-    color: var(--gray-400);
+/* Variant Combinations Table */
     background: var(--gray-50);
     border-radius: 8px;
-    border: 2px dashed var(--gray-300);
 }
 
-.variants-empty-state i {
-    font-size: 3rem;
-    margin-bottom: 12px;
-    display: block;
+.variant-combinations-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+}
+
+.variant-combinations-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.variant-combinations-table thead {
+    background: var(--gray-100);
+}
+
+.variant-combinations-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-300);
+}
+
+.variant-combinations-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
+}
+
+.variant-combinations-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.combo-name {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 4px;
+}
+
+.combo-attributes {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.variant-combinations-table input[type="text"],
+.variant-combinations-table input[type="number"] {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.variant-combinations-table input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .variants-empty-state p {
