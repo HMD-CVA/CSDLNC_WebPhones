@@ -1499,7 +1499,6 @@
             await this.loadProducts();
             this.bindEvents();
             this.setupImagePreview();
-            this.updateStats();
         }
 
         async loadProducts() {
@@ -1508,8 +1507,9 @@
                 this.products = await ProductAPIService.getProducts();
                 
                 this.showLoading(false);
-                this.updateStats();
-                this.filterProducts();
+                this.renderProductsTable();  // Render table trước
+                this.updateStats();           // Sau đó update stats từ this.products
+                this.filterProducts();        // Cuối cùng apply filters
             } catch (error) {
                 this.showLoading(false);
                 this.showError('Không thể tải danh sách sản phẩm: ' + error.message);
@@ -1539,9 +1539,10 @@
             this.products.forEach(product => {
                 const row = document.createElement('tr');
                 row.setAttribute('data-id', product.id);
-                row.setAttribute('data-status', product.trang_thai);
+                row.setAttribute('data-status', product.trang_thai ? '1' : '0');
                 row.setAttribute('data-category', product.danh_muc_id);
                 row.setAttribute('data-brand', product.thuong_hieu_id);
+                row.setAttribute('data-featured', product.san_pham_noi_bat ? 'true' : 'false');
 
                 row.innerHTML = `
                     <td class="col-image">
@@ -1808,10 +1809,20 @@
 
         updateStats() {
             const total = this.products.length;
-            const active = this.products.filter(p => p.trang_thai === 1).length;
-            const inactive = this.products.filter(p => p.trang_thai === 0).length;
+            const active = this.products.filter(p => p.trang_thai == 1).length; // Dùng == thay vì ===
+            const inactive = this.products.filter(p => p.trang_thai == 0).length; // Dùng == thay vì ===
             const featured = this.products.filter(p => p.san_pham_noi_bat).length;
 
+            console.log('📊 Stats:', { total, active, inactive, featured });
+            console.log('📦 Sample product:', this.products[0]);
+
+            document.getElementById('totalProducts').textContent = total;
+            document.getElementById('countActive').textContent = active;
+            document.getElementById('countInactive').textContent = inactive;
+            document.getElementById('countFeatured').textContent = featured;
+        }
+
+        updateStatsWithCounts(total, active, inactive, featured) {
             document.getElementById('totalProducts').textContent = total;
             document.getElementById('countActive').textContent = active;
             document.getElementById('countInactive').textContent = inactive;
@@ -1826,13 +1837,23 @@
 
             const rows = document.querySelectorAll('#productsTable tbody tr');
             let visibleCount = 0;
+            let visibleActive = 0;
+            let visibleInactive = 0;
+            let visibleFeatured = 0;
 
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 const name = row.querySelector('.product-name')?.textContent.toLowerCase() || '';
                 const sku = row.querySelector('.product-sku')?.textContent.toLowerCase() || '';
                 const status = row.getAttribute('data-status') || '';
                 const category = row.getAttribute('data-category') || '';
                 const brand = row.getAttribute('data-brand') || '';
+                const featured = row.getAttribute('data-featured') === 'true';
+
+                if (index === 0) {
+                    console.log('🔍 First row attributes:', { status, category, brand, featured });
+                    console.log('🔍 Status type:', typeof status, 'Value:', status);
+                    console.log('🔍 Comparison: status === "1":', status === '1', 'status === "0":', status === '0');
+                }
 
                 const matchesSearch = name.includes(searchTerm) || sku.includes(searchTerm);
                 const matchesStatus = !statusFilter || status === statusFilter;
@@ -1842,13 +1863,23 @@
                 if (matchesSearch && matchesStatus && matchesCategory && matchesBrand) {
                     row.style.display = '';
                     visibleCount++;
+                    
+                    // Đếm stats cho sản phẩm hiển thị
+                    if (status === '1' || status === 'true' || status === '1' || status === true) visibleActive++;
+                    if (status === '0' || status === 'false' || status === '0' || status === false) visibleInactive++;
+                    if (featured) visibleFeatured++;
                 } else {
                     row.style.display = 'none';
                 }
             });
 
+            console.log('🔍 Filter Stats:', { visibleCount, visibleActive, visibleInactive, visibleFeatured });
+
             this.toggleEmptyState(visibleCount === 0);
             this.updateTableInfo(visibleCount);
+            
+            // Cập nhật stats theo dữ liệu đã lọc
+            this.updateStatsWithCounts(visibleCount, visibleActive, visibleInactive, visibleFeatured);
         }
 
         clearFilters() {
