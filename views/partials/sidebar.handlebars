@@ -49,6 +49,14 @@
         </a>
       </li>
       <li class="nav-item">
+        <a href="/admin/flashsale" class="nav-link" data-page="flashsale">
+          <div class="nav-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <span class="nav-text">Flash Sale</span>
+        </a>
+      </li>
+      <li class="nav-item">
         <a href="/admin/khachhang" class="nav-link" data-page="khachhang">
           <div class="nav-icon">
             <i class="fas fa-users"></i>
@@ -663,6 +671,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 link.classList.add('active');
             }
             else if (currentPath.includes('/sanpham') && linkPath.includes('/sanpham')) {
+                link.classList.add('active');
+            }
+            else if (currentPath.includes('/flashsale') && linkPath.includes('/flashsale')) {
                 link.classList.add('active');
             }
             else if (currentPath.includes('/khachhang') && linkPath.includes('/khachhang')) {

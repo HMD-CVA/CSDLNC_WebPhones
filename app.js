@@ -2686,5 +2686,314 @@ const updatedUpload = multer({
     }
 });
 
+// =============================================
+// FLASH SALE API ROUTES
+// =============================================
+
+// GET /admin/flashsale - Trang quản lý flash sale
+app.get('/admin/flashsale', async (req, res) => {
+    try {
+        res.render('flashsale', {
+            layout: 'AdminMain',
+            title: 'Quản Lý Flash Sale'
+        });
+    } catch (error) {
+        console.error('Flash Sale Page Error:', error);
+        res.status(500).send('Lỗi server');
+    }
+});
+
+// GET /api/flashsales - Lấy danh sách flash sales
+app.get('/api/flashsales', async (req, res) => {
+    try {
+        const { page = 1, limit = 10, trang_thai, search } = req.query;
+        
+        const filters = {};
+        if (trang_thai) filters.trang_thai = trang_thai;
+        if (search) filters.search = search;
+        
+        const flashSales = await DataModel.SQL.FlashSale.findAll(filters);
+        
+        // Pagination
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const paginatedData = flashSales.slice(startIndex, endIndex);
+        
+        res.json({
+            success: true,
+            data: paginatedData,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(flashSales.length / limit),
+            total: flashSales.length
+        });
+    } catch (error) {
+        console.error('Flash Sales API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách flash sale'
+        });
+    }
+});
+
+// GET /api/flashsales/:id - Lấy thông tin flash sale
+app.get('/api/flashsales/:id', async (req, res) => {
+    try {
+        const flashSale = await DataModel.SQL.FlashSale.findById(req.params.id);
+        
+        if (!flashSale) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy flash sale'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: flashSale
+        });
+    } catch (error) {
+        console.error('Flash Sale API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin flash sale'
+        });
+    }
+});
+
+// GET /api/flashsales/:id/details - Lấy chi tiết đầy đủ
+app.get('/api/flashsales/:id/details', async (req, res) => {
+    try {
+        const flashSale = await DataModel.SQL.FlashSale.findById(req.params.id);
+        
+        if (!flashSale) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy flash sale'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: flashSale
+        });
+    } catch (error) {
+        console.error('Flash Sale Details API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy chi tiết flash sale'
+        });
+    }
+});
+
+// POST /api/flashsales - Tạo flash sale mới
+app.post('/api/flashsales', async (req, res) => {
+    try {
+        const flashSaleData = {
+            ten_flash_sale: req.body.ten_flash_sale,
+            mo_ta: req.body.mo_ta,
+            ngay_bat_dau: req.body.ngay_bat_dau,
+            ngay_ket_thuc: req.body.ngay_ket_thuc,
+            trang_thai: req.body.trang_thai || 'cho',
+            nguoi_tao: req.body.nguoi_tao || '00000000-0000-0000-0000-000000000000'
+        };
+        
+        const newFlashSale = await DataModel.SQL.FlashSale.create(flashSaleData);
+        
+        res.json({
+            success: true,
+            message: 'Tạo flash sale thành công',
+            data: newFlashSale
+        });
+    } catch (error) {
+        console.error('Create Flash Sale Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tạo flash sale: ' + error.message
+        });
+    }
+});
+
+// PUT /api/flashsales/:id - Cập nhật flash sale
+app.put('/api/flashsales/:id', async (req, res) => {
+    try {
+        const updateData = {
+            ten_flash_sale: req.body.ten_flash_sale,
+            mo_ta: req.body.mo_ta,
+            ngay_bat_dau: req.body.ngay_bat_dau,
+            ngay_ket_thuc: req.body.ngay_ket_thuc,
+            trang_thai: req.body.trang_thai
+        };
+        
+        const updatedFlashSale = await DataModel.SQL.FlashSale.update(req.params.id, updateData);
+        
+        if (!updatedFlashSale) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy flash sale'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật flash sale thành công',
+            data: updatedFlashSale
+        });
+    } catch (error) {
+        console.error('Update Flash Sale Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật flash sale: ' + error.message
+        });
+    }
+});
+
+// DELETE /api/flashsales/:id - Xóa flash sale
+app.delete('/api/flashsales/:id', async (req, res) => {
+    try {
+        await DataModel.SQL.FlashSale.destroy(req.params.id);
+        
+        res.json({
+            success: true,
+            message: 'Xóa flash sale thành công'
+        });
+    } catch (error) {
+        console.error('Delete Flash Sale Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa flash sale: ' + error.message
+        });
+    }
+});
+
+// =============================================
+// FLASH SALE ITEMS API ROUTES
+// =============================================
+
+// GET /api/flashsales/:id/items - Lấy danh sách sản phẩm trong flash sale
+app.get('/api/flashsales/:id/items', async (req, res) => {
+    try {
+        const items = await DataModel.SQL.FlashSaleItem.findByFlashSaleId(req.params.id);
+        
+        res.json({
+            success: true,
+            data: items
+        });
+    } catch (error) {
+        console.error('Flash Sale Items API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách sản phẩm'
+        });
+    }
+});
+
+// GET /api/flashsales/:flashSaleId/items/:itemId - Lấy thông tin 1 item
+app.get('/api/flashsales/:flashSaleId/items/:itemId', async (req, res) => {
+    try {
+        const item = await DataModel.SQL.FlashSaleItem.findById(req.params.itemId);
+        
+        if (!item) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: item
+        });
+    } catch (error) {
+        console.error('Flash Sale Item API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin sản phẩm'
+        });
+    }
+});
+
+// POST /api/flashsales/:id/items - Thêm sản phẩm vào flash sale
+app.post('/api/flashsales/:id/items', async (req, res) => {
+    try {
+        const itemData = {
+            flash_sale_id: req.params.id,
+            san_pham_id: req.body.san_pham_id,
+            gia_goc: req.body.gia_goc,
+            gia_flash_sale: req.body.gia_flash_sale,
+            so_luong_ton: req.body.so_luong_ton,
+            gioi_han_mua: req.body.gioi_han_mua,
+            thu_tu: req.body.thu_tu,
+            trang_thai: req.body.trang_thai || 'dang_ban'
+        };
+        
+        const newItem = await DataModel.SQL.FlashSaleItem.create(itemData);
+        
+        res.json({
+            success: true,
+            message: 'Thêm sản phẩm thành công',
+            data: newItem
+        });
+    } catch (error) {
+        console.error('Create Flash Sale Item Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi thêm sản phẩm: ' + error.message
+        });
+    }
+});
+
+// PUT /api/flashsales/:flashSaleId/items/:itemId - Cập nhật sản phẩm
+app.put('/api/flashsales/:flashSaleId/items/:itemId', async (req, res) => {
+    try {
+        const updateData = {
+            gia_goc: req.body.gia_goc,
+            gia_flash_sale: req.body.gia_flash_sale,
+            so_luong_ton: req.body.so_luong_ton,
+            gioi_han_mua: req.body.gioi_han_mua,
+            thu_tu: req.body.thu_tu,
+            trang_thai: req.body.trang_thai
+        };
+        
+        const updatedItem = await DataModel.SQL.FlashSaleItem.update(req.params.itemId, updateData);
+        
+        if (!updatedItem) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật sản phẩm thành công',
+            data: updatedItem
+        });
+    } catch (error) {
+        console.error('Update Flash Sale Item Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật sản phẩm: ' + error.message
+        });
+    }
+});
+
+// DELETE /api/flashsales/:flashSaleId/items/:itemId - Xóa sản phẩm
+app.delete('/api/flashsales/:flashSaleId/items/:itemId', async (req, res) => {
+    try {
+        await DataModel.SQL.FlashSaleItem.destroy(req.params.itemId);
+        
+        res.json({
+            success: true,
+            message: 'Xóa sản phẩm thành công'
+        });
+    } catch (error) {
+        console.error('Delete Flash Sale Item Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa sản phẩm: ' + error.message
+        });
+    }
+});
+
 // Start server
 app.listen(3000, () => console.log('Server running on port 3000'));

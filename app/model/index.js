@@ -691,6 +691,239 @@ class SQLProductModel {
   }
 }
 
+// Model cho Flash Sale trong SQL Server
+class SQLFlashSaleModel {
+  static async findAll(filters = {}) {
+    try {
+      const request = new sql.Request();
+      let whereClause = 'WHERE 1=1';
+      
+      if (filters.trang_thai) {
+        request.input('trang_thai', sql.NVarChar(20), filters.trang_thai);
+        whereClause += ' AND fs.trang_thai = @trang_thai';
+      }
+      
+      if (filters.search) {
+        request.input('search', sql.NVarChar(255), `%${filters.search}%`);
+        whereClause += ' AND fs.ten_flash_sale LIKE @search';
+      }
+      
+      const query = `
+        SELECT 
+          fs.*,
+          (SELECT COUNT(*) FROM flash_sale_items WHERE flash_sale_id = fs.id) as so_san_pham,
+          (SELECT ISNULL(SUM(da_ban), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as tong_da_ban,
+          (SELECT ISNULL(SUM(da_ban * gia_flash_sale), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as doanh_thu
+        FROM flash_sales fs
+        ${whereClause}
+        ORDER BY fs.ngay_tao DESC
+      `;
+      
+      const result = await request.query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Flash Sale Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            fs.*,
+            (SELECT COUNT(*) FROM flash_sale_items WHERE flash_sale_id = fs.id) as so_san_pham,
+            (SELECT ISNULL(SUM(da_ban), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as tong_da_ban,
+            (SELECT ISNULL(SUM(da_ban * gia_flash_sale), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as doanh_thu
+          FROM flash_sales fs
+          WHERE fs.id = @id
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(flashSaleData) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('ten_flash_sale', sql.NVarChar(255), flashSaleData.ten_flash_sale)
+        .input('mo_ta', sql.NVarChar(500), flashSaleData.mo_ta || null)
+        .input('ngay_bat_dau', sql.DateTime2, new Date(flashSaleData.ngay_bat_dau))
+        .input('ngay_ket_thuc', sql.DateTime2, new Date(flashSaleData.ngay_ket_thuc))
+        .input('trang_thai', sql.NVarChar(20), flashSaleData.trang_thai || 'cho')
+        .input('nguoi_tao', sql.UniqueIdentifier, flashSaleData.nguoi_tao || '00000000-0000-0000-0000-000000000000')
+        .query(`
+          INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, trang_thai, nguoi_tao)
+          OUTPUT INSERTED.*
+          VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @trang_thai, @nguoi_tao)
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Create Error:', error);
+      throw error;
+    }
+  }
+
+  static async update(id, updateData) {
+    try {
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      request.input('ten_flash_sale', sql.NVarChar(255), updateData.ten_flash_sale);
+      request.input('mo_ta', sql.NVarChar(500), updateData.mo_ta || null);
+      request.input('ngay_bat_dau', sql.DateTime2, new Date(updateData.ngay_bat_dau));
+      request.input('ngay_ket_thuc', sql.DateTime2, new Date(updateData.ngay_ket_thuc));
+      request.input('trang_thai', sql.NVarChar(20), updateData.trang_thai);
+      
+      const result = await request.query(`
+        UPDATE flash_sales 
+        SET 
+          ten_flash_sale = @ten_flash_sale,
+          mo_ta = @mo_ta,
+          ngay_bat_dau = @ngay_bat_dau,
+          ngay_ket_thuc = @ngay_ket_thuc,
+          trang_thai = @trang_thai,
+          ngay_cap_nhat = GETDATE()
+        WHERE id = @id;
+        
+        SELECT * FROM flash_sales WHERE id = @id;
+      `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Update Error:', error);
+      throw error;
+    }
+  }
+
+  static async destroy(id) {
+    try {
+      const request = new sql.Request();
+      await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM flash_sales WHERE id = @id');
+      return { success: true };
+    } catch (error) {
+      console.error('SQL Flash Sale Delete Error:', error);
+      throw error;
+    }
+  }
+}
+
+// Model cho Flash Sale Items
+class SQLFlashSaleItemModel {
+  static async findByFlashSaleId(flashSaleId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('flashSaleId', sql.UniqueIdentifier, flashSaleId)
+        .query(`
+          SELECT 
+            fsi.*,
+            p.ten_san_pham,
+            p.link_anh
+          FROM flash_sale_items fsi
+          INNER JOIN products p ON fsi.san_pham_id = p.id
+          WHERE fsi.flash_sale_id = @flashSaleId
+          ORDER BY fsi.thu_tu ASC, fsi.ngay_tao DESC
+        `);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Flash Sale Items Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('SELECT * FROM flash_sale_items WHERE id = @id');
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Item Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(itemData) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('flash_sale_id', sql.UniqueIdentifier, itemData.flash_sale_id)
+        .input('san_pham_id', sql.UniqueIdentifier, itemData.san_pham_id)
+        .input('gia_goc', sql.Decimal(15, 2), itemData.gia_goc)
+        .input('gia_flash_sale', sql.Decimal(15, 2), itemData.gia_flash_sale)
+        .input('so_luong_ton', sql.Int, itemData.so_luong_ton)
+        .input('gioi_han_mua', sql.Int, itemData.gioi_han_mua || null)
+        .input('thu_tu', sql.Int, itemData.thu_tu || 0)
+        .input('trang_thai', sql.NVarChar(20), itemData.trang_thai || 'dang_ban')
+        .query(`
+          INSERT INTO flash_sale_items 
+          (flash_sale_id, san_pham_id, gia_goc, gia_flash_sale, so_luong_ton, gioi_han_mua, thu_tu, trang_thai)
+          OUTPUT INSERTED.*
+          VALUES (@flash_sale_id, @san_pham_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @gioi_han_mua, @thu_tu, @trang_thai)
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Item Create Error:', error);
+      throw error;
+    }
+  }
+
+  static async update(id, updateData) {
+    try {
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      request.input('gia_goc', sql.Decimal(15, 2), updateData.gia_goc);
+      request.input('gia_flash_sale', sql.Decimal(15, 2), updateData.gia_flash_sale);
+      request.input('so_luong_ton', sql.Int, updateData.so_luong_ton);
+      request.input('gioi_han_mua', sql.Int, updateData.gioi_han_mua || null);
+      request.input('thu_tu', sql.Int, updateData.thu_tu || 0);
+      request.input('trang_thai', sql.NVarChar(20), updateData.trang_thai);
+      
+      const result = await request.query(`
+        UPDATE flash_sale_items 
+        SET 
+          gia_goc = @gia_goc,
+          gia_flash_sale = @gia_flash_sale,
+          so_luong_ton = @so_luong_ton,
+          gioi_han_mua = @gioi_han_mua,
+          thu_tu = @thu_tu,
+          trang_thai = @trang_thai,
+          ngay_cap_nhat = GETDATE()
+        WHERE id = @id;
+        
+        SELECT * FROM flash_sale_items WHERE id = @id;
+      `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Item Update Error:', error);
+      throw error;
+    }
+  }
+
+  static async destroy(id) {
+    try {
+      const request = new sql.Request();
+      await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM flash_sale_items WHERE id = @id');
+      return { success: true };
+    } catch (error) {
+      console.error('SQL Flash Sale Item Delete Error:', error);
+      throw error;
+    }
+  }
+}
+
 // ==================== EXPORT ALL MODELS ====================
 
 export default {
@@ -701,6 +934,8 @@ export default {
   SQLBrandModel,
   SQLCategoryModel,
   SQLProductModel,
+  SQLFlashSaleModel,
+  SQLFlashSaleItemModel,
   
   // Hoặc export theo nhóm để dễ sử dụng
   Mongo: {
@@ -710,6 +945,8 @@ export default {
   SQL: {
     Brand: SQLBrandModel,
     Category: SQLCategoryModel,
-    Product: SQLProductModel
+    Product: SQLProductModel,
+    FlashSale: SQLFlashSaleModel,
+    FlashSaleItem: SQLFlashSaleItemModel
   }
 };
