@@ -4,14 +4,82 @@ import sql from 'mssql';
 // ==================== MONGODB MODELS ====================
 
 const productDetailSchema = new mongoose.Schema({
-  sql_product_id: { type: String, unique: true },
+  sql_product_id: { type: String, required: true, unique: true },
 }, { 
   strict: false, // Cho phép lưu các trường không được định nghĩa
   timestamps: true 
 });
-
-// MongoDB Models
 const Data_ProductDetail_Model = mongoose.model('ProductDetail', productDetailSchema);
+
+const flashSaleDetailSchema = new mongoose.Schema({
+  _id: { type: String, required: true }, // UUID từ SQL flash_sales.id
+  banner_images: [{ type: String }], // Mảng URL ảnh banner
+  promotional_videos: [{ 
+    url: String,
+    title: String,
+    thumbnail: String,
+    duration: Number
+  }],
+  rules: {
+    max_quantity_per_user: Number,
+    min_purchase_amount: Number,
+    eligible_user_groups: [String],
+    payment_methods: [String]
+  },
+  marketing: {
+    seo_title: String,
+    seo_description: String,
+    seo_keywords: [String],
+    social_share_image: String,
+    hashtags: [String]
+  },
+  notification_settings: {
+    send_email: { type: Boolean, default: true },
+    send_sms: { type: Boolean, default: false },
+    send_push: { type: Boolean, default: true },
+    notify_before_start: Number, // phút trước khi bắt đầu
+    notify_when_sold_out: { type: Boolean, default: true }
+  },
+  analytics: {
+    total_views: { type: Number, default: 0 },
+    total_clicks: { type: Number, default: 0 },
+    conversion_rate: { type: Number, default: 0 },
+    revenue: { type: Number, default: 0 }
+  },
+  ui_settings: {
+    theme_color: String,
+    background_color: String,
+    countdown_style: String,
+    layout_type: String
+  },
+  custom_data: mongoose.Schema.Types.Mixed, // Dữ liệu tùy chỉnh bất kỳ
+  notes: String,
+  tags: [String]
+}, { 
+  _id: false, // Tắt auto-generate _id vì đã tự định nghĩa
+  strict: false, // Cho phép lưu các trường không được định nghĩa
+  timestamps: true 
+});
+
+// Thêm static methods trước khi tạo model
+flashSaleDetailSchema.statics.findByFlashSaleId = async function(flashSaleId) {
+  return await this.findById(flashSaleId);
+};
+
+flashSaleDetailSchema.statics.createOrUpdate = async function(flashSaleId, detailData) {
+  return await this.findByIdAndUpdate(
+    flashSaleId,
+    { $set: { ...detailData, _id: flashSaleId } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+};
+
+flashSaleDetailSchema.statics.deleteByFlashSaleId = async function(flashSaleId) {
+  return await this.findByIdAndDelete(flashSaleId);
+};
+
+// MongoDB Models (tạo sau khi đã định nghĩa methods)
+const Data_FlashSaleDetail_Model = mongoose.model('FlashSaleDetail', flashSaleDetailSchema);
 
 // ==================== SQL SERVER MODELS ====================
 
@@ -751,18 +819,27 @@ class SQLFlashSaleModel {
   static async create(flashSaleData) {
     try {
       const request = new sql.Request();
-      const result = await request
+      request
         .input('ten_flash_sale', sql.NVarChar(255), flashSaleData.ten_flash_sale)
         .input('mo_ta', sql.NVarChar(500), flashSaleData.mo_ta || null)
         .input('ngay_bat_dau', sql.DateTime2, new Date(flashSaleData.ngay_bat_dau))
         .input('ngay_ket_thuc', sql.DateTime2, new Date(flashSaleData.ngay_ket_thuc))
-        .input('trang_thai', sql.NVarChar(20), flashSaleData.trang_thai || 'cho')
-        .input('nguoi_tao', sql.UniqueIdentifier, flashSaleData.nguoi_tao || '00000000-0000-0000-0000-000000000000')
-        .query(`
-          INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, trang_thai, nguoi_tao)
-          OUTPUT INSERTED.*
-          VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @trang_thai, @nguoi_tao)
-        `);
+        .input('trang_thai', sql.NVarChar(20), flashSaleData.trang_thai || 'cho');
+      
+      // Chỉ thêm nguoi_tao nếu có giá trị hợp lệ
+      if (flashSaleData.nguoi_tao) {
+        request.input('nguoi_tao', sql.UniqueIdentifier, flashSaleData.nguoi_tao);
+      }
+      
+      const query = flashSaleData.nguoi_tao
+        ? `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, trang_thai, nguoi_tao)
+           OUTPUT INSERTED.*
+           VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @trang_thai, @nguoi_tao)`
+        : `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, trang_thai)
+           OUTPUT INSERTED.*
+           VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @trang_thai)`;
+      
+      const result = await request.query(query);
       return result.recordset[0];
     } catch (error) {
       console.error('SQL Flash Sale Create Error:', error);
@@ -774,21 +851,49 @@ class SQLFlashSaleModel {
     try {
       const request = new sql.Request();
       request.input('id', sql.UniqueIdentifier, id);
-      request.input('ten_flash_sale', sql.NVarChar(255), updateData.ten_flash_sale);
-      request.input('mo_ta', sql.NVarChar(500), updateData.mo_ta || null);
-      request.input('ngay_bat_dau', sql.DateTime2, new Date(updateData.ngay_bat_dau));
-      request.input('ngay_ket_thuc', sql.DateTime2, new Date(updateData.ngay_ket_thuc));
-      request.input('trang_thai', sql.NVarChar(20), updateData.trang_thai);
+      
+      // Build dynamic UPDATE query
+      const updates = [];
+      
+      if (updateData.ten_flash_sale !== undefined) {
+        request.input('ten_flash_sale', sql.NVarChar(255), updateData.ten_flash_sale);
+        updates.push('ten_flash_sale = @ten_flash_sale');
+      }
+      
+      if (updateData.mo_ta !== undefined) {
+        request.input('mo_ta', sql.NVarChar(500), updateData.mo_ta || null);
+        updates.push('mo_ta = @mo_ta');
+      }
+      
+      if (updateData.ngay_bat_dau !== undefined) {
+        request.input('ngay_bat_dau', sql.DateTime2, new Date(updateData.ngay_bat_dau));
+        updates.push('ngay_bat_dau = @ngay_bat_dau');
+      }
+      
+      if (updateData.ngay_ket_thuc !== undefined) {
+        request.input('ngay_ket_thuc', sql.DateTime2, new Date(updateData.ngay_ket_thuc));
+        updates.push('ngay_ket_thuc = @ngay_ket_thuc');
+      }
+      
+      if (updateData.trang_thai !== undefined) {
+        request.input('trang_thai', sql.NVarChar(20), updateData.trang_thai);
+        updates.push('trang_thai = @trang_thai');
+      }
+      
+      if (updateData.mongo_flash_sale_detail_id !== undefined) {
+        request.input('mongo_flash_sale_detail_id', sql.NVarChar(255), updateData.mongo_flash_sale_detail_id);
+        updates.push('mongo_flash_sale_detail_id = @mongo_flash_sale_detail_id');
+      }
+      
+      if (updates.length === 0) {
+        throw new Error('No fields to update');
+      }
+      
+      updates.push('ngay_cap_nhat = GETDATE()');
       
       const result = await request.query(`
         UPDATE flash_sales 
-        SET 
-          ten_flash_sale = @ten_flash_sale,
-          mo_ta = @mo_ta,
-          ngay_bat_dau = @ngay_bat_dau,
-          ngay_ket_thuc = @ngay_ket_thuc,
-          trang_thai = @trang_thai,
-          ngay_cap_nhat = GETDATE()
+        SET ${updates.join(', ')}
         WHERE id = @id;
         
         SELECT * FROM flash_sales WHERE id = @id;
@@ -939,7 +1044,8 @@ export default {
   
   // Hoặc export theo nhóm để dễ sử dụng
   Mongo: {
-    ProductDetail: Data_ProductDetail_Model,
+    ProductDetail: Data_ProductDetail_Model, 
+    FlashSaleDetail: Data_FlashSaleDetail_Model
   },
   
   SQL: {

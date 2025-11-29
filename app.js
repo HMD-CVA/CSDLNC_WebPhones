@@ -2788,24 +2788,76 @@ app.get('/api/flashsales/:id/details', async (req, res) => {
 // POST /api/flashsales - Tạo flash sale mới
 app.post('/api/flashsales', async (req, res) => {
     try {
+        console.log('📝 Creating new flash sale...', req.body);
+        
         const flashSaleData = {
             ten_flash_sale: req.body.ten_flash_sale,
             mo_ta: req.body.mo_ta,
             ngay_bat_dau: req.body.ngay_bat_dau,
             ngay_ket_thuc: req.body.ngay_ket_thuc,
             trang_thai: req.body.trang_thai || 'cho',
-            nguoi_tao: req.body.nguoi_tao || '00000000-0000-0000-0000-000000000000'
+            nguoi_tao: req.session?.user?.id || req.body.nguoi_tao || null
         };
         
+        // Bước 1: Tạo flash sale trong SQL
         const newFlashSale = await DataModel.SQL.FlashSale.create(flashSaleData);
+        console.log('✅ SQL created with ID:', newFlashSale.id);
+        
+        // Bước 2: Tạo MongoDB document với _id = SQL flash sale id
+        const mongoData = {
+            banner_images: [],
+            promotional_videos: [],
+            rules: {
+                max_quantity_per_user: null,
+                min_purchase_amount: 0,
+                eligible_user_groups: ['all'],
+                payment_methods: ['all']
+            },
+            marketing: {
+                seo_title: req.body.ten_flash_sale,
+                seo_description: req.body.mo_ta || '',
+                seo_keywords: [],
+                hashtags: []
+            },
+            notification_settings: {
+                send_email: true,
+                send_sms: false,
+                send_push: true,
+                notify_before_start: 30,
+                notify_when_sold_out: true
+            },
+            analytics: {
+                total_views: 0,
+                total_clicks: 0,
+                conversion_rate: 0,
+                revenue: 0
+            },
+            ui_settings: {
+                theme_color: '#f59e0b',
+                background_color: '#ffffff',
+                countdown_style: 'digital',
+                layout_type: 'grid'
+            },
+            tags: [],
+            notes: ''
+        };
+        
+        const mongoDoc = await DataModel.Mongo.FlashSaleDetail.createOrUpdate(newFlashSale.id, mongoData);
+        console.log('✅ MongoDB created with _id:', mongoDoc._id);
+        
+        // Bước 3: Update SQL để lưu mongo_flash_sale_detail_id
+        const updatedFlashSale = await DataModel.SQL.FlashSale.update(newFlashSale.id, {
+            mongo_flash_sale_detail_id: mongoDoc._id.toString()
+        });
+        console.log('✅ SQL updated with mongo_flash_sale_detail_id');
         
         res.json({
             success: true,
             message: 'Tạo flash sale thành công',
-            data: newFlashSale
+            data: updatedFlashSale
         });
     } catch (error) {
-        console.error('Create Flash Sale Error:', error);
+        console.error('❌ Create Flash Sale Error:', error);
         res.status(500).json({
             success: false,
             message: 'Lỗi khi tạo flash sale: ' + error.message
@@ -2850,7 +2902,11 @@ app.put('/api/flashsales/:id', async (req, res) => {
 // DELETE /api/flashsales/:id - Xóa flash sale
 app.delete('/api/flashsales/:id', async (req, res) => {
     try {
+        // Xóa từ SQL
         await DataModel.SQL.FlashSale.destroy(req.params.id);
+        
+        // Xóa từ MongoDB
+        await DataModel.Mongo.FlashSaleDetail.deleteByFlashSaleId(req.params.id);
         
         res.json({
             success: true,
@@ -2991,6 +3047,159 @@ app.delete('/api/flashsales/:flashSaleId/items/:itemId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Lỗi khi xóa sản phẩm: ' + error.message
+        });
+    }
+});
+
+// =============================================
+// FLASH SALE MONGODB DETAIL API ROUTES
+// =============================================
+
+// GET /api/flashsales/:id/detail - Lấy dữ liệu MongoDB của flash sale
+app.get('/api/flashsales/:id/detail', async (req, res) => {
+    try {
+        const detail = await DataModel.Mongo.FlashSaleDetail.findByFlashSaleId(req.params.id);
+        
+        if (!detail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy chi tiết flash sale'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: detail
+        });
+    } catch (error) {
+        console.error('Flash Sale Detail API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy chi tiết flash sale'
+        });
+    }
+});
+
+// PUT /api/flashsales/:id/detail - Cập nhật dữ liệu MongoDB
+app.put('/api/flashsales/:id/detail', async (req, res) => {
+    try {
+        const updateData = req.body;
+        
+        const updatedDetail = await DataModel.Mongo.FlashSaleDetail.createOrUpdate(
+            req.params.id,
+            updateData
+        );
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật chi tiết flash sale thành công',
+            data: updatedDetail
+        });
+    } catch (error) {
+        console.error('Update Flash Sale Detail Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật chi tiết: ' + error.message
+        });
+    }
+});
+
+// PATCH /api/flashsales/:id/detail/analytics - Cập nhật analytics
+app.patch('/api/flashsales/:id/detail/analytics', async (req, res) => {
+    try {
+        const { total_views, total_clicks, conversion_rate, revenue } = req.body;
+        
+        const detail = await DataModel.Mongo.FlashSaleDetail.findByFlashSaleId(req.params.id);
+        
+        if (!detail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy flash sale'
+            });
+        }
+        
+        const updatedAnalytics = {
+            ...detail.analytics,
+            ...(total_views !== undefined && { total_views }),
+            ...(total_clicks !== undefined && { total_clicks }),
+            ...(conversion_rate !== undefined && { conversion_rate }),
+            ...(revenue !== undefined && { revenue })
+        };
+        
+        const updated = await DataModel.Mongo.FlashSaleDetail.createOrUpdate(req.params.id, {
+            analytics: updatedAnalytics
+        });
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật analytics thành công',
+            data: updated.analytics
+        });
+    } catch (error) {
+        console.error('Update Analytics Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật analytics'
+        });
+    }
+});
+
+// PATCH /api/flashsales/:id/detail/banners - Cập nhật banner images
+app.patch('/api/flashsales/:id/detail/banners', async (req, res) => {
+    try {
+        const { banner_images } = req.body;
+        
+        if (!Array.isArray(banner_images)) {
+            return res.status(400).json({
+                success: false,
+                message: 'banner_images phải là mảng'
+            });
+        }
+        
+        const updated = await DataModel.Mongo.FlashSaleDetail.createOrUpdate(req.params.id, {
+            banner_images
+        });
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật banner thành công',
+            data: updated.banner_images
+        });
+    } catch (error) {
+        console.error('Update Banners Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật banner'
+        });
+    }
+});
+
+// PATCH /api/flashsales/:id/detail/marketing - Cập nhật marketing data
+app.patch('/api/flashsales/:id/detail/marketing', async (req, res) => {
+    try {
+        const marketingData = req.body;
+        
+        const detail = await DataModel.Mongo.FlashSaleDetail.findByFlashSaleId(req.params.id);
+        
+        const updatedMarketing = {
+            ...detail?.marketing,
+            ...marketingData
+        };
+        
+        const updated = await DataModel.Mongo.FlashSaleDetail.createOrUpdate(req.params.id, {
+            marketing: updatedMarketing
+        });
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật marketing thành công',
+            data: updated.marketing
+        });
+    } catch (error) {
+        console.error('Update Marketing Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật marketing'
         });
     }
 });

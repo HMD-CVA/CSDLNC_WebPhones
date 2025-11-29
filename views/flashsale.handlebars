@@ -274,6 +274,75 @@
                                     </select>
                                 </div>
                             </div>
+
+                            <!-- Products Section -->
+                            <div class="form-section" id="productsSection">
+                                <h4 class="section-title">
+                                    <i class="fas fa-box"></i>
+                                    Sản phẩm Flash Sale
+                                    <span style="font-size: 0.85rem; color: var(--gray-500); font-weight: normal; margin-left: 8px;">
+                                        (Có thể thêm sau)
+                                    </span>
+                                </h4>
+
+                                <!-- Add Product Form -->
+                                <div class="add-product-form">
+                                    <div class="form-grid-2" style="margin-bottom: 12px;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="modalProductSelect" class="form-label">Chọn sản phẩm</label>
+                                            <select class="form-select" id="modalProductSelect">
+                                                <option value="">-- Chọn sản phẩm --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="modalGiaFlashSale" class="form-label">Giá Flash Sale *</label>
+                                            <input type="number" class="form-control" id="modalGiaFlashSale" 
+                                                placeholder="Nhập giá flash sale" min="0">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-grid-2" style="margin-bottom: 12px;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="modalSoLuong" class="form-label">Số lượng *</label>
+                                            <input type="number" class="form-control" id="modalSoLuong" 
+                                                placeholder="Nhập số lượng" min="1">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label for="modalGioiHan" class="form-label">Giới hạn mua/khách</label>
+                                            <input type="number" class="form-control" id="modalGioiHan" 
+                                                placeholder="Không giới hạn" min="1">
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-sm" id="addProductToListBtn"
+                                        style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: 600;">
+                                        <i class="fas fa-plus"></i>
+                                        Thêm vào danh sách
+                                    </button>
+                                </div>
+
+                                <!-- Products List -->
+                                <div class="products-list-container" style="margin-top: 16px;">
+                                    <table class="table table-sm" id="modalProductsTable" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th width="35%">Sản phẩm</th>
+                                                <th width="15%">Giá gốc</th>
+                                                <th width="15%">Giá FS</th>
+                                                <th width="10%">% Giảm</th>
+                                                <th width="10%">SL</th>
+                                                <th width="10%">Giới hạn</th>
+                                                <th width="5%"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="modalProductsTableBody"></tbody>
+                                    </table>
+                                    <div id="modalNoProducts" style="text-align: center; padding: 20px; color: var(--gray-500);">
+                                        <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; display: block; margin-bottom: 8px;"></i>
+                                        Chưa có sản phẩm nào
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -1571,6 +1640,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
 <script>
 // Flash Sale Management JavaScript
 
@@ -1580,6 +1651,8 @@ let totalPages = 1;
 let flashSales = [];
 let currentFlashSaleId = null;
 let flashSaleItems = [];
+let tempProductsList = []; // Danh sách sản phẩm tạm trong modal
+let allProducts = []; // Lưu tất cả sản phẩm để tái sử dụng
 
 // API endpoints
 const API_BASE = '/api/flashsales';
@@ -1587,6 +1660,7 @@ const API_BASE = '/api/flashsales';
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadFlashSales();
+    loadAllProducts(); // Load products khi trang load
     setupEventListeners();
 });
 
@@ -1624,8 +1698,13 @@ function setupEventListeners() {
     document.getElementById('productItemForm')?.addEventListener('submit', handleProductItemSubmit);
     
     // Save buttons
-    document.getElementById('saveFlashSaleBtn')?.addEventListener('click', () => {
-        document.getElementById('flashSaleForm').dispatchEvent(new Event('submit'));
+    document.getElementById('saveFlashSaleBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const form = document.getElementById('flashSaleForm');
+        if (form) {
+            const submitEvent = new Event('submit', { cancelable: true });
+            form.dispatchEvent(submitEvent);
+        }
     });
     
     document.getElementById('saveProductItemBtn')?.addEventListener('click', () => {
@@ -1648,7 +1727,203 @@ function setupEventListeners() {
         document.getElementById('flashSaleItemId').value = '';
         document.getElementById('phanTramGiam').value = '';
     });
+
+    // Modal product management
+    document.getElementById('addProductToListBtn')?.addEventListener('click', addProductToTempList);
+    document.getElementById('modalProductSelect')?.addEventListener('change', handleModalProductSelect);
+    document.getElementById('modalGiaFlashSale')?.addEventListener('input', updateModalDiscount);
 }
+
+// Load all products once
+async function loadAllProducts() {
+    try {
+        const response = await fetch('/api/sanpham');
+        const data = await response.json();
+
+        if (data.success && data.data && data.data.sanphams) {
+            allProducts = data.data.sanphams;
+            populateModalProductDropdown();
+        } else {
+            console.error('Invalid data structure:', data);
+            allProducts = [];
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showError('Lỗi tải danh sách sản phẩm');
+        allProducts = [];
+    }
+}
+
+// Populate modal product dropdown
+function populateModalProductDropdown() {
+    const selectElement = document.getElementById('modalProductSelect');
+    if (!selectElement) return;
+    
+    selectElement.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+    
+    if (!Array.isArray(allProducts) || allProducts.length === 0) {
+        console.warn('No products available');
+        return;
+    }
+    
+    allProducts.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        
+        // Hiển thị: Tên | Giá bán | Tồn kho
+        const priceDisplay = formatCurrency(product.gia_ban || product.gia || 0);
+        const stockDisplay = product.so_luong_ton || 0;
+        option.textContent = `${product.ten_san_pham} | ${priceDisplay} | Tồn: ${stockDisplay}`;
+        
+        // Lưu data attributes
+        option.setAttribute('data-price', product.gia_ban || product.gia || 0);
+        option.setAttribute('data-name', product.ten_san_pham);
+        option.setAttribute('data-stock', stockDisplay);
+        
+        selectElement.appendChild(option);
+    });
+}
+
+// Handle modal product select
+function handleModalProductSelect(e) {
+    const selectedOption = e.target.options[e.target.selectedIndex];
+    const price = selectedOption.getAttribute('data-price');
+    const stock = selectedOption.getAttribute('data-stock');
+    
+    if (price) {
+        // Auto-fill flash sale price (90% of original)
+        const flashSalePrice = Math.floor(price * 0.9);
+        document.getElementById('modalGiaFlashSale').value = flashSalePrice;
+        
+        // Suggest max quantity based on stock
+        if (stock && parseInt(stock) > 0) {
+            const suggestedQty = Math.min(parseInt(stock), 100); // Max 100 hoặc tồn kho
+            document.getElementById('modalSoLuong').value = suggestedQty;
+            document.getElementById('modalSoLuong').setAttribute('max', stock);
+        }
+        
+        updateModalDiscount();
+    }
+}
+
+// Update modal discount display
+function updateModalDiscount() {
+    const selectElement = document.getElementById('modalProductSelect');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const giaGoc = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+    const giaFlashSale = parseFloat(document.getElementById('modalGiaFlashSale').value) || 0;
+
+    // Visual feedback only (not stored anywhere yet)
+    if (giaGoc > 0 && giaFlashSale > 0 && giaFlashSale < giaGoc) {
+        const discount = ((giaGoc - giaFlashSale) / giaGoc * 100).toFixed(0);
+        // Could show discount somewhere if needed
+    }
+}
+
+// Add product to temporary list
+function addProductToTempList() {
+    const selectElement = document.getElementById('modalProductSelect');
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const productId = selectElement.value;
+    const productName = selectedOption.getAttribute('data-name');
+    const giaGoc = parseFloat(selectedOption.getAttribute('data-price'));
+    const stock = parseInt(selectedOption.getAttribute('data-stock'));
+    const giaFlashSale = parseFloat(document.getElementById('modalGiaFlashSale').value);
+    const soLuong = parseInt(document.getElementById('modalSoLuong').value);
+    const gioiHan = parseInt(document.getElementById('modalGioiHan').value) || null;
+
+    // Validate
+    if (!productId) {
+        showError('Vui lòng chọn sản phẩm');
+        return;
+    }
+    if (!giaFlashSale || giaFlashSale <= 0) {
+        showError('Vui lòng nhập giá flash sale hợp lệ');
+        return;
+    }
+    if (!soLuong || soLuong <= 0) {
+        showError('Vui lòng nhập số lượng hợp lệ');
+        return;
+    }
+    if (giaFlashSale >= giaGoc) {
+        showError('Giá flash sale phải nhỏ hơn giá gốc');
+        return;
+    }
+    if (soLuong > stock) {
+        showError(`Số lượng không được vượt quá tồn kho (${stock})`);
+        return;
+    }
+
+    // Check duplicate
+    if (tempProductsList.find(p => p.san_pham_id === productId)) {
+        showError('Sản phẩm đã có trong danh sách');
+        return;
+    }
+
+    // Add to temp list
+    tempProductsList.push({
+        san_pham_id: productId,
+        ten_san_pham: productName,
+        gia_goc: giaGoc,
+        gia_flash_sale: giaFlashSale,
+        so_luong_ton: soLuong,
+        gioi_han_mua: gioiHan,
+        thu_tu: tempProductsList.length,
+        trang_thai: 'dang_ban'
+    });
+
+    renderTempProductsList();
+    
+    // Reset form
+    document.getElementById('modalProductSelect').value = '';
+    document.getElementById('modalGiaFlashSale').value = '';
+    document.getElementById('modalSoLuong').value = '';
+    document.getElementById('modalGioiHan').value = '';
+    document.getElementById('modalSoLuong').removeAttribute('max');
+}
+
+// Render temporary products list
+function renderTempProductsList() {
+    const table = document.getElementById('modalProductsTable');
+    const tbody = document.getElementById('modalProductsTableBody');
+    const noProducts = document.getElementById('modalNoProducts');
+
+    if (tempProductsList.length === 0) {
+        table.style.display = 'none';
+        noProducts.style.display = 'block';
+        return;
+    }
+
+    table.style.display = 'table';
+    noProducts.style.display = 'none';
+
+    tbody.innerHTML = tempProductsList.map((product, index) => {
+        const discount = ((product.gia_goc - product.gia_flash_sale) / product.gia_goc * 100).toFixed(0);
+        return `
+            <tr>
+                <td style="font-weight: 500;">${product.ten_san_pham}</td>
+                <td>${formatCurrency(product.gia_goc)}</td>
+                <td style="color: #ef4444; font-weight: 600;">${formatCurrency(product.gia_flash_sale)}</td>
+                <td><span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">-${discount}%</span></td>
+                <td>${product.so_luong_ton}</td>
+                <td>${product.gioi_han_mua || '-'}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeFromTempList(${index})" 
+                        style="padding: 2px 8px; font-size: 0.75rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Remove from temporary list
+function removeFromTempList(index) {
+    tempProductsList.splice(index, 1);
+    renderTempProductsList();
+}
+
 
 // Load Flash Sales
 async function loadFlashSales(filters = {}) {
@@ -1831,6 +2106,8 @@ function openFlashSaleModal(flashSaleId = null) {
     const saveButtonText = document.getElementById('saveButtonText');
 
     form.reset();
+    tempProductsList = []; // Reset temp products list
+    renderTempProductsList();
 
     if (flashSaleId) {
         title.textContent = 'Chỉnh sửa Flash Sale';
@@ -1872,28 +2149,48 @@ async function loadFlashSaleData(id) {
 }
 
 // Handle Flash Sale form submit
+let isSubmitting = false;
+
 async function handleFlashSaleSubmit(e) {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (isSubmitting) {
+        console.log('⚠️ Already submitting, skipping...');
+        return;
+    }
+
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    // Validate dates
+    if (!startDate || !endDate) {
+        showNotification('Vui lòng chọn ngày bắt đầu và ngày kết thúc', 'error');
+        return;
+    }
+
+    if (new Date(startDate) >= new Date(endDate)) {
+        showNotification('Ngày kết thúc phải sau ngày bắt đầu', 'error');
+        return;
+    }
 
     const formData = {
         ten_flash_sale: document.getElementById('flashSaleName').value,
         mo_ta: document.getElementById('flashSaleDescription').value,
-        ngay_bat_dau: document.getElementById('startDate').value,
-        ngay_ket_thuc: document.getElementById('endDate').value,
+        ngay_bat_dau: new Date(startDate).toISOString(),
+        ngay_ket_thuc: new Date(endDate).toISOString(),
         trang_thai: document.getElementById('flashSaleStatus').value
     };
-
-    // Validate dates
-    if (new Date(formData.ngay_bat_dau) >= new Date(formData.ngay_ket_thuc)) {
-        showNotification('Ngày kết thúc phải sau ngày bắt đầu', 'error');
-        return;
-    }
 
     const flashSaleId = document.getElementById('flashSaleId').value;
     const url = flashSaleId ? `${API_BASE}/${flashSaleId}` : API_BASE;
     const method = flashSaleId ? 'PUT' : 'POST';
 
+    isSubmitting = true;
+    console.log('📤 Submitting flash sale:', method, formData);
+
     try {
+        // Save Flash Sale
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -1903,17 +2200,69 @@ async function handleFlashSaleSubmit(e) {
         });
 
         const data = await response.json();
+        console.log('📥 Response:', data);
 
         if (data.success) {
+            const savedFlashSale = data.data;
+            
+            // Nếu có sản phẩm trong danh sách tạm, lưu chúng
+            if (!flashSaleId && tempProductsList.length > 0) {
+                console.log('💾 Saving products...');
+                await saveFlashSaleProducts(savedFlashSale.id);
+            }
+            
             showNotification(flashSaleId ? 'Cập nhật thành công' : 'Tạo flash sale thành công', 'success');
             bootstrap.Modal.getInstance(document.getElementById('flashSaleModal')).hide();
             loadFlashSales();
+            tempProductsList = []; // Clear temp list
         } else {
             showNotification(data.message || 'Có lỗi xảy ra', 'error');
         }
     } catch (error) {
-        console.error('Error saving flash sale:', error);
+        console.error('❌ Error saving flash sale:', error);
         showNotification('Lỗi kết nối server', 'error');
+    } finally {
+        isSubmitting = false;
+        console.log('✅ Submission complete');
+    }
+}
+
+// Save flash sale products
+async function saveFlashSaleProducts(flashSaleId) {
+    try {
+        const savePromises = tempProductsList.map(product => {
+            const itemData = {
+                flash_sale_id: flashSaleId,
+                san_pham_id: product.san_pham_id,
+                gia_goc: product.gia_goc,
+                gia_flash_sale: product.gia_flash_sale,
+                so_luong_ton: product.so_luong_ton,
+                gioi_han_mua: product.gioi_han_mua,
+                thu_tu: product.thu_tu,
+                trang_thai: product.trang_thai
+            };
+
+            return fetch(`${API_BASE}/${flashSaleId}/items`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(itemData)
+            });
+        });
+
+        const results = await Promise.all(savePromises);
+        
+        // Check if all succeeded
+        const allSuccess = results.every(r => r.ok);
+        if (allSuccess) {
+            console.log(`Đã thêm ${tempProductsList.length} sản phẩm vào flash sale`);
+        } else {
+            console.warn('Một số sản phẩm không được thêm thành công');
+        }
+    } catch (error) {
+        console.error('Error saving products:', error);
+        showError('Có lỗi khi lưu sản phẩm');
     }
 }
 
@@ -2024,14 +2373,41 @@ function editFlashSale(id) {
     openFlashSaleModal(id);
 }
 
+// Load all products for dropdown
+async function loadProducts() {
+    try {
+        const response = await fetch('/api/sanpham');
+        const data = await response.json();
+
+        if (data.success) {
+            const selectElement = document.getElementById('sanPham');
+            selectElement.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+            
+            data.data.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.ten_san_pham} - ${formatCurrency(product.gia)}`;
+                option.setAttribute('data-price', product.gia);
+                selectElement.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showNotification('Lỗi tải danh sách sản phẩm', 'error');
+    }
+}
+
 // Products Management
 async function manageProducts(flashSaleId, flashSaleName) {
     currentFlashSaleId = flashSaleId;
     document.getElementById('currentFlashSaleId').value = flashSaleId;
     document.getElementById('productsModalTitle').textContent = `Quản lý Sản phẩm - ${flashSaleName}`;
 
-    // Load products
-    await loadFlashSaleItems(flashSaleId);
+    // Load products dropdown and flash sale items
+    await Promise.all([
+        loadProducts(),
+        loadFlashSaleItems(flashSaleId)
+    ]);
     
     const modal = new bootstrap.Modal(document.getElementById('productsModal'));
     modal.show();
@@ -2288,58 +2664,44 @@ function getItemStatusText(status) {
     return statusMap[status] || status;
 }
 
-function showNotification(message, type = 'info') {
-    const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
-    
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${bgColor};
-        color: white;
-        padding: 16px 24px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        z-index: 10001;
-        font-weight: 600;
-        animation: slideIn 0.3s ease;
-    `;
-    notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+// Notification Methods
+function showSuccess(message) {
+    Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: message,
+        timer: 2000,
+        showConfirmButton: false
+    });
 }
 
-// Add CSS animations
+function showError(message) {
+    Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        html: message,
+        confirmButtonColor: '#f59e0b'
+    });
+}
+
+function showNotification(message, type = 'info') {
+    if (type === 'success') {
+        showSuccess(message);
+    } else if (type === 'error') {
+        showError(message);
+    } else {
+        Swal.fire({
+            icon: type,
+            title: message,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+}
+
+// Add CSS for view sections
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-    
     .view-section {
         margin-bottom: 24px;
         padding-bottom: 24px;
