@@ -1029,6 +1029,455 @@ class SQLFlashSaleItemModel {
   }
 }
 
+// Model cho Region trong SQL Server
+class SQLRegionModel {
+  static async findAll() {
+    try {
+      const request = new sql.Request();
+      const result = await request.query(`
+        SELECT 
+          r.*,
+          (SELECT COUNT(*) FROM provinces WHERE vung_id = r.ma_vung AND trang_thai = 1) as so_tinh
+        FROM regions r
+        ORDER BY r.ma_vung ASC
+      `);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Region Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            r.*,
+            (SELECT COUNT(*) FROM provinces WHERE vung_id = r.ma_vung AND trang_thai = 1) as so_tinh
+          FROM regions r
+          WHERE r.id = @id
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Region Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(regionData) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('ma_vung', sql.NVarChar(50), regionData.ma_vung)
+        .input('ten_vung', sql.NVarChar(100), regionData.ten_vung)
+        .input('mo_ta', sql.NVarChar(500), regionData.mo_ta || null)
+        .input('trang_thai', sql.Int, regionData.trang_thai !== undefined ? regionData.trang_thai : 1)
+        .query(`
+          INSERT INTO regions (ma_vung, ten_vung, mo_ta, trang_thai)
+          OUTPUT INSERTED.*
+          VALUES (@ma_vung, @ten_vung, @mo_ta, @trang_thai)
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Region Create Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Mã vùng đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async update(id, updateData) {
+    try {
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      request.input('ma_vung', sql.NVarChar(50), updateData.ma_vung);
+      request.input('ten_vung', sql.NVarChar(100), updateData.ten_vung);
+      request.input('mo_ta', sql.NVarChar(500), updateData.mo_ta || null);
+      request.input('trang_thai', sql.Int, updateData.trang_thai);
+
+      const result = await request.query(`
+        UPDATE regions 
+        SET 
+          ma_vung = @ma_vung,
+          ten_vung = @ten_vung,
+          mo_ta = @mo_ta,
+          trang_thai = @trang_thai
+        WHERE id = @id;
+        
+        SELECT 
+          r.*,
+          (SELECT COUNT(*) FROM provinces WHERE vung_id = r.ma_vung AND trang_thai = 1) as so_tinh
+        FROM regions r
+        WHERE r.id = @id;
+      `);
+
+      if (!result.recordset || result.recordset.length === 0) {
+        throw new Error('Không tìm thấy vùng miền');
+      }
+
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Region Update Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Mã vùng đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      
+      // Lấy ma_vung từ id
+      const regionResult = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('SELECT ma_vung FROM regions WHERE id = @id');
+      
+      if (!regionResult.recordset || regionResult.recordset.length === 0) {
+        throw new Error('Không tìm thấy vùng miền');
+      }
+      
+      const maVung = regionResult.recordset[0].ma_vung;
+      
+      // Kiểm tra có tỉnh/thành thuộc vùng này không
+      const checkRequest = new sql.Request();
+      const checkProvinces = await checkRequest
+        .input('ma_vung', sql.NVarChar(10), maVung)
+        .query(`
+          SELECT COUNT(*) as count 
+          FROM provinces 
+          WHERE vung_id = @ma_vung AND trang_thai = 1
+        `);
+
+      if (checkProvinces.recordset[0].count > 0) {
+        throw new Error('Không thể xóa vùng miền vì còn tỉnh/thành thuộc vùng này');
+      }
+
+      // Xóa vùng miền
+      const deleteRequest = new sql.Request();
+      await deleteRequest
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM regions WHERE id = @id');
+
+      return { success: true };
+    } catch (error) {
+      console.error('SQL Region Delete Error:', error);
+      throw error;
+    }
+  }
+}
+
+// Model cho Province trong SQL Server
+class SQLProvinceModel {
+  static async findAll(filters = {}) {
+    try {
+      const request = new sql.Request();
+      let whereClause = 'WHERE p.trang_thai = 1';
+
+      if (filters.vung_id) {
+        request.input('vung_id', sql.UniqueIdentifier, filters.vung_id);
+        whereClause += ' AND p.vung_id = @vung_id';
+      }
+
+      if (filters.trang_thai !== undefined) {
+        whereClause = whereClause.replace('WHERE p.trang_thai = 1', 'WHERE 1=1');
+        request.input('trang_thai', sql.Int, filters.trang_thai);
+        whereClause += ' AND p.trang_thai = @trang_thai';
+      }
+
+      const result = await request.query(`
+        SELECT 
+          p.*,
+          r.ten_vung,
+          (SELECT COUNT(*) FROM wards WHERE tinh_thanh_id = p.id AND trang_thai = 1) as so_phuong_xa
+        FROM provinces p
+        INNER JOIN regions r ON p.vung_id = r.ma_vung
+        ${whereClause}
+        ORDER BY p.thu_tu_uu_tien DESC, p.ten_tinh ASC
+      `);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Province Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            p.*,
+            r.ten_vung,
+            (SELECT COUNT(*) FROM wards WHERE tinh_thanh_id = p.id AND trang_thai = 1) as so_phuong_xa
+          FROM provinces p
+          INNER JOIN regions r ON p.vung_id = r.ma_vung
+          WHERE p.id = @id
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Province Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(provinceData) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('ma_tinh', sql.NVarChar(50), provinceData.ma_tinh)
+        .input('ten_tinh', sql.NVarChar(100), provinceData.ten_tinh)
+        .input('vung_id', sql.NVarChar(10), provinceData.vung_id)
+        .input('is_major_city', sql.Bit, provinceData.is_major_city || 0)
+        .input('thu_tu_uu_tien', sql.Int, provinceData.thu_tu_uu_tien || 0)
+        .input('trang_thai', sql.Bit, provinceData.trang_thai !== undefined ? provinceData.trang_thai : 1)
+        .query(`
+          INSERT INTO provinces (ma_tinh, ten_tinh, vung_id, is_major_city, thu_tu_uu_tien, trang_thai)
+          OUTPUT INSERTED.*
+          VALUES (@ma_tinh, @ten_tinh, @vung_id, @is_major_city, @thu_tu_uu_tien, @trang_thai)
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Province Create Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Mã tỉnh đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async update(id, updateData) {
+    try {
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      request.input('ma_tinh', sql.NVarChar(50), updateData.ma_tinh);
+      request.input('ten_tinh', sql.NVarChar(100), updateData.ten_tinh);
+      request.input('vung_id', sql.NVarChar(10), updateData.vung_id);
+      request.input('is_major_city', sql.Bit, updateData.is_major_city || 0);
+      request.input('thu_tu_uu_tien', sql.Int, updateData.thu_tu_uu_tien || 0);
+      request.input('trang_thai', sql.Bit, updateData.trang_thai);
+
+      const result = await request.query(`
+        UPDATE provinces 
+        SET 
+          ma_tinh = @ma_tinh,
+          ten_tinh = @ten_tinh,
+          vung_id = @vung_id,
+          is_major_city = @is_major_city,
+          thu_tu_uu_tien = @thu_tu_uu_tien,
+          trang_thai = @trang_thai
+        WHERE id = @id;
+        
+        SELECT 
+          p.*,
+          r.ten_vung,
+          (SELECT COUNT(*) FROM wards WHERE tinh_thanh_id = p.id AND trang_thai = 1) as so_phuong_xa
+        FROM provinces p
+        INNER JOIN regions r ON p.vung_id = r.ma_vung
+        WHERE p.id = @id;
+      `);
+
+      if (!result.recordset || result.recordset.length === 0) {
+        throw new Error('Không tìm thấy tỉnh/thành');
+      }
+
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Province Update Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Mã tỉnh đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      
+      // Kiểm tra có phường/xã thuộc tỉnh này không
+      const checkWards = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT COUNT(*) as count 
+          FROM wards 
+          WHERE tinh_thanh_id = @id AND trang_thai = 1
+        `);
+
+      if (checkWards.recordset[0].count > 0) {
+        throw new Error('Không thể xóa tỉnh/thành vì còn phường/xã thuộc tỉnh này');
+      }
+
+      // Xóa tỉnh/thành
+      const deleteRequest = new sql.Request();
+      await deleteRequest
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM provinces WHERE id = @id');
+
+      return { success: true };
+    } catch (error) {
+      console.error('SQL Province Delete Error:', error);
+      throw error;
+    }
+  }
+}
+
+// Model cho Ward trong SQL Server
+class SQLWardModel {
+  static async findAll(filters = {}) {
+    try {
+      const request = new sql.Request();
+      let whereClause = 'WHERE w.trang_thai = 1';
+
+      if (filters.tinh_thanh_id) {
+        request.input('tinh_thanh_id', sql.UniqueIdentifier, filters.tinh_thanh_id);
+        whereClause += ' AND w.tinh_thanh_id = @tinh_thanh_id';
+      }
+
+      if (filters.loai) {
+        request.input('loai', sql.NVarChar(50), filters.loai);
+        whereClause += ' AND w.loai = @loai';
+      }
+
+      if (filters.trang_thai !== undefined) {
+        whereClause = whereClause.replace('WHERE w.trang_thai = 1', 'WHERE 1=1');
+        request.input('trang_thai', sql.Int, filters.trang_thai);
+        whereClause += ' AND w.trang_thai = @trang_thai';
+      }
+
+      const result = await request.query(`
+        SELECT 
+          w.*,
+          p.ten_tinh,
+          r.ten_vung
+        FROM wards w
+        INNER JOIN provinces p ON w.tinh_thanh_id = p.id
+        INNER JOIN regions r ON p.vung_id = r.ma_vung
+        ${whereClause}
+        ORDER BY p.ten_tinh ASC, w.ten_phuong_xa ASC
+      `);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Ward Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            w.*,
+            p.ten_tinh,
+            r.ten_vung
+          FROM wards w
+          INNER JOIN provinces p ON w.tinh_thanh_id = p.id
+          INNER JOIN regions r ON p.vung_id = r.ma_vung
+          WHERE w.id = @id
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Ward Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(wardData) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('ma_phuong_xa', sql.NVarChar(50), wardData.ma_phuong_xa)
+        .input('ten_phuong_xa', sql.NVarChar(100), wardData.ten_phuong_xa)
+        .input('tinh_thanh_id', sql.UniqueIdentifier, wardData.tinh_thanh_id)
+        .input('loai', sql.NVarChar(50), wardData.loai)
+        .input('is_inner_area', sql.Bit, wardData.is_inner_area || 0)
+        .input('trang_thai', sql.Bit, wardData.trang_thai !== undefined ? wardData.trang_thai : 1)
+        .query(`
+          INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area, trang_thai)
+          OUTPUT INSERTED.*
+          VALUES (@ma_phuong_xa, @ten_phuong_xa, @tinh_thanh_id, @loai, @is_inner_area, @trang_thai)
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Ward Create Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Mã phường/xã đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async update(id, updateData) {
+    try {
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      request.input('ma_phuong_xa', sql.NVarChar(50), updateData.ma_phuong_xa);
+      request.input('ten_phuong_xa', sql.NVarChar(100), updateData.ten_phuong_xa);
+      request.input('tinh_thanh_id', sql.UniqueIdentifier, updateData.tinh_thanh_id);
+      request.input('loai', sql.NVarChar(50), updateData.loai);
+      request.input('is_inner_area', sql.Bit, updateData.is_inner_area || 0);
+      request.input('trang_thai', sql.Bit, updateData.trang_thai);
+
+      const result = await request.query(`
+        UPDATE wards 
+        SET 
+          ma_phuong_xa = @ma_phuong_xa,
+          ten_phuong_xa = @ten_phuong_xa,
+          tinh_thanh_id = @tinh_thanh_id,
+          loai = @loai,
+          is_inner_area = @is_inner_area,
+          trang_thai = @trang_thai
+        WHERE id = @id;
+        
+        SELECT 
+          w.*,
+          p.ten_tinh,
+          r.ten_vung
+        FROM wards w
+        INNER JOIN provinces p ON w.tinh_thanh_id = p.id
+        INNER JOIN regions r ON p.vung_id = r.ma_vung
+        WHERE w.id = @id;
+      `);
+
+      if (!result.recordset || result.recordset.length === 0) {
+        throw new Error('Không tìm thấy phường/xã');
+      }
+
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Ward Update Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Mã phường/xã đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM wards WHERE id = @id');
+
+      return { success: true };
+    } catch (error) {
+      console.error('SQL Ward Delete Error:', error);
+      throw error;
+    }
+  }
+}
+
 // ==================== EXPORT ALL MODELS ====================
 
 export default {
@@ -1041,6 +1490,9 @@ export default {
   SQLProductModel,
   SQLFlashSaleModel,
   SQLFlashSaleItemModel,
+  SQLRegionModel,
+  SQLProvinceModel,
+  SQLWardModel,
   
   // Hoặc export theo nhóm để dễ sử dụng
   Mongo: {
@@ -1053,6 +1505,9 @@ export default {
     Category: SQLCategoryModel,
     Product: SQLProductModel,
     FlashSale: SQLFlashSaleModel,
-    FlashSaleItem: SQLFlashSaleItemModel
+    FlashSaleItem: SQLFlashSaleItemModel,
+    Region: SQLRegionModel,
+    Province: SQLProvinceModel,
+    Ward: SQLWardModel
   }
 };

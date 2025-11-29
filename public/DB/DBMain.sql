@@ -1,4 +1,16 @@
--- TẠO DATABASE
+-- XÓA DATABASE CŨ VÀ TẠO MỚI
+USE master;
+GO
+
+-- Ngắt kết nối tất cả các session đang sử dụng DB
+ALTER DATABASE DB_WEBPHONES SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+GO
+
+-- Xóa database
+DROP DATABASE IF EXISTS DB_WEBPHONES;
+GO
+
+-- Tạo database mới
 CREATE DATABASE DB_WEBPHONES;
 GO
 
@@ -10,8 +22,36 @@ CREATE TABLE regions (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ma_vung NVARCHAR(10) UNIQUE NOT NULL CHECK (ma_vung IN (N'bac', N'trung', N'nam')),
     ten_vung NVARCHAR(50) NOT NULL,
+    mo_ta NVARCHAR(500),
     trang_thai BIT DEFAULT 1,
     ngay_tao DATETIME2 DEFAULT GETDATE()
+);
+GO
+
+-- Bảng tỉnh/thành phố
+CREATE TABLE provinces (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    ma_tinh NVARCHAR(10) UNIQUE NOT NULL,
+    ten_tinh NVARCHAR(100) NOT NULL,
+    vung_id NVARCHAR(10) NOT NULL,
+    is_major_city BIT DEFAULT 0, -- TP lớn: HN, HCM, DN, HP, CT
+    thu_tu_uu_tien INT DEFAULT 0, -- Sắp xếp hiển thị
+    trang_thai BIT DEFAULT 1,
+    ngay_tao DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (vung_id) REFERENCES regions(ma_vung)
+);
+GO
+
+CREATE TABLE wards (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    ma_phuong_xa NVARCHAR(20) UNIQUE NOT NULL,
+    ten_phuong_xa NVARCHAR(150) NOT NULL,
+    tinh_thanh_id UNIQUEIDENTIFIER NOT NULL,
+    loai NVARCHAR(20) DEFAULT N'xa' CHECK (loai IN (N'phuong', N'xa', N'thi_tran')),
+    is_inner_area BIT DEFAULT 0, -- Khu vực trung tâm (để tính phí ship)
+    trang_thai BIT DEFAULT 1,
+    ngay_tao DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (tinh_thanh_id) REFERENCES provinces(id) ON DELETE CASCADE
 );
 GO
 
@@ -58,6 +98,7 @@ CREATE TABLE products (
     so_luong_ban INT DEFAULT 0,
     ngay_tao DATETIME2 DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
+    link_anh VARCHAR(500),
     FOREIGN KEY (danh_muc_id) REFERENCES categories(id),
     FOREIGN KEY (thuong_hieu_id) REFERENCES brands(id),
     CHECK (gia_ban > 0),
@@ -67,13 +108,24 @@ CREATE TABLE products (
 );
 GO
 
--- 5. BẢNG NGƯỜI DÙNG
+-- 5. BẢNG NGƯỜI DÙNG (Bao gồm cả khách hàng và nhân viên)
 CREATE TABLE users (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     email NVARCHAR(255) UNIQUE NOT NULL,
     mat_khau NVARCHAR(255) NOT NULL,
     ho_ten NVARCHAR(100),
     so_dien_thoai NVARCHAR(20),
+    
+    -- Phân quyền
+    vai_tro NVARCHAR(20) NOT NULL DEFAULT N'khach_hang' CHECK (vai_tro IN (N'khach_hang', N'nhan_vien', N'quan_ly', N'admin')),
+    
+    -- Thông tin bổ sung cho nhân viên
+    ma_nhan_vien NVARCHAR(20) UNIQUE NULL, -- Chỉ có khi vai_tro != 'khach_hang'
+    chuc_vu NVARCHAR(100) NULL, -- Chức vụ nhân viên
+    phong_ban NVARCHAR(100) NULL, -- Phòng ban
+    ngay_vao_lam DATETIME2 NULL, -- Ngày bắt đầu làm việc
+    luong_co_ban DECIMAL(15,2) NULL, -- Lương cơ bản
+    
     vung_id NVARCHAR(10) NOT NULL DEFAULT N'bac' CHECK (vung_id IN (N'bac', N'trung', N'nam')),
     mongo_profile_id NVARCHAR(50) NULL,
     trang_thai BIT DEFAULT 1,
@@ -83,19 +135,73 @@ CREATE TABLE users (
 );
 GO
 
+-- ========== BẢNG ĐỊA CHỈ NGƯỜI DÙNG ==========
+-- 1 user có thể có nhiều địa chỉ (nhà riêng, công ty, giao hàng...)
+CREATE TABLE user_addresses (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    user_id UNIQUEIDENTIFIER NOT NULL,
+    loai_dia_chi NVARCHAR(20) CHECK(loai_dia_chi IN (N'nha_rieng', N'cong_ty', N'giao_hang')) DEFAULT N'nha_rieng',
+    is_default BIT DEFAULT 0, -- Địa chỉ mặc định
+    
+    -- Thông tin người nhận
+    ten_nguoi_nhan NVARCHAR(100) NOT NULL,
+    sdt_nguoi_nhan VARCHAR(15) NOT NULL,
+    
+    -- Địa chỉ hành chính (liên kết với bảng wards)
+    phuong_xa_id UNIQUEIDENTIFIER NOT NULL,
+    dia_chi_cu_the NVARCHAR(200) NOT NULL, -- Số nhà, tên đường, tòa nhà...
+    
+    -- Ghi chú bổ sung
+    ghi_chu NVARCHAR(500),
+    
+    -- Metadata
+    ngay_tao DATETIME2 DEFAULT GETDATE(),
+    ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
+    trang_thai BIT DEFAULT 1,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (phuong_xa_id) REFERENCES wards(id)
+);
+GO
+
+-- Index để tăng tốc truy vấn
+CREATE INDEX idx_user_addresses_user_id ON user_addresses(user_id);
+CREATE INDEX idx_user_addresses_default ON user_addresses(user_id, is_default) WHERE is_default = 1;
+CREATE INDEX idx_user_addresses_phuong_xa ON user_addresses(phuong_xa_id);
+GO
+
+-- Trigger để đảm bảo chỉ 1 địa chỉ mặc định
+CREATE TRIGGER trg_user_addresses_default
+ON user_addresses
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    -- Nếu có địa chỉ mới được set làm mặc định
+    IF EXISTS (SELECT 1 FROM inserted WHERE is_default = 1)
+    BEGIN
+        -- Bỏ mặc định của tất cả địa chỉ khác của user đó
+        UPDATE user_addresses
+        SET is_default = 0
+        WHERE user_id IN (SELECT user_id FROM inserted WHERE is_default = 1)
+          AND id NOT IN (SELECT id FROM inserted WHERE is_default = 1)
+          AND is_default = 1;
+    END
+END;
+GO
+
 -- 6. BẢNG KHO HÀNG
 CREATE TABLE warehouses (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ten_kho NVARCHAR(100) NOT NULL,
-    dia_chi_chi_tiet NVARCHAR(255),
-    phuong_xa NVARCHAR(100),
-    quan_huyen NVARCHAR(100),
-    thanh_pho NVARCHAR(100),
+    phuong_xa_id UNIQUEIDENTIFIER NOT NULL,
+    dia_chi_chi_tiet NVARCHAR(255) NOT NULL,
     so_dien_thoai NVARCHAR(20),
-    vung_id NVARCHAR(10) NOT NULL DEFAULT N'bac' CHECK (vung_id IN (N'bac', N'trung', N'nam')),
     trang_thai BIT DEFAULT 1,
     ngay_tao DATETIME2 DEFAULT GETDATE(),
-    FOREIGN KEY (vung_id) REFERENCES regions(ma_vung)
+    ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (phuong_xa_id) REFERENCES wards(id)
 );
 GO
 
@@ -121,26 +227,7 @@ CREATE TABLE inventory (
 );
 GO
 
--- 8. BẢNG ĐỊA CHỈ GIAO HÀNG
-CREATE TABLE shipping_addresses (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    nguoi_dung_id UNIQUEIDENTIFIER NOT NULL,
-    ho_ten NVARCHAR(100) NOT NULL,
-    so_dien_thoai NVARCHAR(20) NOT NULL,
-    dia_chi_chi_tiet NVARCHAR(255) NOT NULL,
-    phuong_xa NVARCHAR(100) NOT NULL,
-    quan_huyen NVARCHAR(100) NOT NULL,
-    thanh_pho NVARCHAR(100) NOT NULL,
-    vung_id NVARCHAR(10) NOT NULL DEFAULT N'bac' CHECK (vung_id IN (N'bac', N'trung', N'nam')),
-    dia_chi_mac_dinh BIT DEFAULT 0,
-    loai_dia_chi NVARCHAR(20) DEFAULT N'nha_rieng' CHECK (loai_dia_chi IN (N'nha_rieng', N'van_phong', N'khac')),
-    ngay_tao DATETIME2 DEFAULT GETDATE(),
-    FOREIGN KEY (nguoi_dung_id) REFERENCES users(id),
-    FOREIGN KEY (vung_id) REFERENCES regions(ma_vung)
-);
-GO
-
--- 9. BẢNG PHƯƠNG THỨC VẬN CHUYỂN
+-- 8. BẢNG PHƯƠNG THỨC VẬN CHUYỂN
 CREATE TABLE shipping_methods (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ten_phuong_thuc NVARCHAR(100) NOT NULL,
@@ -152,7 +239,7 @@ CREATE TABLE shipping_methods (
 );
 GO
 
--- 10. BẢNG PHƯƠNG THỨC VẬN CHUYỂN THEO VÙNG
+-- 9. BẢNG PHƯƠNG THỨC VẬN CHUYỂN THEO VÙNG
 CREATE TABLE shipping_method_regions (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     shipping_method_id UNIQUEIDENTIFIER NOT NULL,
@@ -170,7 +257,7 @@ CREATE TABLE shipping_method_regions (
 );
 GO
 
--- 11. BẢNG VOUCHER
+-- 10. BẢNG VOUCHER
 CREATE TABLE vouchers (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ma_voucher NVARCHAR(50) UNIQUE NOT NULL,
@@ -201,7 +288,7 @@ CREATE TABLE vouchers (
 );
 GO
 
--- 12. BẢNG VOUCHER ÁP DỤNG CHO SẢN PHẨM
+-- 11. BẢNG VOUCHER ÁP DỤNG CHO SẢN PHẨM
 CREATE TABLE voucher_products (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     voucher_id UNIQUEIDENTIFIER NOT NULL,
@@ -213,7 +300,7 @@ CREATE TABLE voucher_products (
 );
 GO
 
--- 13. BẢNG FLASH SALE
+-- 12. BẢNG FLASH SALE
 CREATE TABLE flash_sales (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ten_flash_sale NVARCHAR(255) NOT NULL,
@@ -230,7 +317,7 @@ CREATE TABLE flash_sales (
 );
 GO
 
--- 14. BẢNG SẢN PHẨM FLASH SALE
+-- 13. BẢNG SẢN PHẨM FLASH SALE
 CREATE TABLE flash_sale_items (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     flash_sale_id UNIQUEIDENTIFIER NOT NULL,
@@ -256,7 +343,7 @@ CREATE TABLE flash_sale_items (
 );
 GO
 
--- 15. BẢNG ĐƠN HÀNG
+-- 14. BẢNG ĐƠN HÀNG
 CREATE TABLE orders (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ma_don_hang NVARCHAR(50) UNIQUE NOT NULL,
@@ -277,7 +364,7 @@ CREATE TABLE orders (
     FOREIGN KEY (nguoi_dung_id) REFERENCES users(id),
     FOREIGN KEY (vung_don_hang) REFERENCES regions(ma_vung),
     FOREIGN KEY (shipping_method_region_id) REFERENCES shipping_method_regions(id),
-    FOREIGN KEY (dia_chi_giao_hang_id) REFERENCES shipping_addresses(id),
+    FOREIGN KEY (dia_chi_giao_hang_id) REFERENCES user_addresses(id),
     FOREIGN KEY (kho_giao_hang) REFERENCES warehouses(id),
     FOREIGN KEY (voucher_id) REFERENCES vouchers(id),
     CHECK (tong_tien_hang >= 0),
@@ -288,7 +375,7 @@ CREATE TABLE orders (
 );
 GO
 
--- 16. BẢNG CHI TIẾT ĐƠN HÀNG
+-- 15. BẢNG CHI TIẾT ĐƠN HÀNG
 CREATE TABLE order_details (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     don_hang_id UNIQUEIDENTIFIER NOT NULL,
@@ -307,7 +394,7 @@ CREATE TABLE order_details (
 );
 GO
 
--- 17. BẢNG GIỎ HÀNG
+-- 16. BẢNG GIỎ HÀNG
 CREATE TABLE carts (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     nguoi_dung_id UNIQUEIDENTIFIER NOT NULL,
@@ -319,7 +406,7 @@ CREATE TABLE carts (
 );
 GO
 
--- 18. BẢNG SẢN PHẨM TRONG GIỎ HÀNG
+-- 17. BẢNG SẢN PHẨM TRONG GIỎ HÀNG
 CREATE TABLE cart_items (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     gio_hang_id UNIQUEIDENTIFIER NOT NULL,
@@ -333,7 +420,7 @@ CREATE TABLE cart_items (
 );
 GO
 
--- 19. BẢNG ĐÁNH GIÁ
+-- 18. BẢNG ĐÁNH GIÁ
 CREATE TABLE reviews (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     san_pham_id UNIQUEIDENTIFIER NOT NULL,
@@ -351,7 +438,7 @@ CREATE TABLE reviews (
 );
 GO
 
--- 20. BẢNG THANH TOÁN
+-- 19. BẢNG THANH TOÁN
 CREATE TABLE payments (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     don_hang_id UNIQUEIDENTIFIER NOT NULL,
@@ -367,7 +454,7 @@ CREATE TABLE payments (
 );
 GO
 
--- 21. BẢNG VOUCHER ĐÃ SỬ DỤNG
+-- 20. BẢNG VOUCHER ĐÃ SỬ DỤNG
 CREATE TABLE used_vouchers (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     voucher_id UNIQUEIDENTIFIER NOT NULL,
@@ -383,7 +470,7 @@ CREATE TABLE used_vouchers (
 );
 GO
 
--- 22. BẢNG LỊCH SỬ MUA FLASH SALE
+-- 21. BẢNG LỊCH SỬ MUA FLASH SALE
 CREATE TABLE flash_sale_orders (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     flash_sale_item_id UNIQUEIDENTIFIER NOT NULL,
@@ -400,7 +487,7 @@ CREATE TABLE flash_sale_orders (
 );
 GO
 
--- 23. BẢNG MÃ OTP
+-- 22. BẢNG MÃ OTP
 CREATE TABLE otp_codes (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     email NVARCHAR(255) NOT NULL,
@@ -413,7 +500,7 @@ CREATE TABLE otp_codes (
 );
 GO
 
--- 24. BẢNG THEO DÕI TRẠNG THÁI ĐƠN HÀNG
+-- 23. BẢNG THEO DÕI TRẠNG THÁI ĐƠN HÀNG
 CREATE TABLE order_status_history (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     don_hang_id UNIQUEIDENTIFIER NOT NULL,
@@ -429,6 +516,34 @@ GO
 
 -- TẠO INDEX SAU KHI TẠO XONG TẤT CẢ BẢNG
 
+-- Index cho bảng regions
+CREATE INDEX IX_regions_ma_vung ON regions(ma_vung);
+CREATE INDEX IX_regions_trang_thai ON regions(trang_thai);
+
+-- Index cho bảng provinces
+CREATE INDEX IX_provinces_vung_id ON provinces(vung_id);
+CREATE INDEX IX_provinces_trang_thai ON provinces(trang_thai);
+CREATE INDEX IX_provinces_is_major_city ON provinces(is_major_city);
+
+-- Index cho bảng wards
+CREATE INDEX IX_wards_tinh_thanh_id ON wards(tinh_thanh_id);
+CREATE INDEX IX_wards_loai ON wards(loai);
+CREATE INDEX IX_wards_is_inner_area ON wards(is_inner_area);
+CREATE INDEX IX_wards_trang_thai ON wards(trang_thai);
+
+-- Index cho bảng warehouses
+CREATE INDEX IX_warehouses_phuong_xa_id ON warehouses(phuong_xa_id);
+CREATE INDEX IX_warehouses_trang_thai ON warehouses(trang_thai);
+
+-- Index cho bảng categories
+CREATE INDEX IX_categories_danh_muc_cha_id ON categories(danh_muc_cha_id);
+CREATE INDEX IX_categories_trang_thai ON categories(trang_thai);
+CREATE INDEX IX_categories_slug ON categories(slug);
+
+-- Index cho bảng brands
+CREATE INDEX IX_brands_slug ON brands(slug);
+CREATE INDEX IX_brands_trang_thai ON brands(trang_thai);
+
 -- Index cho bảng products
 CREATE INDEX IX_products_danh_muc_id ON products(danh_muc_id);
 CREATE INDEX IX_products_thuong_hieu_id ON products(thuong_hieu_id);
@@ -441,6 +556,8 @@ CREATE INDEX IX_products_ngay_tao ON products(ngay_tao);
 CREATE INDEX IX_users_email ON users(email);
 CREATE INDEX IX_users_vung_id ON users(vung_id);
 CREATE INDEX IX_users_trang_thai ON users(trang_thai);
+CREATE INDEX IX_users_vai_tro ON users(vai_tro);
+CREATE INDEX IX_users_ma_nhan_vien ON users(ma_nhan_vien) WHERE ma_nhan_vien IS NOT NULL;
 
 -- Index cho bảng inventory
 CREATE INDEX IX_inventory_san_pham_id ON inventory(san_pham_id);
@@ -569,4 +686,356 @@ INSERT INTO products (ma_sku, ten_san_pham, danh_muc_id, thuong_hieu_id, gia_nie
  (SELECT id FROM categories WHERE ten_danh_muc = N'Samsung'),
  (SELECT id FROM brands WHERE ten_thuong_hieu = N'Samsung'),
  19990000, 17990000, '667a8b1e5f4d3c2a1b9c8d87', 15, 650);
+GO
+
+
+-- Chèn dữ liệu vùng miền
+INSERT INTO regions (ma_vung, ten_vung, mo_ta, trang_thai) VALUES
+(N'bac', N'Miền Bắc', N'Bao gồm các tỉnh phía Bắc sông Gianh, trung tâm là Hà Nội và Hải Phòng', 1),
+(N'trung', N'Miền Trung', N'Từ Thanh Hóa đến Bình Thuận, trung tâm là Đà Nẵng', 1),
+(N'nam', N'Miền Nam', N'Từ Đồng Nai trở vào, trung tâm là TP Hồ Chí Minh và Cần Thơ', 1);
+GO
+
+
+-- Chèn dữ liệu tỉnh/thành phố (5 tỉnh đông dân nhất mỗi vùng)
+INSERT INTO provinces (ma_tinh, ten_tinh, vung_id, is_major_city, thu_tu_uu_tien) VALUES
+-- MIỀN BẮC (5 tỉnh đông dân nhất)
+('HN', N'Hà Nội', 'bac', 1, 1),
+('HP', N'Hải Phòng', 'bac', 1, 2),
+('BN', N'Bắc Ninh', 'bac', 0, 3),
+('HD', N'Hải Dương', 'bac', 0, 4),
+('VPC', N'Vĩnh Phúc', 'bac', 0, 5),
+
+-- MIỀN TRUNG (5 tỉnh đông dân nhất)
+('DN', N'Đà Nẵng', 'trung', 1, 6),
+('TH', N'Thanh Hóa', 'trung', 0, 7),
+('NA', N'Nghệ An', 'trung', 0, 8),
+('HT', N'Hà Tĩnh', 'trung', 0, 9),
+('QNa', N'Quảng Nam', 'trung', 0, 10),
+
+-- MIỀN NAM (5 tỉnh đông dân nhất)
+('HCM', N'TP Hồ Chí Minh', 'nam', 1, 11),
+('BD', N'Bình Dương', 'nam', 0, 12),
+('DNA', N'Đồng Nai', 'nam', 0, 13),
+('CT', N'Cần Thơ', 'nam', 1, 14),
+('BRVT', N'Bà Rịa - Vũng Tàu', 'nam', 0, 15);
+GO
+
+-- ========== BƯỚC 4: CHÈN DỮ LIỆU PHƯỜNG/XÃ CHO 15 TỈNH THÀNH ==========
+
+-- ===== MIỀN BẮC =====
+
+-- HÀ NỘI (12 quận nội thành + 17 huyện ngoại thành = 584 phường/xã, chọn 30 đại diện)
+DECLARE @HanoiId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'HN');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Quận Ba Đình
+('HN-BD-01', N'Phường Phúc Xá', @HanoiId, N'phuong', 1),
+('HN-BD-02', N'Phường Trúc Bạch', @HanoiId, N'phuong', 1),
+('HN-BD-03', N'Phường Điện Biên', @HanoiId, N'phuong', 1),
+('HN-BD-04', N'Phường Quán Thánh', @HanoiId, N'phuong', 1),
+-- Quận Hoàn Kiếm
+('HN-HK-01', N'Phường Hàng Bạc', @HanoiId, N'phuong', 1),
+('HN-HK-02', N'Phường Hàng Bài', @HanoiId, N'phuong', 1),
+('HN-HK-03', N'Phường Hàng Trống', @HanoiId, N'phuong', 1),
+('HN-HK-04', N'Phường Lý Thái Tổ', @HanoiId, N'phuong', 1),
+-- Quận Đống Đa
+('HN-DD-01', N'Phường Khương Thượng', @HanoiId, N'phuong', 1),
+('HN-DD-02', N'Phường Ô Chợ Dừa', @HanoiId, N'phuong', 1),
+('HN-DD-03', N'Phường Láng Hạ', @HanoiId, N'phuong', 1),
+-- Quận Cầu Giấy
+('HN-CG-01', N'Phường Nghĩa Đô', @HanoiId, N'phuong', 1),
+('HN-CG-02', N'Phường Dịch Vọng', @HanoiId, N'phuong', 1),
+('HN-CG-03', N'Phường Trung Hòa', @HanoiId, N'phuong', 1),
+-- Quận Hai Bà Trưng
+('HN-HBT-01', N'Phường Thanh Lương', @HanoiId, N'phuong', 1),
+('HN-HBT-02', N'Phường Bạch Đằng', @HanoiId, N'phuong', 1),
+-- Quận Thanh Xuân
+('HN-TX-01', N'Phường Nhân Chính', @HanoiId, N'phuong', 1),
+('HN-TX-02', N'Phường Khương Trung', @HanoiId, N'phuong', 1),
+-- Huyện Đông Anh (ngoại thành)
+('HN-DA-01', N'Xã Xuân Nộn', @HanoiId, N'xa', 0),
+('HN-DA-02', N'Xã Đại Mạch', @HanoiId, N'xa', 0),
+-- Huyện Gia Lâm (ngoại thành)
+('HN-GL-01', N'Xã Yên Viên', @HanoiId, N'xa', 0),
+('HN-GL-02', N'Xã Yên Thường', @HanoiId, N'xa', 0);
+GO
+
+-- HẢI PHÒNG (15 quận/huyện = 235 phường/xã, chọn 20 đại diện)
+DECLARE @HaiPhongId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'HP');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Quận Hồng Bàng
+('HP-HB-01', N'Phường Quán Toan', @HaiPhongId, N'phuong', 1),
+('HP-HB-02', N'Phường Hùng Vương', @HaiPhongId, N'phuong', 1),
+('HP-HB-03', N'Phường Sở Dầu', @HaiPhongId, N'phuong', 1),
+-- Quận Lê Chân
+('HP-LC-01', N'Phường Cát Dài', @HaiPhongId, N'phuong', 1),
+('HP-LC-02', N'Phường An Biên', @HaiPhongId, N'phuong', 1),
+('HP-LC-03', N'Phường Lam Sơn', @HaiPhongId, N'phuong', 1),
+-- Quận Ngô Quyền
+('HP-NQ-01', N'Phường Máy Chai', @HaiPhongId, N'phuong', 1),
+('HP-NQ-02', N'Phường Cầu Đất', @HaiPhongId, N'phuong', 1),
+-- Quận Hải An
+('HP-HA-01', N'Phường Đông Hải 1', @HaiPhongId, N'phuong', 1),
+('HP-HA-02', N'Phường Đông Hải 2', @HaiPhongId, N'phuong', 1),
+-- Huyện An Dương (ngoại thành)
+('HP-AD-01', N'Xã An Hòa', @HaiPhongId, N'xa', 0),
+('HP-AD-02', N'Xã An Hưng', @HaiPhongId, N'xa', 0);
+GO
+
+-- BẮC NINH (8 huyện/thành = 228 phường/xã, chọn 15 đại diện)
+DECLARE @BacNinhId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'BN');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Bắc Ninh
+('BN-TP-01', N'Phường Suối Hoa', @BacNinhId, N'phuong', 1),
+('BN-TP-02', N'Phường Vũ Ninh', @BacNinhId, N'phuong', 1),
+('BN-TP-03', N'Phường Đáp Cầu', @BacNinhId, N'phuong', 1),
+('BN-TP-04', N'Phường Võ Cường', @BacNinhId, N'phuong', 1),
+-- Huyện Từ Sơn
+('BN-TS-01', N'Thị trấn Từ Sơn', @BacNinhId, N'thi_tran', 1),
+('BN-TS-02', N'Xã Phù Khê', @BacNinhId, N'xa', 0),
+-- Huyện Thuận Thành
+('BN-TT-01', N'Xã Phương Liễu', @BacNinhId, N'xa', 0),
+('BN-TT-02', N'Xã Minh Tân', @BacNinhId, N'xa', 0);
+GO
+
+-- HẢI DƯƠNG (12 huyện/thành = 281 phường/xã, chọn 15 đại diện)
+DECLARE @HaiDuongId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'HD');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Hải Dương
+('HD-TP-01', N'Phường Nguyễn Trãi', @HaiDuongId, N'phuong', 1),
+('HD-TP-02', N'Phường Phan Bội Châu', @HaiDuongId, N'phuong', 1),
+('HD-TP-03', N'Phường Quang Trung', @HaiDuongId, N'phuong', 1),
+('HD-TP-04', N'Phường Ngọc Châu', @HaiDuongId, N'phuong', 1),
+-- Thành phố Chí Linh
+('HD-CL-01', N'Phường Sao Đỏ', @HaiDuongId, N'phuong', 1),
+('HD-CL-02', N'Phường Cộng Hòa', @HaiDuongId, N'phuong', 1),
+-- Huyện Gia Lộc
+('HD-GL-01', N'Xã Thống Nhất', @HaiDuongId, N'xa', 0),
+('HD-GL-02', N'Xã Yết Kiêu', @HaiDuongId, N'xa', 0);
+GO
+
+-- VĨNH PHÚC (9 huyện/thành = 159 phường/xã, chọn 12 đại diện)
+DECLARE @VinhPhucId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'VPC');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Vĩnh Yên
+('VPC-VY-01', N'Phường Khai Quang', @VinhPhucId, N'phuong', 1),
+('VPC-VY-02', N'Phường Liên Bảo', @VinhPhucId, N'phuong', 1),
+('VPC-VY-03', N'Phường Đồng Tâm', @VinhPhucId, N'phuong', 1),
+-- Thành phố Phúc Yên
+('VPC-PY-01', N'Phường Trưng Trắc', @VinhPhucId, N'phuong', 1),
+('VPC-PY-02', N'Phường Hùng Vương', @VinhPhucId, N'phuong', 1),
+-- Huyện Bình Xuyên
+('VPC-BX-01', N'Xã Sơn Lôi', @VinhPhucId, N'xa', 0),
+('VPC-BX-02', N'Xã Thiện Kế', @VinhPhucId, N'xa', 0);
+GO
+
+-- ===== MIỀN TRUNG =====
+
+-- ĐÀ NẴNG (8 quận/huyện = 56 phường/xã, chọn tất cả phường trung tâm)
+DECLARE @DaNangId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'DN');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Quận Hải Châu
+('DN-HC-01', N'Phường Thạch Thang', @DaNangId, N'phuong', 1),
+('DN-HC-02', N'Phường Hải Châu I', @DaNangId, N'phuong', 1),
+('DN-HC-03', N'Phường Hải Châu II', @DaNangId, N'phuong', 1),
+('DN-HC-04', N'Phường Thuận Phước', @DaNangId, N'phuong', 1),
+-- Quận Thanh Khê
+('DN-TK-01', N'Phường Thanh Khê Tây', @DaNangId, N'phuong', 1),
+('DN-TK-02', N'Phường Thanh Khê Đông', @DaNangId, N'phuong', 1),
+('DN-TK-03', N'Phường Tân Chính', @DaNangId, N'phuong', 1),
+-- Quận Sơn Trà
+('DN-ST-01', N'Phường Thọ Quang', @DaNangId, N'phuong', 1),
+('DN-ST-02', N'Phường Nại Hiên Đông', @DaNangId, N'phuong', 1),
+('DN-ST-03', N'Phường Mân Thái', @DaNangId, N'phuong', 1),
+-- Quận Cẩm Lệ
+('DN-CL-01', N'Phường Khuê Trung', @DaNangId, N'phuong', 1),
+('DN-CL-02', N'Phường Hòa Phát', @DaNangId, N'phuong', 1),
+-- Huyện Hòa Vang
+('DN-HV-01', N'Xã Hòa Liên', @DaNangId, N'xa', 0),
+('DN-HV-02', N'Xã Hòa Ninh', @DaNangId, N'xa', 0);
+GO
+
+-- THANH HÓA (27 huyện/thành = 616 phường/xã, chọn 20 đại diện)
+DECLARE @ThanhHoaId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'TH');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Thanh Hóa
+('TH-TP-01', N'Phường Đông Thọ', @ThanhHoaId, N'phuong', 1),
+('TH-TP-02', N'Phường Nam Ngạn', @ThanhHoaId, N'phuong', 1),
+('TH-TP-03', N'Phường Trường Thi', @ThanhHoaId, N'phuong', 1),
+('TH-TP-04', N'Phường Điện Biên', @ThanhHoaId, N'phuong', 1),
+-- Thành phố Sầm Sơn
+('TH-SS-01', N'Phường Trường Sơn', @ThanhHoaId, N'phuong', 1),
+('TH-SS-02', N'Phường Quảng Cư', @ThanhHoaId, N'phuong', 1),
+-- Huyện Đông Sơn
+('TH-DS-01', N'Xã Đông Hoàng', @ThanhHoaId, N'xa', 0),
+('TH-DS-02', N'Xã Đông Ninh', @ThanhHoaId, N'xa', 0);
+GO
+
+-- NGHỆ AN (21 huyện/thành = 460 phường/xã, chọn 20 đại diện)
+DECLARE @NgheAnId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'NA');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Vinh
+('NA-V-01', N'Phường Hà Huy Tập', @NgheAnId, N'phuong', 1),
+('NA-V-02', N'Phường Lê Lợi', @NgheAnId, N'phuong', 1),
+('NA-V-03', N'Phường Quang Trung', @NgheAnId, N'phuong', 1),
+('NA-V-04', N'Phường Đội Cung', @NgheAnId, N'phuong', 1),
+-- Thị xã Cửa Lò
+('NA-CL-01', N'Phường Nghi Thuỷ', @NgheAnId, N'phuong', 1),
+('NA-CL-02', N'Phường Nghi Hòa', @NgheAnId, N'phuong', 1),
+-- Huyện Nghi Lộc
+('NA-NL-01', N'Xã Nghi Kiều', @NgheAnId, N'xa', 0),
+('NA-NL-02', N'Xã Nghi Đồng', @NgheAnId, N'xa', 0);
+GO
+
+-- HÀ TĨNH (13 huyện/thành = 240 phường/xã, chọn 15 đại diện)
+DECLARE @HaTinhId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'HT');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Hà Tĩnh
+('HT-TP-01', N'Phường Trần Phú', @HaTinhId, N'phuong', 1),
+('HT-TP-02', N'Phường Nam Hà', @HaTinhId, N'phuong', 1),
+('HT-TP-03', N'Phường Bắc Hà', @HaTinhId, N'phuong', 1),
+('HT-TP-04', N'Phường Nguyễn Du', @HaTinhId, N'phuong', 1),
+-- Thị xã Hồng Lĩnh
+('HT-HL-01', N'Phường Bắc Hồng', @HaTinhId, N'phuong', 1),
+('HT-HL-02', N'Phường Nam Hồng', @HaTinhId, N'phuong', 1),
+-- Huyện Cẩm Xuyên
+('HT-CX-01', N'Xã Cẩm Vĩnh', @HaTinhId, N'xa', 0),
+('HT-CX-02', N'Xã Cẩm Thạch', @HaTinhId, N'xa', 0);
+GO
+
+-- QUẢNG NAM (18 huyện/thành = 244 phường/xã, chọn 18 đại diện)
+DECLARE @QuangNamId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'QNa');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Tam Kỳ
+('QNa-TK-01', N'Phường Tân Thạnh', @QuangNamId, N'phuong', 1),
+('QNa-TK-02', N'Phường An Mỹ', @QuangNamId, N'phuong', 1),
+('QNa-TK-03', N'Phường Hòa Hương', @QuangNamId, N'phuong', 1),
+-- Thành phố Hội An
+('QNa-HA-01', N'Phường Minh An', @QuangNamId, N'phuong', 1),
+('QNa-HA-02', N'Phường Tân An', @QuangNamId, N'phuong', 1),
+('QNa-HA-03', N'Phường Cẩm Phô', @QuangNamId, N'phuong', 1),
+-- Huyện Điện Bàn
+('QNa-DB-01', N'Xã Điện Ngọc', @QuangNamId, N'xa', 0),
+('QNa-DB-02', N'Xã Điện Phương', @QuangNamId, N'xa', 0);
+GO
+
+-- ===== MIỀN NAM =====
+
+-- TP HỒ CHÍ MINH (22 quận/huyện = 322 phường/xã, chọn 30 đại diện)
+DECLARE @HCMId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'HCM');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Quận 1
+('HCM-Q1-01', N'Phường Bến Nghé', @HCMId, N'phuong', 1),
+('HCM-Q1-02', N'Phường Bến Thành', @HCMId, N'phuong', 1),
+('HCM-Q1-03', N'Phường Nguyễn Thái Bình', @HCMId, N'phuong', 1),
+('HCM-Q1-04', N'Phường Phạm Ngũ Lão', @HCMId, N'phuong', 1),
+-- Quận 3
+('HCM-Q3-01', N'Phường Võ Thị Sáu', @HCMId, N'phuong', 1),
+('HCM-Q3-02', N'Phường Phường 1', @HCMId, N'phuong', 1),
+('HCM-Q3-03', N'Phường Phường 2', @HCMId, N'phuong', 1),
+-- Quận 5
+('HCM-Q5-01', N'Phường Phường 1', @HCMId, N'phuong', 1),
+('HCM-Q5-02', N'Phường Phường 2', @HCMId, N'phuong', 1),
+-- Quận 7
+('HCM-Q7-01', N'Phường Tân Thuận Đông', @HCMId, N'phuong', 1),
+('HCM-Q7-02', N'Phường Tân Thuận Tây', @HCMId, N'phuong', 1),
+('HCM-Q7-03', N'Phường Phú Thuận', @HCMId, N'phuong', 1),
+-- Quận Tân Bình
+('HCM-TB-01', N'Phường 1', @HCMId, N'phuong', 1),
+('HCM-TB-02', N'Phường 2', @HCMId, N'phuong', 1),
+-- Thành phố Thủ Đức
+('HCM-TD-01', N'Phường Linh Xuân', @HCMId, N'phuong', 1),
+('HCM-TD-02', N'Phường Bình Thọ', @HCMId, N'phuong', 1),
+('HCM-TD-03', N'Phường Linh Trung', @HCMId, N'phuong', 1),
+-- Huyện Bình Chánh (ngoại thành)
+('HCM-BC-01', N'Xã Phạm Văn Hai', @HCMId, N'xa', 0),
+('HCM-BC-02', N'Xã Bình Lợi', @HCMId, N'xa', 0),
+('HCM-BC-03', N'Xã Tân Nhựt', @HCMId, N'xa', 0),
+-- Huyện Củ Chi
+('HCM-CC-01', N'Xã Phú Mỹ Hưng', @HCMId, N'xa', 0),
+('HCM-CC-02', N'Xã An Phú', @HCMId, N'xa', 0);
+GO
+
+-- BÌNH DƯƠNG (9 huyện/thành = 107 phường/xã, chọn 18 đại diện)
+DECLARE @BinhDuongId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'BD');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Thủ Dầu Một
+('BD-TDM-01', N'Phường Hiệp Thành', @BinhDuongId, N'phuong', 1),
+('BD-TDM-02', N'Phường Phú Lợi', @BinhDuongId, N'phuong', 1),
+('BD-TDM-03', N'Phường Phú Hòa', @BinhDuongId, N'phuong', 1),
+-- Thành phố Thuận An
+('BD-TA-01', N'Phường Bình Chuẩn', @BinhDuongId, N'phuong', 1),
+('BD-TA-02', N'Phường Thuận Giao', @BinhDuongId, N'phuong', 1),
+-- Thành phố Dĩ An
+('BD-DA-01', N'Phường Dĩ An', @BinhDuongId, N'phuong', 1),
+('BD-DA-02', N'Phường Tân Bình', @BinhDuongId, N'phuong', 1),
+-- Huyện Bàu Bàng
+('BD-BB-01', N'Xã Lai Uyên', @BinhDuongId, N'xa', 0),
+('BD-BB-02', N'Xã Trừ Văn Thố', @BinhDuongId, N'xa', 0);
+GO
+
+-- ĐỒNG NAI (11 huyện/thành = 171 phường/xã, chọn 20 đại diện)
+DECLARE @DongNaiId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'DNA');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Biên Hòa
+('DNA-BH-01', N'Phường Trảng Dài', @DongNaiId, N'phuong', 1),
+('DNA-BH-02', N'Phường Tân Phong', @DongNaiId, N'phuong', 1),
+('DNA-BH-03', N'Phường Tân Biên', @DongNaiId, N'phuong', 1),
+('DNA-BH-04', N'Phường Quyết Thắng', @DongNaiId, N'phuong', 1),
+-- Thành phố Long Khánh
+('DNA-LK-01', N'Phường Xuân Trung', @DongNaiId, N'phuong', 1),
+('DNA-LK-02', N'Phường Xuân Thanh', @DongNaiId, N'phuong', 1),
+-- Huyện Nhơn Trạch
+('DNA-NT-01', N'Xã Phú Hữu', @DongNaiId, N'xa', 0),
+('DNA-NT-02', N'Xã Phú Hội', @DongNaiId, N'xa', 0);
+GO
+
+-- CẦN THƠ (9 quận/huyện = 82 phường/xã, chọn 20 đại diện)
+DECLARE @CanThoId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'CT');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Quận Ninh Kiều
+('CT-NK-01', N'Phường Cái Khế', @CanThoId, N'phuong', 1),
+('CT-NK-02', N'Phường An Hòa', @CanThoId, N'phuong', 1),
+('CT-NK-03', N'Phường Thới Bình', @CanThoId, N'phuong', 1),
+('CT-NK-04', N'Phường An Nghiệp', @CanThoId, N'phuong', 1),
+-- Quận Bình Thuỷ
+('CT-BT-01', N'Phường Bình Thuỷ', @CanThoId, N'phuong', 1),
+('CT-BT-02', N'Phường Trà An', @CanThoId, N'phuong', 1),
+-- Quận Cái Răng
+('CT-CR-01', N'Phường Lê Bình', @CanThoId, N'phuong', 1),
+('CT-CR-02', N'Phường Hưng Phú', @CanThoId, N'phuong', 1),
+-- Huyện Phong Điền
+('CT-PD-01', N'Xã Nhơn Ái', @CanThoId, N'xa', 0),
+('CT-PD-02', N'Xã Giai Xuân', @CanThoId, N'xa', 0);
+GO
+
+-- BÀ RỊA - VŨNG TÀU (8 huyện/thành = 82 phường/xã, chọn 15 đại diện)
+DECLARE @BRVTId UNIQUEIDENTIFIER = (SELECT id FROM provinces WHERE ma_tinh = 'BRVT');
+
+INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area) VALUES
+-- Thành phố Vũng Tàu
+('BRVT-VT-01', N'Phường 1', @BRVTId, N'phuong', 1),
+('BRVT-VT-02', N'Phường 2', @BRVTId, N'phuong', 1),
+('BRVT-VT-03', N'Phường Thắng Tam', @BRVTId, N'phuong', 1),
+('BRVT-VT-04', N'Phường Thắng Nhì', @BRVTId, N'phuong', 1),
+-- Thành phố Bà Rịa
+('BRVT-BR-01', N'Phường Phước Hưng', @BRVTId, N'phuong', 1),
+('BRVT-BR-02', N'Phường Phước Nguyên', @BRVTId, N'phuong', 1),
+-- Huyện Châu Đức
+('BRVT-CD-01', N'Xã Xuyên Mộc', @BRVTId, N'xa', 0),
+('BRVT-CD-02', N'Xã Bông Trang', @BRVTId, N'xa', 0);
 GO

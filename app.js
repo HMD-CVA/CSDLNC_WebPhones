@@ -3204,5 +3204,454 @@ app.patch('/api/flashsales/:id/detail/marketing', async (req, res) => {
     }
 });
 
+// =============================================
+// ADDRESS MANAGEMENT ROUTES (REGIONS, PROVINCES, WARDS)
+// =============================================
+
+// ===== RENDER PAGE =====
+app.get('/admin/diachi', async (req, res) => {
+    try {
+        res.render('diachi', {
+            layout: 'AdminMain',
+            title: 'Quản Lý Địa Chỉ'
+        });
+    } catch (error) {
+        console.error('Address Page Error:', error);
+        res.status(500).send('Lỗi server');
+    }
+});
+
+// ===== REGIONS API =====
+
+// GET /api/regions - Lấy danh sách vùng miền
+app.get('/api/regions', async (req, res) => {
+    try {
+        const regions = await DataModel.SQL.Region.findAll();
+        
+        res.json({
+            success: true,
+            data: regions
+        });
+    } catch (error) {
+        console.error('Regions API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách vùng miền'
+        });
+    }
+});
+
+// GET /api/regions/:id - Lấy thông tin vùng miền
+app.get('/api/regions/:id', async (req, res) => {
+    try {
+        const region = await DataModel.SQL.Region.findById(req.params.id);
+        
+        if (!region) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy vùng miền'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: region
+        });
+    } catch (error) {
+        console.error('Region API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin vùng miền'
+        });
+    }
+});
+
+// POST /api/regions - Tạo vùng miền mới
+app.post('/api/regions', async (req, res) => {
+    try {
+        const regionData = {
+            ma_vung: req.body.ma_vung,
+            ten_vung: req.body.ten_vung,
+            mo_ta: req.body.mo_ta || null,
+            trang_thai: req.body.trang_thai !== undefined ? req.body.trang_thai : 1
+        };
+
+        // Validate required fields
+        if (!regionData.ma_vung || !regionData.ten_vung) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã vùng và tên vùng là bắt buộc'
+            });
+        }
+
+        const newRegion = await DataModel.SQL.Region.create(regionData);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Tạo vùng miền thành công',
+            data: newRegion
+        });
+    } catch (error) {
+        console.error('Create Region Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi tạo vùng miền'
+        });
+    }
+});
+
+// PUT /api/regions/:id - Cập nhật vùng miền
+app.put('/api/regions/:id', async (req, res) => {
+    try {
+        const updateData = {
+            ma_vung: req.body.ma_vung,
+            ten_vung: req.body.ten_vung,
+            mo_ta: req.body.mo_ta,
+            trang_thai: req.body.trang_thai
+        };
+
+        const updated = await DataModel.SQL.Region.update(req.params.id, updateData);
+        
+        if (!updated) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy vùng miền'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Cập nhật vùng miền thành công',
+            data: updated
+        });
+    } catch (error) {
+        console.error('Update Region Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi cập nhật vùng miền'
+        });
+    }
+});
+
+// DELETE /api/regions/:id - Xóa vùng miền
+app.delete('/api/regions/:id', async (req, res) => {
+    try {
+        const deleted = await DataModel.SQL.Region.delete(req.params.id);
+        
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy vùng miền'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Xóa vùng miền thành công'
+        });
+    } catch (error) {
+        console.error('Delete Region Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi xóa vùng miền'
+        });
+    }
+});
+
+// ===== PROVINCES API =====
+
+// GET /api/provinces - Lấy danh sách tỉnh/thành
+app.get('/api/provinces', async (req, res) => {
+    try {
+        const { vung_id, trang_thai } = req.query;
+        
+        const filters = {};
+        if (vung_id) filters.vung_id = vung_id;
+        if (trang_thai !== undefined) filters.trang_thai = parseInt(trang_thai);
+        
+        const provinces = await DataModel.SQL.Province.findAll(filters);
+        
+        res.json({
+            success: true,
+            data: provinces
+        });
+    } catch (error) {
+        console.error('Provinces API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách tỉnh/thành'
+        });
+    }
+});
+
+// GET /api/provinces/:id - Lấy thông tin tỉnh/thành
+app.get('/api/provinces/:id', async (req, res) => {
+    try {
+        const province = await DataModel.SQL.Province.findById(req.params.id);
+        
+        if (!province) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy tỉnh/thành'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: province
+        });
+    } catch (error) {
+        console.error('Province API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin tỉnh/thành'
+        });
+    }
+});
+
+// POST /api/provinces - Tạo tỉnh/thành mới
+app.post('/api/provinces', async (req, res) => {
+    try {
+        const provinceData = {
+            ma_tinh: req.body.ma_tinh,
+            ten_tinh: req.body.ten_tinh,
+            vung_id: req.body.vung_id,
+            is_major_city: req.body.is_major_city || 0,
+            thu_tu_uu_tien: req.body.thu_tu_uu_tien || 0,
+            trang_thai: req.body.trang_thai !== undefined ? req.body.trang_thai : 1
+        };
+
+        // Validate required fields
+        if (!provinceData.ma_tinh || !provinceData.ten_tinh || !provinceData.vung_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã tỉnh, tên tỉnh và vùng miền là bắt buộc'
+            });
+        }
+
+        const newProvince = await DataModel.SQL.Province.create(provinceData);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Tạo tỉnh/thành thành công',
+            data: newProvince
+        });
+    } catch (error) {
+        console.error('Create Province Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi tạo tỉnh/thành'
+        });
+    }
+});
+
+// PUT /api/provinces/:id - Cập nhật tỉnh/thành
+app.put('/api/provinces/:id', async (req, res) => {
+    try {
+        const updateData = {
+            ma_tinh: req.body.ma_tinh,
+            ten_tinh: req.body.ten_tinh,
+            vung_id: req.body.vung_id,
+            is_major_city: req.body.is_major_city,
+            thu_tu_uu_tien: req.body.thu_tu_uu_tien,
+            trang_thai: req.body.trang_thai
+        };
+
+        const updated = await DataModel.SQL.Province.update(req.params.id, updateData);
+        
+        if (!updated) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy tỉnh/thành'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Cập nhật tỉnh/thành thành công',
+            data: updated
+        });
+    } catch (error) {
+        console.error('Update Province Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi cập nhật tỉnh/thành'
+        });
+    }
+});
+
+// DELETE /api/provinces/:id - Xóa tỉnh/thành
+app.delete('/api/provinces/:id', async (req, res) => {
+    try {
+        const deleted = await DataModel.SQL.Province.delete(req.params.id);
+        
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy tỉnh/thành'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Xóa tỉnh/thành thành công'
+        });
+    } catch (error) {
+        console.error('Delete Province Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi xóa tỉnh/thành'
+        });
+    }
+});
+
+// ===== WARDS API =====
+
+// GET /api/wards - Lấy danh sách phường/xã
+app.get('/api/wards', async (req, res) => {
+    try {
+        const { tinh_thanh_id, loai, trang_thai } = req.query;
+        
+        const filters = {};
+        if (tinh_thanh_id) filters.tinh_thanh_id = tinh_thanh_id;
+        if (loai) filters.loai = loai;
+        if (trang_thai !== undefined) filters.trang_thai = parseInt(trang_thai);
+        
+        const wards = await DataModel.SQL.Ward.findAll(filters);
+        
+        res.json({
+            success: true,
+            data: wards
+        });
+    } catch (error) {
+        console.error('Wards API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách phường/xã'
+        });
+    }
+});
+
+// GET /api/wards/:id - Lấy thông tin phường/xã
+app.get('/api/wards/:id', async (req, res) => {
+    try {
+        const ward = await DataModel.SQL.Ward.findById(req.params.id);
+        
+        if (!ward) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy phường/xã'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: ward
+        });
+    } catch (error) {
+        console.error('Ward API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin phường/xã'
+        });
+    }
+});
+
+// POST /api/wards - Tạo phường/xã mới
+app.post('/api/wards', async (req, res) => {
+    try {
+        const wardData = {
+            ma_phuong_xa: req.body.ma_phuong_xa,
+            ten_phuong_xa: req.body.ten_phuong_xa,
+            tinh_thanh_id: req.body.tinh_thanh_id,
+            loai: req.body.loai,
+            is_inner_area: req.body.is_inner_area || 0,
+            trang_thai: req.body.trang_thai !== undefined ? req.body.trang_thai : 1
+        };
+
+        // Validate required fields
+        if (!wardData.ma_phuong_xa || !wardData.ten_phuong_xa || !wardData.tinh_thanh_id || !wardData.loai) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mã phường/xã, tên, tỉnh/thành và loại là bắt buộc'
+            });
+        }
+
+        const newWard = await DataModel.SQL.Ward.create(wardData);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Tạo phường/xã thành công',
+            data: newWard
+        });
+    } catch (error) {
+        console.error('Create Ward Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi tạo phường/xã'
+        });
+    }
+});
+
+// PUT /api/wards/:id - Cập nhật phường/xã
+app.put('/api/wards/:id', async (req, res) => {
+    try {
+        const updateData = {
+            ma_phuong_xa: req.body.ma_phuong_xa,
+            ten_phuong_xa: req.body.ten_phuong_xa,
+            tinh_thanh_id: req.body.tinh_thanh_id,
+            loai: req.body.loai,
+            is_inner_area: req.body.is_inner_area,
+            trang_thai: req.body.trang_thai
+        };
+
+        const updated = await DataModel.SQL.Ward.update(req.params.id, updateData);
+        
+        if (!updated) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy phường/xã'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Cập nhật phường/xã thành công',
+            data: updated
+        });
+    } catch (error) {
+        console.error('Update Ward Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi cập nhật phường/xã'
+        });
+    }
+});
+
+// DELETE /api/wards/:id - Xóa phường/xã
+app.delete('/api/wards/:id', async (req, res) => {
+    try {
+        const deleted = await DataModel.SQL.Ward.delete(req.params.id);
+        
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy phường/xã'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Xóa phường/xã thành công'
+        });
+    } catch (error) {
+        console.error('Delete Ward Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Lỗi khi xóa phường/xã'
+        });
+    }
+});
+
 // Start server
 app.listen(3000, () => console.log('Server running on port 3000'));

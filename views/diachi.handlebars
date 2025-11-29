@@ -1,0 +1,429 @@
+<div class="main-content">
+    <div class="admin-dashboard">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <div class="title-icon">🗺️</div>
+                    <div>
+                        <h1>QUẢN LÝ ĐỊA CHỈ</h1>
+                        <p>Quản lý vùng miền, tỉnh thành và phường xã Việt Nam</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-secondary" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Làm mới</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon total">
+                    <i class="fas fa-globe-asia"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalRegions">0</h3>
+                    <p>Vùng miền</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon available">
+                    <i class="fas fa-city"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalProvinces">0</h3>
+                    <p>Tỉnh/Thành phố</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon busy">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalWards">0</h3>
+                    <p>Phường/Xã/Thị trấn</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon premium">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalAddresses">0</h3>
+                    <p>Tổng địa chỉ</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-navigation">
+            <button class="tab-btn active" data-tab="regions">
+                <i class="fas fa-globe-asia"></i>
+                Vùng miền
+            </button>
+            <button class="tab-btn" data-tab="provinces">
+                <i class="fas fa-city"></i>
+                Tỉnh/Thành phố
+            </button>
+            <button class="tab-btn" data-tab="wards">
+                <i class="fas fa-map-marker-alt"></i>
+                Phường/Xã
+            </button>
+        </div>
+
+        <!-- Regions Tab -->
+        <div class="tab-content active" id="regionsTab">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3><i class="fas fa-globe-asia"></i> Danh sách Vùng miền</h3>
+                    <div class="table-actions">
+                        <div class="search-box-inline">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="regionSearch" placeholder="Tìm kiếm vùng miền...">
+                        </div>
+                        <button class="btn-primary" id="addRegionBtn">
+                            <i class="fas fa-plus"></i>
+                            Thêm vùng miền
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%">Mã vùng</th>
+                                <th style="width: 25%">Tên vùng</th>
+                                <th style="width: 30%">Mô tả</th>
+                                <th style="width: 10%">Số tỉnh</th>
+                                <th style="width: 10%">Trạng thái</th>
+                                <th style="width: 10%">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="regionsTableBody">
+                            <tr><td colspan="6" class="text-center">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination for Regions -->
+                <div class="table-footer">
+                    <div class="table-info">
+                        Hiển thị <span id="regionDisplayCount">0</span> trên <span id="regionTotalCount">0</span> vùng miền
+                    </div>
+                    <div class="pagination" id="regionPagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Provinces Tab -->
+        <div class="tab-content" id="provincesTab">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3><i class="fas fa-city"></i> Danh sách Tỉnh/Thành phố</h3>
+                    <div class="table-actions">
+                        <select class="filter-select" id="provinceRegionFilter">
+                            <option value="">Tất cả vùng</option>
+                        </select>
+                        <div class="search-box-inline">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="provinceSearch" placeholder="Tìm kiếm tỉnh/thành...">
+                        </div>
+                        <button class="btn-primary" id="addProvinceBtn">
+                            <i class="fas fa-plus"></i>
+                            Thêm tỉnh/thành
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%">Mã</th>
+                                <th style="width: 22%">Tên tỉnh/thành</th>
+                                <th style="width: 15%">Vùng miền</th>
+                                <th style="width: 10%">TP lớn</th>
+                                <th style="width: 8%">Ưu tiên</th>
+                                <th style="width: 10%">Số P/X</th>
+                                <th style="width: 10%">Trạng thái</th>
+                                <th style="width: 15%">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="provincesTableBody">
+                            <tr><td colspan="8" class="text-center">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination for Provinces -->
+                <div class="table-footer">
+                    <div class="table-info">
+                        Hiển thị <span id="provinceDisplayCount">0</span> trên <span id="provinceTotalCount">0</span> tỉnh/thành phố
+                    </div>
+                    <div class="pagination" id="provincePagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wards Tab -->
+        <div class="tab-content" id="wardsTab">
+            <div class="table-container">
+                <div class="table-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> Danh sách Phường/Xã</h3>
+                    <div class="table-actions">
+                        <select class="filter-select" id="wardProvinceFilter">
+                            <option value="">Tất cả tỉnh/thành</option>
+                        </select>
+                        <select class="filter-select" id="wardTypeFilter">
+                            <option value="">Tất cả loại</option>
+                            <option value="phuong">Phường</option>
+                            <option value="xa">Xã</option>
+                            <option value="thi_tran">Thị trấn</option>
+                        </select>
+                        <div class="search-box-inline">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="wardSearch" placeholder="Tìm kiếm phường/xã...">
+                        </div>
+                        <button class="btn-primary" id="addWardBtn">
+                            <i class="fas fa-plus"></i>
+                            Thêm phường/xã
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%">Mã</th>
+                                <th style="width: 22%">Tên phường/xã</th>
+                                <th style="width: 18%">Tỉnh/Thành</th>
+                                <th style="width: 12%">Vùng</th>
+                                <th style="width: 10%">Loại</th>
+                                <th style="width: 10%">Khu vực</th>
+                                <th style="width: 8%">Trạng thái</th>
+                                <th style="width: 10%">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wardsTableBody">
+                            <tr><td colspan="8" class="text-center">Đang tải dữ liệu...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="table-footer">
+                    <div class="table-info">
+                        Hiển thị <span id="wardDisplayCount">0</span> trên <span id="wardTotalCount">0</span> phường/xã
+                    </div>
+                    <div class="pagination" id="wardPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== REGION MODAL ========== -->
+    <div class="modal fade" id="regionModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-globe-asia"></i>
+                        <span id="regionModalTitle">Thêm Vùng miền</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="regionForm">
+                        <input type="hidden" id="regionId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Mã vùng <span class="text-danger">*</span></label>
+                            <select class="form-select" id="regionMaVung" required>
+                                <option value="">Chọn mã vùng</option>
+                                <option value="bac">bac</option>
+                                <option value="trung">trung</option>
+                                <option value="nam">nam</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tên vùng <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="regionTenVung" required placeholder="VD: Miền Bắc">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <textarea class="form-control" id="regionMoTa" rows="2" placeholder="Mô tả về vùng miền..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Trạng thái</label>
+                            <select class="form-select" id="regionTrangThai">
+                                <option value="1">Hoạt động</option>
+                                <option value="0">Không hoạt động</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="saveRegionBtn">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== PROVINCE MODAL ========== -->
+    <div class="modal fade" id="provinceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-city"></i>
+                        <span id="provinceModalTitle">Thêm Tỉnh/Thành phố</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="provinceForm">
+                        <input type="hidden" id="provinceId">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mã tỉnh <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="provinceMaTinh" required placeholder="VD: HN">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tên tỉnh/thành <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="provinceTenTinh" required placeholder="VD: Hà Nội">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Vùng miền <span class="text-danger">*</span></label>
+                                <select class="form-select" id="provinceVungId" required>
+                                    <option value="">Chọn vùng</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Thứ tự ưu tiên</label>
+                                <input type="number" class="form-control" id="provinceThuTu" value="0" min="0">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Trạng thái</label>
+                                <select class="form-select" id="provinceTrangThai">
+                                    <option value="1">Hoạt động</option>
+                                    <option value="0">Không hoạt động</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="provinceIsMajorCity">
+                                <label class="form-check-label" for="provinceIsMajorCity">
+                                    Thành phố lớn (HN, HCM, ĐN, HP, CT)
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="saveProvinceBtn">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== WARD MODAL ========== -->
+    <div class="modal fade" id="wardModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span id="wardModalTitle">Thêm Phường/Xã</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="wardForm">
+                        <input type="hidden" id="wardId">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mã phường/xã <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="wardMaPhuongXa" required placeholder="VD: HBT_01">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tên phường/xã <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="wardTenPhuongXa" required placeholder="VD: Phường Hoàn Kiếm">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Tỉnh/Thành <span class="text-danger">*</span></label>
+                                <select class="form-select" id="wardTinhThanhId" required>
+                                    <option value="">Chọn tỉnh/thành</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Loại <span class="text-danger">*</span></label>
+                                <select class="form-select" id="wardLoai" required>
+                                    <option value="">Chọn loại</option>
+                                    <option value="phuong">Phường</option>
+                                    <option value="xa">Xã</option>
+                                    <option value="thi_tran">Thị trấn</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Trạng thái</label>
+                                <select class="form-select" id="wardTrangThai">
+                                    <option value="1">Hoạt động</option>
+                                    <option value="0">Không hoạt động</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="wardIsInnerArea">
+                                <label class="form-check-label" for="wardIsInnerArea">
+                                    Khu vực nội thành (ảnh hưởng phí ship)
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="saveWardBtn">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="/css/diachi.css">
+<script src="/js/diachi.js"></script>

@@ -2254,65 +2254,168 @@
 
                 let result, productId, mongoDetailId;
 
-                // BƯỚC 1: UPLOAD ẢNH TRƯỚC (nếu có)
-                let hinhAnhArray = [];
-                let link_avatar = '';
-                let videoUrls = [];
+                // ============================================
+                // LUỒNG MỚI: SQL → MongoDB → Upload → Update
+                // ============================================
 
-                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
-                    try {
-                        console.log('🖼️ Starting image upload...');
-                        const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
-                        
-                        if (uploadResult.mainImageUrl) {
-                            hinhAnhArray.push(uploadResult.mainImageUrl);
-                            link_avatar = uploadResult.mainImageUrl;
-                            console.log('✅ Main image uploaded:', link_avatar);
-                        }
-                        if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
-                            hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
-                            console.log('✅ Additional images uploaded:', uploadResult.additionalImages.length);
-                        }
-                        
-                        console.log('✅ Final images array:', hinhAnhArray);
-                    } catch (uploadError) {
-                        console.error('❌ Lỗi upload ảnh:', uploadError);
-                        this.showError('Lỗi upload ảnh: ' + uploadError.message);
-                        // Vẫn tiếp tục tạo sản phẩm dù ảnh lỗi
-                    }
-                }
-
-                if (window.simpleImageUploadManager && window.simpleImageUploadManager.productVideos.length > 0) {
-                    try {
-                        console.log('🎬 Starting video upload...');
-                        videoUrls = await window.simpleImageUploadManager.uploadProductVideos();
-                        console.log('✅ Videos uploaded:', videoUrls);
-                    } catch (uploadError) {
-                        console.error('❌ Lỗi upload video:', uploadError);
-                        // Vẫn tiếp tục dù video lỗi
-                    }
-                }
-
-                // Cập nhật link_anh cho SQL
-                sqlData.link_anh = link_avatar;
-                console.log('📦 Final SQL Data:', sqlData);
-                console.log('🖼️ Final images for MongoDB:', hinhAnhArray);
-
-                // BƯỚC 2: XỬ LÝ SQL VÀ MONGODB
                 if (this.currentEditId) {
                     // 🟡 CẬP NHẬT SẢN PHẨM
                     productId = this.currentEditId;
-                    console.log('🔄 Updating Product ID:', productId);
-                    
                     mongoDetailId = document.getElementById('mongoDetailId').value;
-                    console.log('📝 MongoDB Detail ID:', mongoDetailId);
+                    console.log('🔄 Updating Product ID:', productId, 'MongoDB ID:', mongoDetailId);
+                    
+                    // BƯỚC 1: Upload ảnh/video nếu có
+                    let hinhAnhArray = [];
+                    let link_avatar = '';
+                    let videoUrls = [];
 
-                    // Cập nhật SQL trước
+                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
+                        try {
+                            console.log('🖼️ Starting image upload...');
+                            const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
+                            
+                            if (uploadResult.mainImageUrl) {
+                                hinhAnhArray.push(uploadResult.mainImageUrl);
+                                link_avatar = uploadResult.mainImageUrl;
+                                console.log('✅ Main image uploaded:', link_avatar);
+                            }
+                            if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
+                                hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
+                                console.log('✅ Additional images uploaded:', uploadResult.additionalImages.length);
+                            }
+                        } catch (uploadError) {
+                            console.error('❌ Lỗi upload ảnh:', uploadError);
+                            this.showError('Lỗi upload ảnh: ' + uploadError.message);
+                        }
+                    }
+
+                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productVideos.length > 0) {
+                        try {
+                            console.log('🎬 Starting video upload...');
+                            videoUrls = await window.simpleImageUploadManager.uploadProductVideos();
+                            console.log('✅ Videos uploaded:', videoUrls);
+                        } catch (uploadError) {
+                            console.error('❌ Lỗi upload video:', uploadError);
+                        }
+                    }
+
+                    // BƯỚC 2: Cập nhật SQL với link_anh
+                    sqlData.link_anh = link_avatar || sqlData.link_anh;
                     result = await ProductAPIService.updateProduct(productId, sqlData);
-                    console.log('✅ Product updated in SQL:', productId);
+                    console.log('✅ Product updated in SQL');
 
-                    // Chuẩn bị dữ liệu cho MongoDB
+                    // BƯỚC 3: Chuẩn bị dữ liệu cho MongoDB
                     const mongoUpdateData = {
+                        sql_product_id: productId,
+                        thong_so_ky_thuat: specsData,
+                        variants: variantsData,
+                        thong_tin_khac: additionalInfoData,
+                        video_links: videoLinksData,
+                        hinh_anh: hinhAnhArray,
+                        videos: videoUrls,
+                        link_avatar: link_avatar || '',
+                        mo_ta_chi_tiet: document.getElementById('productDescription').value.trim(),
+                        trang_thai: parseInt(document.getElementById('productStatus').value),
+                        san_pham_noi_bat: document.getElementById('productFeatured').checked,
+                        slug: Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku)
+                    };
+
+                    console.log('📤 MongoDB Update Data:', mongoUpdateData);
+
+                    // BƯỚC 4: Cập nhật hoặc tạo MongoDB
+                    if (mongoDetailId) {
+                        await ProductAPIService.updateProductMongoDetail(mongoDetailId, mongoUpdateData);
+                        console.log('✅ MongoDB document updated');
+                    } else {
+                        const mongoResult = await ProductAPIService.createProductMongoDetail(
+                            productId,
+                            specsData,
+                            document.getElementById('productDescription').value.trim(),
+                            Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
+                            hinhAnhArray,
+                            link_avatar || '',
+                            videoUrls,
+                            variantsData,
+                            videoLinksData,
+                            parseInt(document.getElementById('productStatus').value),
+                            document.getElementById('productFeatured').checked
+                        );
+                        mongoDetailId = mongoResult.data._id;
+                        console.log('✅ New MongoDB document created');
+
+                        await ProductAPIService.updateProduct(productId, {
+                            mongo_detail_id: mongoDetailId
+                        });
+                    }
+
+                } else {
+                    // 🟢 THÊM SẢN PHẨM MỚI - LUỒNG ĐÚNG
+                    
+                    // ============================================
+                    // BƯỚC 1: Tạo sản phẩm trong SQL (KHÔNG CÓ mongo_detail_id và link_anh)
+                    // ============================================
+                    console.log('📝 Step 1: Creating product in SQL (without mongo_detail_id and link_anh)...');
+                    
+                    // Loại bỏ mongo_detail_id và link_anh khỏi sqlData
+                    const sqlCreateData = { ...sqlData };
+                    delete sqlCreateData.mongo_detail_id;
+                    delete sqlCreateData.link_anh;
+                    
+                    console.log('📦 SQL Create Data:', sqlCreateData);
+                    result = await ProductAPIService.createProduct(sqlCreateData);
+                    
+                    if (!result.success || !result.product || !result.product.id) {
+                        throw new Error('Không thể tạo sản phẩm trong SQL');
+                    }
+                    
+                    productId = result.product.id;
+                    console.log('✅ Step 1 complete: Product created in SQL with ID:', productId);
+                    
+                    // ============================================
+                    // BƯỚC 2: Upload ảnh và video (sử dụng productId cho folder naming)
+                    // ============================================
+                    console.log('📝 Step 2: Uploading images and videos...');
+                    let hinhAnhArray = [];
+                    let link_avatar = '';
+                    let videoUrls = [];
+
+                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
+                        try {
+                            console.log('🖼️ Uploading images...');
+                            const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
+                            
+                            if (uploadResult.mainImageUrl) {
+                                hinhAnhArray.push(uploadResult.mainImageUrl);
+                                link_avatar = uploadResult.mainImageUrl;
+                                console.log('✅ Main image uploaded:', link_avatar);
+                            }
+                            if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
+                                hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
+                                console.log('✅ Additional images uploaded:', uploadResult.additionalImages.length);
+                            }
+                        } catch (uploadError) {
+                            console.error('❌ Lỗi upload ảnh:', uploadError);
+                            this.showError('Lỗi upload ảnh: ' + uploadError.message);
+                        }
+                    }
+
+                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productVideos.length > 0) {
+                        try {
+                            console.log('🎬 Uploading videos...');
+                            videoUrls = await window.simpleImageUploadManager.uploadProductVideos();
+                            console.log('✅ Videos uploaded:', videoUrls);
+                        } catch (uploadError) {
+                            console.error('❌ Lỗi upload video:', uploadError);
+                        }
+                    }
+                    
+                    console.log('✅ Step 2 complete: Media uploaded');
+                    
+                    // ============================================
+                    // BƯỚC 3: Tạo document MongoDB với đầy đủ dữ liệu
+                    // ============================================
+                    console.log('📝 Step 3: Creating MongoDB document with all data...');
+                    const mongoData = {
                         sql_product_id: productId,
                         thong_so_ky_thuat: specsData,
                         variants: variantsData,
@@ -2326,73 +2429,41 @@
                         san_pham_noi_bat: document.getElementById('productFeatured').checked,
                         slug: Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku)
                     };
-
-                    console.log('📤 MongoDB Update Data:', mongoUpdateData);
-
-                    if (mongoDetailId) {
-                        // Cập nhật document MongoDB hiện có
-                        await ProductAPIService.updateProductMongoDetail(mongoDetailId, mongoUpdateData);
-                        console.log('✅ MongoDB document updated:', mongoDetailId);
-                    } else {
-                        // Tạo document MongoDB mới
-                        const mongoResult = await ProductAPIService.createProductMongoDetail(
-                            productId,
-                            specsData,
-                            document.getElementById('productDescription').value.trim(),
-                            Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                            hinhAnhArray,
-                            link_avatar,
-                            videoUrls,
-                            variantsData,
-                            videoLinksData,
-                            parseInt(document.getElementById('productStatus').value),
-                            document.getElementById('productFeatured').checked
-                        );
-                        mongoDetailId = mongoResult.data._id;
-                        console.log('✅ New MongoDB document created:', mongoDetailId);
-
-                        // Cập nhật SQL với MongoDB ID
-                        await ProductAPIService.updateProduct(productId, {
-                            mongo_detail_id: mongoDetailId
-                        });
-                    }
-
-                } else {
-                    // 🟢 THÊM SẢN PHẨM MỚI
                     
-                    // Tạo sản phẩm trong SQL trước
-                    result = await ProductAPIService.createProduct(sqlData);
-                    if (result.success && result.product && result.product.id) {
-                        productId = result.product.id;
-                        console.log('✅ Product created in SQL:', productId);
-                        
-                        // Tạo document MongoDB
-                        const mongoResult = await ProductAPIService.createProductMongoDetail(
-                            productId,
-                            specsData,
-                            document.getElementById('productDescription').value.trim(),
-                            Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                            hinhAnhArray,
-                            link_avatar,
-                            videoUrls,
-                            variantsData,
-                            videoLinksData,
-                            parseInt(document.getElementById('productStatus').value),
-                            document.getElementById('productFeatured').checked
-                        );
-                        mongoDetailId = mongoResult.data._id;
-                        console.log('✅ MongoDB document created:', mongoDetailId);
-                        
-                        // Cập nhật SQL với MongoDB ID
-                        await ProductAPIService.updateProduct(productId, { 
-                            mongo_detail_id: mongoDetailId 
-                        });
-                    } else {
-                        throw new Error('Không nhận được ID sản phẩm sau khi tạo');
+                    const mongoResult = await ProductAPIService.createProductMongoDetail(
+                        productId,
+                        specsData,
+                        mongoData.mo_ta_chi_tiet,
+                        mongoData.slug,
+                        hinhAnhArray,
+                        link_avatar,
+                        videoUrls,
+                        variantsData,
+                        videoLinksData,
+                        mongoData.trang_thai,
+                        mongoData.san_pham_noi_bat
+                    );
+                    
+                    if (!mongoResult.success || !mongoResult.data || !mongoResult.data._id) {
+                        throw new Error('Không thể tạo MongoDB document');
                     }
+                    
+                    mongoDetailId = mongoResult.data._id;
+                    console.log('✅ Step 3 complete: MongoDB document created with _id:', mongoDetailId);
+                    
+                    // ============================================
+                    // BƯỚC 4: Cập nhật SQL với mongo_detail_id và link_anh
+                    // ============================================
+                    console.log('📝 Step 4: Updating SQL with mongo_detail_id and link_anh...');
+                    await ProductAPIService.updateProduct(productId, { 
+                        mongo_detail_id: mongoDetailId,
+                        link_anh: link_avatar
+                    });
+                    console.log('✅ Step 4 complete: SQL updated with MongoDB reference and main image link');
                 }
 
-                // BƯỚC 3: HIỂN THỊ THÔNG BÁO VÀ ĐÓNG MODAL
+                // BƯỚC CUỐI: HIỂN THỊ THÔNG BÁO VÀ ĐÓNG MODAL
+                console.log('🎉 All steps completed successfully!');
                 this.showSuccess(this.currentEditId ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công');
 
                 // Đóng modal và làm mới dữ liệu
@@ -6693,7 +6764,10 @@ class SimpleImageUploadManager {
 
     // Thêm phương thức xử lý video
     processProductVideos(files) {
+        console.log('🎬 Processing videos:', files);
         const validFiles = files.filter(file => this.validateVideoFile(file));
+        console.log('✅ Valid videos after filter:', validFiles);
+        
         const remainingSlots = 5 - this.productVideos.length; // Giới hạn 5 video
         
         if (validFiles.length > remainingSlots) {
@@ -6704,9 +6778,11 @@ class SimpleImageUploadManager {
         validFiles.forEach(file => {
             if (this.productVideos.length < 5) {
                 this.productVideos.push(file);
+                console.log(`➕ Added video: ${file.name}`);
             }
         });
 
+        console.log(`📊 Current productVideos array:`, this.productVideos);
         this.renderProductVideosPreview();
         console.log(`✅ Added ${validFiles.length} videos, total: ${this.productVideos.length}`);
     }
@@ -6717,49 +6793,78 @@ class SimpleImageUploadManager {
         const previewGrid = document.getElementById('productVideosPreviewGrid');
         const emptyState = document.getElementById('productVideosUploadArea');
 
-        if (!previewGrid || !previewSection || !emptyState) return;
+        if (!previewGrid || !previewSection || !emptyState) {
+            console.warn('⚠️ Video preview elements not found:', { previewGrid: !!previewGrid, previewSection: !!previewSection, emptyState: !!emptyState });
+            return;
+        }
 
+        console.log(`🎬 Rendering ${this.productVideos.length} product videos`);
         previewGrid.innerHTML = '';
 
         // Nếu không có video, hiện empty state
         if (this.productVideos.length === 0) {
+            console.log('📭 No videos - showing empty state');
             previewSection.classList.add('hidden');
+            previewSection.style.display = 'none';
             emptyState.classList.remove('hidden');
+            emptyState.style.display = '';
             return;
         }
 
         // Có video, hiện preview section và ẩn empty state
+        console.log('📹 Has videos - showing preview section');
         previewSection.classList.remove('hidden');
+        previewSection.style.display = 'block'; // Force show
         emptyState.classList.add('hidden');
+        emptyState.style.display = 'none'; // Force hide
 
         this.productVideos.forEach((file, index) => {
             const videoItem = document.createElement('div');
             videoItem.className = 'video-preview-item';
+            videoItem.style.position = 'relative';
+            videoItem.style.marginBottom = '10px';
+            videoItem.style.padding = '10px';
+            videoItem.style.border = '1px solid #e0e0e0';
+            videoItem.style.borderRadius = '8px';
+            videoItem.style.backgroundColor = '#f9f9f9';
             
             if (file instanceof File) {
                 // Video mới được chọn
+                console.log(`📹 Creating preview for new video file: ${file.name}`);
+                
                 const videoElement = document.createElement('video');
                 videoElement.controls = true;
                 videoElement.preload = 'metadata';
-                videoElement.style.maxWidth = '100%';
-                videoElement.style.maxHeight = '120px';
+                videoElement.style.width = '100%';
+                videoElement.style.maxHeight = '200px';
+                videoElement.style.borderRadius = '8px';
+                videoElement.style.backgroundColor = '#000';
                 
                 const source = document.createElement('source');
                 source.src = URL.createObjectURL(file);
+                source.type = file.type;
                 videoElement.appendChild(source);
 
                 const videoInfo = document.createElement('div');
                 videoInfo.className = 'video-info';
+                videoInfo.style.marginTop = '8px';
+                videoInfo.style.padding = '5px';
                 videoInfo.innerHTML = `
-                    <div class="video-name">${file.name}</div>
-                    <div class="video-size">${this.formatFileSize(file.size)}</div>
+                    <div class="video-name" style="font-size: 13px; font-weight: 500; color: #333; margin-bottom: 3px;">${file.name}</div>
+                    <div class="video-size" style="font-size: 12px; color: #666;">${this.formatFileSize(file.size)}</div>
                 `;
 
                 const removeBtn = document.createElement('button');
-                removeBtn.className = 'btn-delete-video';
+                removeBtn.className = 'btn btn-sm btn-danger';
                 removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
                 removeBtn.title = 'Xóa video';
+                removeBtn.type = 'button';
+                removeBtn.style.position = 'absolute';
+                removeBtn.style.top = '10px';
+                removeBtn.style.right = '10px';
+                removeBtn.style.zIndex = '10';
                 removeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     this.deleteProductVideo(index);
                 });
@@ -6775,6 +6880,10 @@ class SimpleImageUploadManager {
 
             previewGrid.appendChild(videoItem);
         });
+
+        console.log('✅ Video preview rendered successfully');
+        console.log('📊 Preview section display:', previewSection.style.display);
+        console.log('📊 Preview grid children count:', previewGrid.children.length);
     }
 
     // Thêm phương thức xóa video
@@ -6936,18 +7045,26 @@ class SimpleImageUploadManager {
         const maxSize = 50 * 1024 * 1024; // 50MB
         const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime', 'video/webm'];
 
-        if (!file) return false;
+        console.log('🔍 Validating video:', { name: file.name, type: file.type, size: file.size });
+
+        if (!file) {
+            console.error('❌ No file provided');
+            return false;
+        }
 
         if (!allowedTypes.includes(file.type)) {
-            this.showError('Chỉ chấp nhận file video định dạng MP4, MOV, AVI hoặc WebM');
+            console.error('❌ Invalid video type:', file.type);
+            this.showError(`Chỉ chấp nhận file video định dạng MP4, MOV, AVI hoặc WebM. File của bạn: ${file.type}`);
             return false;
         }
 
         if (file.size > maxSize) {
-            this.showError('Kích thước file video không được vượt quá 50MB');
+            console.error('❌ File too large:', file.size);
+            this.showError(`Kích thước file video không được vượt quá 50MB. File của bạn: ${this.formatFileSize(file.size)}`);
             return false;
         }
 
+        console.log('✅ Video validated successfully');
         return true;
     }
 
@@ -8584,7 +8701,7 @@ class VideoLinksManager {
     init() {
         console.log('🎬 Initializing VideoLinksManager...');
         this.bindEvents();
-        this.renderEmpty();
+        this.render(); // Gọi render thay vì renderEmpty để xử lý đúng logic
     }
 
     bindEvents() {
@@ -8712,19 +8829,32 @@ class VideoLinksManager {
         const container = document.getElementById('videoLinksList');
         const emptyState = document.getElementById('videoLinksEmpty');
 
-        if (!container) return;
-
-        if (this.videoLinks.length === 0) {
-            container.innerHTML = '';
-            if (emptyState) {
-                emptyState.classList.remove('hidden');
-            }
+        if (!container) {
+            console.warn('⚠️ Video links container not found');
             return;
         }
 
+        console.log(`🔗 Rendering ${this.videoLinks.length} video links`);
+
+        // Ẩn empty state nếu có links, hiện nếu không có
+        if (this.videoLinks.length === 0) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+                emptyState.style.display = ''; // Reset inline style
+            }
+            console.log('📭 No links - showing empty state');
+            return;
+        }
+
+        // Có links - hiện container, ẩn empty state
+        container.style.display = 'block';
         if (emptyState) {
             emptyState.classList.add('hidden');
+            emptyState.style.display = 'none'; // Force hide with inline style
         }
+        console.log('✅ Has links - hiding empty state');
 
         container.innerHTML = this.videoLinks.map(link => {
             const icon = this.getPlatformIcon(link.platform);
@@ -8778,11 +8908,15 @@ class VideoLinksManager {
         
         if (!linksData || !Array.isArray(linksData)) {
             console.warn('⚠️ Invalid video links data:', linksData);
+            this.videoLinks = [];
+            this.render(); // Render empty state
             return;
         }
         
         if (linksData.length === 0) {
             console.log('ℹ️ Video links data is empty array');
+            this.videoLinks = [];
+            this.render(); // Render empty state
             return;
         }
         
