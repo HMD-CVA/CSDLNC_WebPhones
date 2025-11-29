@@ -1,13 +1,20 @@
 <div id="container">
-  <div class="banner">
-    <div class="banner-track">
-      <img src="/image/img1.webp" alt="Ad 1">
-      <img src="/image/img2.webp" alt="Ad 2">
-      <img src="/image/img3.webp" alt="Ad 3">
-      <img src="/image/img4.webp" alt="Ad 4">
-      <img src="/image/img1.webp" alt="Ad 1">
-      <img src="/image/img2.webp" alt="Ad 2">
+  <div class="banner-container">
+    <div class="banner">
+      <button class="banner-btn banner-prev" id="bannerPrev">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="banner-track" id="bannerTrack">
+        <img src="/image/img1.webp" alt="Ad 1">
+        <img src="/image/img2.webp" alt="Ad 2">
+        <img src="/image/img3.webp" alt="Ad 3">
+        <img src="/image/img4.webp" alt="Ad 4">
+      </div>
+      <button class="banner-btn banner-next" id="bannerNext">
+        <i class="fas fa-chevron-right"></i>
+      </button>
     </div>
+    <div class="banner-dots" id="bannerDots"></div>
   </div>
 
   <div id="wrapper">
@@ -90,8 +97,64 @@
 </div>
 
 <script>
-  // JavaScript cho chức năng sản phẩm
+  // JavaScript cho chức năng banner và sản phẩm
   document.addEventListener('DOMContentLoaded', function () {
+    // Banner Slider Logic
+    const bannerTrack = document.getElementById('bannerTrack');
+    const bannerPrev = document.getElementById('bannerPrev');
+    const bannerNext = document.getElementById('bannerNext');
+    const bannerDotsContainer = document.getElementById('bannerDots');
+    const images = bannerTrack.querySelectorAll('img');
+    const totalImages = images.length;
+    let currentIndex = 0;
+
+    // Clear and create dots
+    bannerDotsContainer.innerHTML = '';
+    for (let i = 0; i < totalImages; i++) {
+      const dot = document.createElement('div');
+      dot.classList.add('banner-dot');
+      if (i === 0) dot.classList.add('active');
+      dot.setAttribute('data-index', i);
+      dot.addEventListener('click', function() {
+        goToSlide(parseInt(this.getAttribute('data-index')));
+      });
+      bannerDotsContainer.appendChild(dot);
+    }
+
+    function updateSlider() {
+      // Update track position
+      const offset = -currentIndex * 100;
+      bannerTrack.style.transform = `translateX(${offset}%)`;
+      
+      // Update dots
+      const allDots = bannerDotsContainer.querySelectorAll('.banner-dot');
+      allDots.forEach((dot, index) => {
+        if (index === currentIndex) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+
+    function goToSlide(index) {
+      currentIndex = index;
+      updateSlider();
+    }
+
+    function nextSlide() {
+      currentIndex = (currentIndex + 1) % totalImages;
+      updateSlider();
+    }
+
+    function prevSlide() {
+      currentIndex = (currentIndex - 1 + totalImages) % totalImages;
+      updateSlider();
+    }
+
+    bannerNext.addEventListener('click', nextSlide);
+    bannerPrev.addEventListener('click', prevSlide);
+
     // Lấy tất cả các nút "XEM NHANH"
     const viewButtons = document.querySelectorAll('.product-view-btn');
     const modal = document.getElementById('quickviewModal');

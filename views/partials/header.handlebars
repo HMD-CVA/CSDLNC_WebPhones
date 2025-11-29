@@ -1,36 +1,178 @@
-<nav class="navbar navbar-expand-lg fixed-top">
-  <div class="container-fluid">
-    <a class="navbar-brand me-auto" href="#">NDK</a>
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">NNice</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body">
-        <ul class="navbar-nav justify-content-center flex-grow-1 pe-3">
-          <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="#">Trang chủ</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link mx-lg-2" href="#">Dịch vụ</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link mx-lg-2" href="#">Giới thiệu</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link mx-lg-2" href="#">Sản phẩm</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link mx-lg-2" href="#">Liên hệ</a>
-          </li>
-        </ul>
-      </div>
+<!-- CellphoneS Style Header - One Line Compact -->
+<header class="cps-header">
+    <div class="container-fluid">
+        <div class="row align-items-center py-2">
+            <!-- Logo -->
+            <div class="col-auto">
+                <a href="/" class="cps-logo">
+                    <img src="/icon/logo.png" alt="WebPhones" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                    <span class="cps-logo-text">WebPhones</span>
+                </a>
+            </div>
+
+            <!-- Location Selector -->
+            <div class="col-auto d-none d-lg-block">
+                <div class="cps-location">
+                    <i class="fas fa-map-marker-alt text-danger"></i>
+                    <select id="locationSelect" class="form-select form-select-sm">
+                        <optgroup label="Miền Bắc">
+                            <option value="hanoi" selected>Hà Nội</option>
+                            <option value="haiphong">Hải Phòng</option>
+                            <option value="quangninh">Quảng Ninh</option>
+                            <option value="thaibinh">Thái Bình</option>
+                            <option value="namdinh">Nam Định</option>
+                        </optgroup>
+                        <optgroup label="Miền Trung">
+                            <option value="danang">Đà Nẵng</option>
+                            <option value="hue">Huế</option>
+                            <option value="quangnam">Quảng Nam</option>
+                            <option value="nhatrang">Nha Trang</option>
+                            <option value="quynhon">Quy Nhơn</option>
+                        </optgroup>
+                        <optgroup label="Miền Nam">
+                            <option value="hochiminh">Hồ Chí Minh</option>
+                            <option value="binhduong">Bình Dương</option>
+                            <option value="dongnai">Đồng Nai</option>
+                            <option value="cantho">Cần Thơ</option>
+                            <option value="vungtau">Vũng Tàu</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Categories Dropdown -->
+            <div class="col-auto">
+                <div class="dropdown cps-categories-dropdown">
+                    <button class="btn btn-danger btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-bars"></i>
+                        <span class="d-none d-md-inline ms-2">Danh mục</span>
+                    </button>
+                    <ul class="dropdown-menu cps-mega-dropdown">
+                        <li class="row g-0">
+                            <div class="col-md-3">
+                                <h6 class="dropdown-header"><i class="fas fa-mobile-alt"></i> Điện thoại</h6>
+                                <a class="dropdown-item" href="/category/iphone">iPhone</a>
+                                <a class="dropdown-item" href="/category/samsung">Samsung</a>
+                                <a class="dropdown-item" href="/category/xiaomi">Xiaomi</a>
+                                <a class="dropdown-item" href="/category/oppo">OPPO</a>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="dropdown-header"><i class="fas fa-laptop"></i> Laptop</h6>
+                                <a class="dropdown-item" href="/category/macbook">MacBook</a>
+                                <a class="dropdown-item" href="/category/dell">Dell</a>
+                                <a class="dropdown-item" href="/category/hp">HP</a>
+                                <a class="dropdown-item" href="/category/asus">Asus</a>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="dropdown-header"><i class="fas fa-tablet-alt"></i> Tablet</h6>
+                                <a class="dropdown-item" href="/category/ipad">iPad</a>
+                                <a class="dropdown-item" href="/category/samsung-tablet">Samsung Tab</a>
+                            </div>
+                            <div class="col-md-3">
+                                <h6 class="dropdown-header"><i class="fas fa-headphones"></i> Phụ kiện</h6>
+                                <a class="dropdown-item" href="/category/earphone">Tai nghe</a>
+                                <a class="dropdown-item" href="/category/charger">Sạc & Cáp</a>
+                                <a class="dropdown-item" href="/category/case">Ốp lưng</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="col">
+                <div class="cps-search-wrapper position-relative">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Bạn cần tìm gì?" autocomplete="off">
+                        <button class="btn btn-danger" type="button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <!-- Search Suggestions -->
+                    <div class="cps-search-suggestions position-absolute w-100 d-none" id="searchSuggestions">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-2">
+                                <small class="text-muted d-block mb-1">Tìm kiếm gần đây</small>
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    <span class="badge bg-light text-dark cps-history-item">iPhone 15</span>
+                                    <span class="badge bg-light text-dark cps-history-item">Samsung S24</span>
+                                </div>
+                                <small class="text-muted d-block mb-1">Từ khóa phổ biến</small>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <span class="badge bg-danger cps-trending-item">iPhone 15 Pro</span>
+                                    <span class="badge bg-danger cps-trending-item">Galaxy S24 Ultra</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hotline -->
+            <div class="col-auto d-none d-lg-block">
+                <a href="tel:1800.2097" class="text-decoration-none">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-phone-alt text-danger me-2"></i>
+                        <div>
+                            <small class="text-muted d-block" style="font-size: 10px;">Gọi mua hàng</small>
+                            <strong class="text-dark" style="font-size: 13px;">1800.2097</strong>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- User Account -->
+            <div class="col-auto">
+                <div class="dropdown cps-user-dropdown">
+                    <button class="btn btn-link text-decoration-none p-0" type="button" data-bs-toggle="dropdown">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user text-danger me-2"></i>
+                            <div class="text-start d-none d-md-block">
+                                <small class="text-muted d-block" style="font-size: 10px;">Tài khoản</small>
+                                <strong class="text-dark" style="font-size: 13px;" id="userDisplayName">Đăng nhập</strong>
+                            </div>
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="cps-user-not-logged">
+                            <a class="dropdown-item" href="#" id="btnLogin">
+                                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
+                            </a>
+                            <a class="dropdown-item" href="#" id="btnRegister">
+                                <i class="fas fa-user-plus me-2"></i>Đăng ký
+                            </a>
+                        </li>
+                        <li class="cps-user-logged d-none">
+                            <a class="dropdown-item" href="/profile">
+                                <i class="fas fa-user-circle me-2"></i>Thông tin tài khoản
+                            </a>
+                            <a class="dropdown-item" href="/orders">
+                                <i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi
+                            </a>
+                            <a class="dropdown-item" href="/wishlist">
+                                <i class="fas fa-heart me-2"></i>Yêu thích
+                            </a>
+                            <hr class="dropdown-divider">
+                            <a class="dropdown-item text-danger" href="#" id="btnLogout">
+                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Cart -->
+            <div class="col-auto">
+                <a href="/cart" class="position-relative text-decoration-none">
+                    <i class="fas fa-shopping-cart text-danger fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="font-size: 9px;">
+                        0
+                    </span>
+                    <div class="d-none d-md-block">
+                        <small class="text-muted d-block" style="font-size: 10px;">Giỏ hàng</small>
+                    </div>
+                </a>
+            </div>
+        </div>
     </div>
-    <a href="#" class="login-button"><img src="/icon/shopping-cart.png" alt="Cart"
-        style="width: 30px; height: 30px;"></a>
-    <button class="navbar-toggler pe-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar"
-      aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-  </div>
-</nav>
+</header>

@@ -1,0 +1,322 @@
+/* CellphoneS Header - One Line Compact with Bootstrap */
+:root {
+    --cps-red: #d70018;
+    --cps-red-dark: #b30015;
+    --cps-text-dark: #333;
+    --cps-text-gray: #666;
+}
+
+.cps-header {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.cps-header .container-fluid {
+    max-width: 1400px;
+}
+
+/* Location Selector */
+.cps-location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cps-location .form-select {
+    border: 1px solid #dee2e6;
+    font-size: 13px;
+    padding: 4px 28px 4px 8px;
+    width: auto;
+    min-width: 140px;
+}
+
+.cps-location .form-select:focus {
+    border-color: var(--cps-red);
+    box-shadow: 0 0 0 0.2rem rgba(215, 0, 24, 0.15);
+}
+
+/* Logo */
+.cps-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    gap: 8px;
+}
+
+.cps-logo img {
+    height: 36px;
+    width: auto;
+}
+
+.cps-logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cps-red);
+    display: none;
+}
+
+.cps-logo img[style*="display: none"] + .cps-logo-text {
+    display: inline-block;
+}
+
+/* Categories Dropdown */
+.cps-categories-dropdown .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.cps-categories-dropdown .btn i {
+    font-size: 14px;
+}
+
+.cps-mega-dropdown {
+    min-width: 700px;
+    padding: 15px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-top: 8px;
+}
+
+.cps-mega-dropdown .dropdown-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+}
+
+.cps-mega-dropdown .dropdown-header i {
+    color: var(--cps-red);
+    margin-right: 6px;
+}
+
+.cps-mega-dropdown .dropdown-item {
+    font-size: 13px;
+    padding: 6px 12px;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.cps-mega-dropdown .dropdown-item:hover {
+    background: #fff0f1;
+    color: var(--cps-red);
+    padding-left: 18px;
+}
+
+/* Search Bar */
+.cps-search-wrapper .input-group {
+    max-width: 500px;
+}
+
+.cps-search-wrapper .form-control {
+    border: 2px solid var(--cps-red);
+    border-right: none;
+    font-size: 13px;
+    padding: 8px 12px;
+}
+
+.cps-search-wrapper .form-control:focus {
+    border-color: var(--cps-red);
+    box-shadow: none;
+}
+
+.cps-search-wrapper .btn {
+    border: 2px solid var(--cps-red);
+    border-left: none;
+    padding: 6px 16px;
+}
+
+.cps-search-wrapper .btn:hover {
+    background: var(--cps-red-dark);
+    border-color: var(--cps-red-dark);
+}
+
+/* Search Suggestions */
+.cps-search-suggestions {
+    top: calc(100% + 5px);
+    left: 0;
+    z-index: 1050;
+}
+
+.cps-search-suggestions .card {
+    border-radius: 8px;
+}
+
+.cps-search-suggestions small {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.cps-search-suggestions .badge {
+    font-size: 11px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cps-search-suggestions .badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.cps-history-item {
+    border: 1px solid #ddd !important;
+}
+
+.cps-trending-item {
+    background: var(--cps-red) !important;
+}
+
+/* Hotline */
+.cps-header a[href^="tel:"] {
+    color: inherit;
+}
+
+.cps-header a[href^="tel:"] i {
+    font-size: 20px;
+}
+
+.cps-header a[href^="tel:"] small {
+    line-height: 1;
+}
+
+.cps-header a[href^="tel:"] strong {
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* User Dropdown */
+.cps-user-dropdown .btn {
+    border: none;
+    background: transparent;
+}
+
+.cps-user-dropdown .btn:hover {
+    background: transparent;
+}
+
+.cps-user-dropdown i.fa-user {
+    font-size: 20px;
+}
+
+.cps-user-dropdown small,
+.cps-user-dropdown strong {
+    line-height: 1.2;
+}
+
+.cps-user-dropdown .dropdown-menu {
+    min-width: 220px;
+    padding: 8px 0;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-top: 8px;
+}
+
+.cps-user-dropdown .dropdown-item {
+    font-size: 13px;
+    padding: 8px 16px;
+    transition: all 0.2s;
+}
+
+.cps-user-dropdown .dropdown-item:hover {
+    background: #fff0f1;
+    color: var(--cps-red);
+}
+
+.cps-user-dropdown .dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Cart */
+.cps-header a[href="/cart"] {
+    color: inherit;
+}
+
+.cps-header a[href="/cart"] i {
+    font-size: 24px;
+}
+
+.cps-header a[href="/cart"] .badge {
+    font-size: 10px;
+    padding: 2px 5px;
+    min-width: 18px;
+}
+
+.cps-header a[href="/cart"] small {
+    font-size: 10px;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+/* Responsive Design */
+@media (max-width: 991.98px) {
+    .cps-logo-text {
+        display: inline-block;
+    }
+    
+    .cps-search-wrapper .input-group {
+        max-width: 100%;
+    }
+    
+    .cps-mega-dropdown {
+        min-width: auto;
+        max-width: 90vw;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .cps-header .py-2 {
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+    
+    .cps-logo img {
+        height: 30px;
+    }
+    
+    .cps-logo-text {
+        font-size: 16px;
+    }
+    
+    .cps-categories-dropdown .btn span {
+        display: none;
+    }
+    
+    .cps-search-wrapper .form-control {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    .cps-mega-dropdown {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        transform: none !important;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .cps-mega-dropdown .row {
+        flex-direction: column;
+    }
+    
+    .cps-mega-dropdown .col-md-3 {
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .cps-header a[href="/cart"] i {
+        font-size: 20px;
+    }
+    
+    .cps-user-dropdown i.fa-user {
+        font-size: 18px;
+    }
+}
