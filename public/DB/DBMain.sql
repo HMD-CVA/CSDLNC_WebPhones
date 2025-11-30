@@ -116,16 +116,6 @@ CREATE TABLE users (
     ho_ten NVARCHAR(100),
     so_dien_thoai NVARCHAR(20),
     
-    -- Phân quyền
-    vai_tro NVARCHAR(20) NOT NULL DEFAULT N'khach_hang' CHECK (vai_tro IN (N'khach_hang', N'nhan_vien', N'quan_ly', N'admin')),
-    
-    -- Thông tin bổ sung cho nhân viên
-    ma_nhan_vien NVARCHAR(20) UNIQUE NULL, -- Chỉ có khi vai_tro != 'khach_hang'
-    chuc_vu NVARCHAR(100) NULL, -- Chức vụ nhân viên
-    phong_ban NVARCHAR(100) NULL, -- Phòng ban
-    ngay_vao_lam DATETIME2 NULL, -- Ngày bắt đầu làm việc
-    luong_co_ban DECIMAL(15,2) NULL, -- Lương cơ bản
-    
     vung_id NVARCHAR(10) NOT NULL DEFAULT N'bac' CHECK (vung_id IN (N'bac', N'trung', N'nam')),
     mongo_profile_id NVARCHAR(50) NULL,
     trang_thai BIT DEFAULT 1,

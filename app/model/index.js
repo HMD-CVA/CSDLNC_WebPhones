@@ -11,6 +11,9 @@ const productDetailSchema = new mongoose.Schema({
 });
 const Data_ProductDetail_Model = mongoose.model('ProductDetail', productDetailSchema);
 
+
+
+
 const flashSaleDetailSchema = new mongoose.Schema({
   _id: { type: String, required: true }, // UUID từ SQL flash_sales.id
   banner_images: [{ type: String }], // Mảng URL ảnh banner
@@ -80,6 +83,14 @@ flashSaleDetailSchema.statics.deleteByFlashSaleId = async function(flashSaleId) 
 
 // MongoDB Models (tạo sau khi đã định nghĩa methods)
 const Data_FlashSaleDetail_Model = mongoose.model('FlashSaleDetail', flashSaleDetailSchema);
+
+const userDetailSchema = new mongoose.Schema({
+  sql_user_id: { type: String, required: true, unique: true },
+}, {
+  strict: false, // Cho phép lưu các trường không được định nghĩa
+  timestamps: true
+});
+const Data_UserDetail_Model = mongoose.model('UserDetail', userDetailSchema);
 
 // ==================== SQL SERVER MODELS ====================
 
@@ -1478,6 +1489,249 @@ class SQLWardModel {
   }
 }
 
+// Model cho User trong SQL Server
+class SQLUserModel {
+  static async findAll(filters = {}) {
+    try {
+      const request = new sql.Request();
+      let whereConditions = [];
+      
+      if (filters.status !== undefined) {
+        request.input('status', sql.Bit, filters.status);
+        whereConditions.push('u.trang_thai = @status');
+      }
+      
+      const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+      
+      const query = `
+        SELECT 
+          u.id,
+          u.ho_ten as name,
+          u.email,
+          u.so_dien_thoai as phone,
+          u.vung_id,
+          u.mongo_profile_id,
+          u.trang_thai as status,
+          u.ngay_dang_ky as created_at,
+          u.ngay_cap_nhat as updated_at
+        FROM users u
+        ${whereClause}
+        ORDER BY u.ngay_dang_ky DESC
+      `;
+      
+      const result = await request.query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL User findAll Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            u.id,
+            u.ho_ten as name,
+            u.email,
+            u.so_dien_thoai as phone,
+            u.vung_id,
+            u.mongo_profile_id,
+            u.trang_thai as status,
+            u.ngay_dang_ky as created_at,
+            u.ngay_cap_nhat as updated_at
+          FROM users u
+          WHERE u.id = @id
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL User findById Error:', error);
+      throw error;
+    }
+  }
+
+  static async findByEmail(email) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('email', sql.NVarChar(255), email)
+        .query(`
+          SELECT 
+            u.id,
+            u.ho_ten as name,
+            u.email,
+            u.so_dien_thoai as phone,
+            u.vung_id,
+            u.trang_thai as status,
+            u.ngay_dang_ky as created_at,
+            u.ngay_cap_nhat as updated_at
+          FROM users u
+          WHERE u.email = @email
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL User findByEmail Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(userData) {
+    try {
+      const request = new sql.Request();
+      
+      request.input('ho_ten', sql.NVarChar(100), userData.name);
+      request.input('email', sql.NVarChar(255), userData.email);
+      request.input('so_dien_thoai', sql.NVarChar(20), userData.phone || null);
+      request.input('mat_khau', sql.NVarChar(255), userData.password); // Should be hashed
+      request.input('vung_id', sql.NVarChar(10), userData.vung_id || 'bac');
+      request.input('trang_thai', sql.Bit, userData.status !== undefined ? userData.status : 1);
+      
+      const result = await request.query(`
+        INSERT INTO users (ho_ten, email, so_dien_thoai, mat_khau, vung_id, trang_thai)
+        OUTPUT INSERTED.id, INSERTED.ho_ten as name, INSERTED.email, 
+               INSERTED.so_dien_thoai as phone, INSERTED.vung_id,
+               INSERTED.trang_thai as status, INSERTED.ngay_dang_ky as created_at
+        VALUES (@ho_ten, @email, @so_dien_thoai, @mat_khau, @vung_id, @trang_thai)
+      `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL User create Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Email đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async update(id, updateData) {
+    try {
+      const request = new sql.Request();
+      
+      request.input('id', sql.UniqueIdentifier, id);
+      request.input('ho_ten', sql.NVarChar(100), updateData.name);
+      request.input('email', sql.NVarChar(255), updateData.email);
+      request.input('so_dien_thoai', sql.NVarChar(20), updateData.phone || null);
+      request.input('vung_id', sql.NVarChar(10), updateData.vung_id || 'bac');
+      request.input('trang_thai', sql.Bit, updateData.status);
+      request.input('updated_at', sql.DateTime2, new Date());
+      
+      let passwordUpdate = '';
+      if (updateData.password) {
+        request.input('mat_khau', sql.NVarChar(255), updateData.password);
+        passwordUpdate = ', mat_khau = @mat_khau';
+      }
+      
+      let mongoProfileUpdate = '';
+      if (updateData.mongo_profile_id) {
+        request.input('mongo_profile_id', sql.NVarChar(50), updateData.mongo_profile_id);
+        mongoProfileUpdate = ', mongo_profile_id = @mongo_profile_id';
+      }
+      
+      const query = `
+        UPDATE users 
+        SET ho_ten = @ho_ten,
+            email = @email,
+            so_dien_thoai = @so_dien_thoai,
+            vung_id = @vung_id,
+            trang_thai = @trang_thai,
+            ngay_cap_nhat = @updated_at
+            ${passwordUpdate}
+            ${mongoProfileUpdate}
+        WHERE id = @id;
+        
+        SELECT 
+          id,
+          ho_ten as name,
+          email,
+          so_dien_thoai as phone,
+          vung_id,
+          mongo_profile_id,
+          trang_thai as status,
+          ngay_dang_ky as created_at,
+          ngay_cap_nhat as updated_at
+        FROM users WHERE id = @id;
+      `;
+      
+      const result = await request.query(query);
+      
+      if (!result.recordset || result.recordset.length === 0) {
+        throw new Error('Không tìm thấy người dùng');
+      }
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL User update Error:', error);
+      if (error.message && error.message.includes('UNIQUE')) {
+        throw new Error('Email đã tồn tại');
+      }
+      throw error;
+    }
+  }
+
+  static async updateStatus(id, status) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .input('status', sql.Bit, status)
+        .input('updated_at', sql.DateTime2, new Date())
+        .query(`
+          UPDATE users 
+          SET trang_thai = @status,
+              ngay_cap_nhat = @updated_at
+          WHERE id = @id;
+          
+          SELECT 
+            id,
+            ho_ten as name,
+            email,
+            so_dien_thoai as phone,
+            vai_tro as role,
+            trang_thai as status,
+            ngay_dang_ky as created_at,
+            ngay_cap_nhat as updated_at
+          FROM users WHERE id = @id;
+        `);
+      
+      if (!result.recordset || result.recordset.length === 0) {
+        throw new Error('Không tìm thấy người dùng');
+      }
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL User updateStatus Error:', error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      
+      // Soft delete - set status to 0
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .input('updated_at', sql.DateTime2, new Date())
+        .query(`
+          UPDATE users 
+          SET trang_thai = 0,
+              ngay_cap_nhat = @updated_at
+          WHERE id = @id;
+          
+          SELECT @@ROWCOUNT as affected;
+        `);
+      
+      return result.recordset[0].affected > 0;
+    } catch (error) {
+      console.error('SQL User delete Error:', error);
+      throw error;
+    }
+  }
+}
+
 // ==================== EXPORT ALL MODELS ====================
 
 export default {
@@ -1497,7 +1751,8 @@ export default {
   // Hoặc export theo nhóm để dễ sử dụng
   Mongo: {
     ProductDetail: Data_ProductDetail_Model, 
-    FlashSaleDetail: Data_FlashSaleDetail_Model
+    FlashSaleDetail: Data_FlashSaleDetail_Model,
+    UserDetail: Data_UserDetail_Model
   },
   
   SQL: {
@@ -1508,6 +1763,7 @@ export default {
     FlashSaleItem: SQLFlashSaleItemModel,
     Region: SQLRegionModel,
     Province: SQLProvinceModel,
-    Ward: SQLWardModel
+    Ward: SQLWardModel,
+    User: SQLUserModel
   }
 };

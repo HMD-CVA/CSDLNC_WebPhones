@@ -271,7 +271,7 @@
                                                 <button class="pagination-btn" id="brandsPrevPage" disabled>
                                                     <i class="fas fa-chevron-left"></i>
                                                 </button>
-                                                <span class="pagination-info">Trang 1 của 1</span>
+                                                <span class="pagination-info">Trang 1/1</span>
                                                 <button class="pagination-btn" id="brandsNextPage" disabled>
                                                     <i class="fas fa-chevron-right"></i>
                                                 </button>
@@ -492,7 +492,7 @@
                                                 <button class="pagination-btn" id="categoriesPrevPage" disabled>
                                                     <i class="fas fa-chevron-left"></i>
                                                 </button>
-                                                <span class="pagination-info">Trang 1 của 1</span>
+                                                <span class="pagination-info">Trang 1/1</span>
                                                 <button class="pagination-btn" id="categoriesNextPage" disabled>
                                                     <i class="fas fa-chevron-right"></i>
                                                 </button>
@@ -549,7 +549,6 @@
                             <th class="col-brand">Thương hiệu</th>
                             <th class="col-status">Trạng thái</th>
                             {{!-- <th class="col-featured">Nổi bật</th> --}}
-                            <th class="col-specs">Thông số</th>
                             <th class="col-actions">Thao tác</th>
                         </tr>
                     </thead>
@@ -597,12 +596,6 @@
                                 <i class="far fa-star"></i>
                                 {{/if}}
                             </td> --}}
-                            <td class="col-specs">
-                                <button class="btn-view-specs" data-id="{{this.id}}" data-name="{{this.ten_san_pham}}">
-                                    <i class="fa fa-info-circle"></i>
-                                    {{!-- Xem thông số --}}
-                                </button>
-                            </td>
                             <td class="col-actions">
                                 <div class="action-buttons">
                                     <button class="btn-action btn-edit" data-id="{{this.id}}" title="Chỉnh sửa">
@@ -636,7 +629,7 @@
                     <button class="pagination-btn" id="prevPage" disabled>
                         <i class="fas fa-chevron-left"></i>
                     </button>
-                    <span class="pagination-info">Trang 1 của 1</span>
+                    <span class="pagination-info">Trang 1/1</span>
                     <button class="pagination-btn" id="nextPage" disabled>
                         <i class="fas fa-chevron-right"></i>
                     </button>
@@ -1028,107 +1021,7 @@
     </div>
 
     <!-- Technical Specifications Modal -->
-    <div class="modal fade modal-premium" id="specsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-cogs"></i>
-                        <span id="specsModalTitle">Thông số kỹ thuật</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="specs-modal-content">
-                        <div class="specs-product-info">
-                            <h6 id="specsProductName">Sản phẩm: </h6>
-                            <p class="specs-product-sku" id="specsProductSku"></p>
-                        </div>
 
-                        <div class="specs-list-container">
-                            <div class="specs-list-header">
-                                <h6 class="specs-list-title">Thông số kỹ thuật:</h6>
-                                <button class="btn btn-primary" id="addNewSpecBtn">
-                                    <i class="fas fa-plus"></i> Thêm thông số
-                                </button>
-                            </div>
-
-                            <div class="specs-table-container">
-                                <table class="specs-table">
-                                    <thead>
-                                        <tr>
-                                            <th width="25%">Thông số</th>
-                                            <th width="60%">Giá trị</th>
-                                            <th width="15%">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="specsTableBody">
-                                        <!-- Dynamic specs will be loaded here -->
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div class="no-specs-message" id="noSpecsMessage" style="display: none;">
-                                <div class="no-specs-icon">
-                                    <i class="fas fa-info-circle"></i>
-                                </div>
-                                <p>Chưa có thông số kỹ thuật cho sản phẩm này</p>
-                                <button class="btn-primary" id="addSpecsBtn">
-                                    <i class="fas fa-plus"></i>
-                                    Thêm thông số
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i>
-                        Đóng
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Spec Edit Modal (Thay thế SweetAlert2 input) -->
-    <div class="modal fade" id="specEditModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-edit"></i>
-                        <span id="specEditModalTitle">Thêm thông số mới</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="specEditForm">
-                        <div class="form-group mb-3">
-                            <label for="editSpecKey" class="form-label">Tên thông số *</label>
-                            <input type="text" class="form-control" id="editSpecKey"
-                                placeholder="Ví dụ: Màn hình, RAM, Pin...">
-                        </div>
-                        <div class="form-group mb-3">
-                            <label for="editSpecValue" class="form-label">Giá trị *</label>
-                            <input type="text" class="form-control" id="editSpecValue"
-                                placeholder="Ví dụ: 6.8 inch, 12GB, 5000mAh...">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i>
-                        Hủy
-                    </button>
-                    <button type="button" class="btn btn-primary" id="saveSpecEditBtn">
-                        <i class="fas fa-save"></i>
-                        <span id="saveSpecEditText">Thêm</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 
@@ -1368,7 +1261,7 @@
         }
         // Tạo document MongoDB mới
         // Trong ProductAPIService, sửa hàm createProductMongoDetail
-        static async createProductMongoDetail(sql_product_id, specsData, mo_ta_chi_tiet, slug, hinh_anh, link_avatar = '', videos = [], variants = [], video_links = [], trang_thai = 1, san_pham_noi_bat = false) {
+        static async createProductMongoDetail(sql_product_id, specsData, mo_ta_chi_tiet, slug, hinh_anh, link_avatar = '', videos = [], variants = [], video_links = [], trang_thai = 1, san_pham_noi_bat = false, thong_tin_khac = {}) {
             try {
                 console.log('📤 Creating MongoDB document with:', {
                     sql_product_id,
@@ -1379,7 +1272,8 @@
                     link_avatar,
                     videos,
                     variants,
-                    video_links
+                    video_links,
+                    thong_tin_khac
                 });
 
                 const requestBody = {
@@ -1389,6 +1283,7 @@
                     videos: videos || [],
                     variants: variants || [],
                     video_links: video_links || [],
+                    thong_tin_khac: thong_tin_khac || {},
                     link_avatar: link_avatar,
                     mo_ta_chi_tiet: mo_ta_chi_tiet,
                     trang_thai: trang_thai,
@@ -1506,10 +1401,11 @@
         constructor() {
             this.products = [];
             this.currentEditId = null;
-            this.currentSpecsProductId = null;
-            this.currentSpecsProduct = null;
-            this.currentEditingSpecKey = null;
             this.isSaving = false;
+            // Phân trang
+            this.currentPage = 1;
+            this.itemsPerPage = 5;
+            this.totalPages = 1;
             this.init();
         }
 
@@ -1548,13 +1444,22 @@
 
             if (this.products.length === 0) {
                 this.toggleEmptyState(true);
+                this.renderPagination();
                 return;
             }
 
             this.toggleEmptyState(false);
 
-            // Render từng sản phẩm
-            this.products.forEach(product => {
+            // Tính toán phân trang
+            this.totalPages = Math.ceil(this.products.length / this.itemsPerPage);
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            const paginatedProducts = this.products.slice(startIndex, endIndex);
+
+            console.log(`📊 Page ${this.currentPage}/${this.totalPages} - Showing ${paginatedProducts.length} products`);
+
+            // Render từng sản phẩm trong trang hiện tại
+            paginatedProducts.forEach(product => {
                 const row = document.createElement('tr');
                 row.setAttribute('data-id', product.id);
                 row.setAttribute('data-status', product.trang_thai ? '1' : '0');
@@ -1591,11 +1496,6 @@
                             ${product.trang_thai ? '🟢 Đang bán' : '🔴 Ngừng bán'}
                         </span>
                     </td>
-                    <td class="col-specs">
-                        <button class="btn-view-specs" data-id="${product.id}" data-name="${product.ten_san_pham}">
-                            <i class="fa fa-info-circle"></i>
-                        </button>
-                    </td>
                     <td class="col-actions">
                         <div class="action-buttons">
                             <button class="btn-action btn-edit" data-id="${product.id}" title="Chỉnh sửa">
@@ -1616,8 +1516,34 @@
                 tbody.appendChild(row);
             });
 
-            console.log(`✅ Rendered ${this.products.length} products`);
-            this.updateTableInfo(this.products.length);
+            // Tính tổng sản phẩm hiển thị
+            const displayCount = paginatedProducts.length;
+            console.log(`✅ Rendered ${displayCount} products for page ${this.currentPage}`);
+            this.updateTableInfo(displayCount);
+            this.renderPagination();
+        }
+
+        renderPagination() {
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            const paginationContainer = prevBtn?.closest('.table-pagination');
+            const paginationInfo = paginationContainer?.querySelector('.pagination-info');
+
+            if (!paginationInfo || !prevBtn || !nextBtn) return;
+
+            // Cập nhật thông tin trang (scope đúng block sản phẩm)
+            const displayTotalPages = this.totalPages === 0 ? 1 : this.totalPages;
+            paginationInfo.textContent = `Trang ${this.currentPage}/${displayTotalPages}`;
+
+            // Cập nhật trạng thái nút
+            prevBtn.disabled = this.currentPage === 1;
+            nextBtn.disabled = this.currentPage === this.totalPages || this.totalPages === 0;
+        }
+
+        goToPage(page) {
+            if (page < 1 || page > this.totalPages) return;
+            this.currentPage = page;
+            this.renderProductsTable();
         }
 
 
@@ -1672,25 +1598,7 @@
                 }
             }
             
-            // Đóng modal thông số
-            const specsModal = document.getElementById('specsModal');
-            if (specsModal) {
-                const modalInstance = bootstrap.Modal.getInstance(specsModal);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-            }
-            
-            // Đóng modal edit spec
-            const specEditModal = document.getElementById('specEditModal');
-            if (specEditModal) {
-                const modalInstance = bootstrap.Modal.getInstance(specEditModal);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-            }
-            
-            console.log('🚪 Đã đóng tất cả modal');
+            console.log('🚪 Đã đóng modal sản phẩm');
         }
 
         // Phương thức reset nút refresh
@@ -1714,6 +1622,10 @@
             document.getElementById('saveProductBtn')?.addEventListener('click', () => this.saveProduct());
             document.getElementById('refreshBtn')?.addEventListener('click', () => this.refreshProducts());
 
+            // Pagination
+            document.getElementById('prevPage')?.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+            document.getElementById('nextPage')?.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+
             // Search and Filter - Auto search/filter
             document.getElementById('searchInput')?.addEventListener('input',
                 Utils.debounce(() => this.filterProducts(), 300)
@@ -1734,39 +1646,9 @@
                 if (e.target.closest('.btn-toggle-status')) {
                     this.handleToggleStatus(e.target.closest('.btn-toggle-status'));
                 }
-                if (e.target.closest('.btn-view-specs')) {
-                    this.handleViewSpecs(e.target.closest('.btn-view-specs'));
-                }
             });
 
             // Technical Specifications Management
-            document.addEventListener('click', (e) => {
-                if (e.target.closest('#addNewSpecBtn') || e.target.closest('#addSpecsBtn')) {
-                    this.showAddSpecModal();
-                }
-                {{!-- if (e.target.closest('.btn-edit-spec')) {
-                    const row = e.target.closest('tr');
-                    const key = row.getAttribute('data-spec-key');
-                    const value = row.querySelector('.spec-value').textContent;
-                    this.showEditSpecModal(key, value);
-                } --}}
-                if (e.target.closest('.btn-delete-spec')) {
-                    const row = e.target.closest('tr');
-                    const key = row.getAttribute('data-spec-key');
-                    this.deleteSpec(key);
-                }
-            });
-
-            // Spec Edit Modal Events
-            document.getElementById('saveSpecEditBtn')?.addEventListener('click', () => this.saveSpecEdit());
-
-            document.getElementById('specEditForm')?.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.saveSpecEdit();
-                }
-            });
-
             // Select All Checkbox
             document.getElementById('selectAll')?.addEventListener('change', (e) => {
                 this.toggleSelectAll(e.target.checked);
@@ -1902,8 +1784,8 @@
             this.toggleEmptyState(visibleCount === 0);
             this.updateTableInfo(visibleCount);
             
-            // Cập nhật stats theo dữ liệu đã lọc
-            this.updateStatsWithCounts(visibleCount, visibleActive, visibleInactive, visibleRevenue);
+            // KHÔNG cập nhật stats khi filter - giữ nguyên stats tổng thể
+            // Stats luôn hiển thị thông tin tổng thể từ this.products
         }
 
         clearFilters() {
@@ -1958,8 +1840,18 @@
             const currentCount = document.getElementById('currentCount');
             const totalCount = document.getElementById('totalCount');
 
-            if (currentCount) currentCount.textContent = visibleCount;
             if (totalCount) totalCount.textContent = this.products.length;
+            
+            if (currentCount) {
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
+                const endIndex = Math.min(startIndex + visibleCount - 1, this.products.length);
+                
+                if (this.products.length === 0) {
+                    currentCount.textContent = '0';
+                } else {
+                    currentCount.textContent = `${startIndex}-${endIndex}`;
+                }
+            }
         }
 
         toggleSelectAll(checked) {
@@ -2017,10 +1909,13 @@
                 if (product) {
                     title.textContent = 'Chỉnh sửa sản phẩm';
                     saveBtn.innerHTML = '<i class="fas fa-save"></i> Cập nhật sản phẩm';
+                    // Lưu slug vào biến toàn cục để dùng cho upload
+                    window.currentProductSlug = null; // Sẽ load từ MongoDB
                     this.fillProductForm(product);
                 } else {
                     title.textContent = 'Thêm sản phẩm mới';
                     saveBtn.innerHTML = '<i class="fas fa-save"></i> Thêm sản phẩm';
+                    window.currentProductSlug = null;
                     this.resetProductForm();
                 }
 
@@ -2223,6 +2118,13 @@
                 const additionalInfoData = window.additionalInfoManager ? window.additionalInfoManager.getInfoData() : {};
                 const videoLinksData = window.videoLinksManager ? window.videoLinksManager.getVideoLinksData() : [];
 
+                console.log('🔍 Checking managers:', {
+                    hasSpecsManager: !!window.productSpecsManager,
+                    hasVariantsManager: !!window.productVariantsManager,
+                    hasAdditionalInfoManager: !!window.additionalInfoManager,
+                    hasVideoLinksManager: !!window.videoLinksManager
+                });
+
                 console.log('📦 Product Data for SQL:', formData);
                 console.log('🔧 Technical Specs for MongoDB:', specsData);
                 console.log('📦 Variants for MongoDB:', variantsData);
@@ -2266,7 +2168,6 @@
                     
                     // BƯỚC 1: Upload ảnh/video nếu có
                     let hinhAnhArray = [];
-                    let link_avatar = '';
                     let videoUrls = [];
 
                     if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
@@ -2276,8 +2177,7 @@
                             
                             if (uploadResult.mainImageUrl) {
                                 hinhAnhArray.push(uploadResult.mainImageUrl);
-                                link_avatar = uploadResult.mainImageUrl;
-                                console.log('✅ Main image uploaded:', link_avatar);
+                                console.log('✅ Main image uploaded:', uploadResult.mainImageUrl);
                             }
                             if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
                                 hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
@@ -2299,6 +2199,9 @@
                         }
                     }
 
+                    // link_avatar là ảnh đầu tiên trong mảng hinh_anh
+                    const link_avatar = hinhAnhArray.length > 0 ? hinhAnhArray[0] : '';
+
                     // BƯỚC 2: Cập nhật SQL với link_anh
                     sqlData.link_anh = link_avatar || sqlData.link_anh;
                     result = await ProductAPIService.updateProduct(productId, sqlData);
@@ -2313,7 +2216,7 @@
                         video_links: videoLinksData,
                         hinh_anh: hinhAnhArray,
                         videos: videoUrls,
-                        link_avatar: link_avatar || '',
+                        link_avatar: link_avatar,
                         mo_ta_chi_tiet: document.getElementById('productDescription').value.trim(),
                         trang_thai: parseInt(document.getElementById('productStatus').value),
                         san_pham_noi_bat: document.getElementById('productFeatured').checked,
@@ -2338,7 +2241,8 @@
                             variantsData,
                             videoLinksData,
                             parseInt(document.getElementById('productStatus').value),
-                            document.getElementById('productFeatured').checked
+                            document.getElementById('productFeatured').checked,
+                            additionalInfoData
                         );
                         mongoDetailId = mongoResult.data._id;
                         console.log('✅ New MongoDB document created');
@@ -2369,14 +2273,16 @@
                     }
                     
                     productId = result.product.id;
-                    console.log('✅ Step 1 complete: Product created in SQL with ID:', productId);
+                    // Tạo slug và lưu vào biến toàn cục để dùng cho upload
+                    const slug = Utils.generateSlug(formData.ten_san_pham + '-' + sqlCreateData.ma_sku);
+                    window.currentProductSlug = slug;
+                    console.log('✅ Step 1 complete: Product created in SQL with ID:', productId, 'Slug:', window.currentProductSlug);
                     
                     // ============================================
                     // BƯỚC 2: Upload ảnh và video (sử dụng productId cho folder naming)
                     // ============================================
                     console.log('📝 Step 2: Uploading images and videos...');
                     let hinhAnhArray = [];
-                    let link_avatar = '';
                     let videoUrls = [];
 
                     if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
@@ -2386,8 +2292,7 @@
                             
                             if (uploadResult.mainImageUrl) {
                                 hinhAnhArray.push(uploadResult.mainImageUrl);
-                                link_avatar = uploadResult.mainImageUrl;
-                                console.log('✅ Main image uploaded:', link_avatar);
+                                console.log('✅ Main image uploaded:', uploadResult.mainImageUrl);
                             }
                             if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
                                 hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
@@ -2408,6 +2313,9 @@
                             console.error('❌ Lỗi upload video:', uploadError);
                         }
                     }
+                    
+                    // link_avatar là ảnh đầu tiên trong mảng hinh_anh
+                    const link_avatar = hinhAnhArray.length > 0 ? hinhAnhArray[0] : '';
                     
                     console.log('✅ Step 2 complete: Media uploaded');
                     
@@ -2441,7 +2349,8 @@
                         variantsData,
                         videoLinksData,
                         mongoData.trang_thai,
-                        mongoData.san_pham_noi_bat
+                        mongoData.san_pham_noi_bat,
+                        additionalInfoData
                     );
                     
                     if (!mongoResult.success || !mongoResult.data || !mongoResult.data._id) {
@@ -2615,259 +2524,7 @@
             }
         }
 
-        // Technical Specifications Management
-        async handleViewSpecs(button) {
-            const productId = button.getAttribute('data-id');
-            const productName = button.getAttribute('data-name');
 
-            try {
-                const product = this.products.find(p => String(p.id) === String(productId));
-
-                if (!product) {
-                    throw new Error('Không tìm thấy thông tin sản phẩm');
-                }
-
-                this.currentSpecsProductId = productId;
-                this.currentSpecsProduct = product;
-
-                const specsData = product.chi_tiet || {};
-
-                this.openSpecsModal(product, specsData);
-            } catch (error) {
-                this.showError('Không thể tải thông số kỹ thuật: ' + error.message);
-            }
-        }
-
-        openSpecsModal(product, specsData) {
-            const modal = new bootstrap.Modal(document.getElementById('specsModal'));
-
-            document.getElementById('specsModalTitle').textContent = `Thông số kỹ thuật - ${product.ten_san_pham}`;
-            document.getElementById('specsProductName').textContent = `Sản phẩm: ${product.ten_san_pham}`;
-            document.getElementById('specsProductSku').textContent = `SKU: ${product.ma_sku}`;
-
-            this.renderSpecsTable(specsData);
-
-            modal.show();
-        }
-
-        renderSpecsTable(specsData) {
-            const tableBody = document.getElementById('specsTableBody');
-            const noSpecsMessage = document.getElementById('noSpecsMessage');
-            const specsTableContainer = document.querySelector('.specs-table-container');
-
-            tableBody.innerHTML = '';
-
-            if (!specsData || Object.keys(specsData).length === 0) {
-                specsTableContainer.style.display = 'none';
-                noSpecsMessage.style.display = 'block';
-                return;
-            }
-
-            specsTableContainer.style.display = 'block';
-            noSpecsMessage.style.display = 'none';
-
-            for (const [key, value] of Object.entries(specsData)) {
-                if (['_id', '__v', 'sql_product_id'].includes(key)) continue;
-
-                const row = document.createElement('tr');
-                row.setAttribute('data-spec-key', key);
-
-                const keyCell = document.createElement('td');
-                keyCell.textContent = this.formatSpecKey(key);
-                keyCell.className = 'spec-key';
-
-                const valueCell = document.createElement('td');
-                let displayValue = value;
-                if (Array.isArray(value)) {
-                    displayValue = value.join(', ');
-                } else if (typeof value === 'object' && value !== null) {
-                    displayValue = JSON.stringify(value);
-                }
-
-                valueCell.textContent = displayValue;
-                valueCell.className = 'spec-value';
-
-                const actionCell = document.createElement('td');
-                actionCell.className = 'spec-actions';
-
-                const editButton = document.createElement('button');
-                {{!-- editButton.className = 'btn-spec-action btn-edit-spec'; --}}
-                editButton.innerHTML = '<i class="fas fa-edit"></i>';
-                editButton.title = 'Sửa thông số';
-
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'btn-spec-action btn-delete-spec';
-                deleteButton.innerHTML = '<i class="fas fa-trash"></i>';
-                deleteButton.title = 'Xóa thông số';
-
-                actionCell.appendChild(editButton);
-                actionCell.appendChild(deleteButton);
-
-                row.appendChild(keyCell);
-                row.appendChild(valueCell);
-                row.appendChild(actionCell);
-                tableBody.appendChild(row);
-            }
-        }
-
-        // Sử dụng Bootstrap Modal thay vì SweetAlert2 cho input
-        showAddSpecModal() {
-            this.currentEditingSpecKey = null;
-            document.getElementById('specEditModalTitle').textContent = 'Thêm thông số mới';
-            document.getElementById('saveSpecEditText').textContent = 'Thêm';
-            document.getElementById('editSpecKey').value = '';
-            document.getElementById('editSpecValue').value = '';
-
-            const modal = new bootstrap.Modal(document.getElementById('specEditModal'));
-            modal.show();
-
-            setTimeout(() => {
-                document.getElementById('editSpecKey').focus();
-            }, 100);
-        }
-
-        showEditSpecModal(key, currentValue) {
-            this.currentEditingSpecKey = key;
-            document.getElementById('specEditModalTitle').textContent = 'Chỉnh sửa thông số';
-            document.getElementById('saveSpecEditText').textContent = 'Cập nhật';
-            document.getElementById('editSpecKey').value = key;
-            document.getElementById('editSpecValue').value = currentValue;
-
-            const modal = new bootstrap.Modal(document.getElementById('specEditModal'));
-            modal.show();
-
-            setTimeout(() => {
-                document.getElementById('editSpecValue').focus();
-            }, 100);
-        }
-
-        saveSpecEdit() {
-            const key = document.getElementById('editSpecKey').value.trim();
-            const value = document.getElementById('editSpecValue').value.trim();
-
-            if (!key) {
-                this.showError('Vui lòng nhập tên thông số');
-                document.getElementById('editSpecKey').focus();
-                return;
-            }
-
-            if (!value) {
-                this.showError('Vui lòng nhập giá trị');
-                document.getElementById('editSpecValue').focus();
-                return;
-            }
-
-            if (this.currentEditingSpecKey === null) {
-                this.createNewSpec(key, value);
-            } else {
-                this.updateSpec(this.currentEditingSpecKey, key, value);
-            }
-
-            bootstrap.Modal.getInstance(document.getElementById('specEditModal')).hide();
-        }
-
-        createNewSpec(key, value) {
-            const product = this.currentSpecsProduct;
-            if (!product) {
-                this.showError('Không tìm thấy sản phẩm');
-                return;
-            }
-
-            const updatedSpecs = product.chi_tiet ? { ...product.chi_tiet } : {};
-
-            if (updatedSpecs[key]) {
-                this.showError(`Thông số "${key}" đã tồn tại. Vui lòng chọn tên khác.`);
-                setTimeout(() => {
-                    this.showAddSpecModal();
-                    document.getElementById('editSpecKey').value = key;
-                    document.getElementById('editSpecValue').value = value;
-                }, 500);
-                return;
-            }
-
-            updatedSpecs[key] = value;
-            this.finalizeNewSpec(updatedSpecs, key, value);
-        }
-
-        updateSpec(oldKey, newKey, newValue) {
-            const product = this.currentSpecsProduct;
-            if (!product) {
-                this.showError('Không tìm thấy sản phẩm');
-                return;
-            }
-
-            const updatedSpecs = { ...product.chi_tiet };
-
-            if (oldKey !== newKey && updatedSpecs[newKey] && oldKey !== newKey) {
-                this.showError(`Thông số "${newKey}" đã tồn tại. Vui lòng chọn tên khác.`);
-                setTimeout(() => {
-                    this.showEditSpecModal(oldKey, newValue);
-                }, 500);
-                return;
-            }
-
-            if (oldKey !== newKey) {
-                delete updatedSpecs[oldKey];
-            }
-
-            updatedSpecs[newKey] = newValue;
-
-            product.chi_tiet = updatedSpecs;
-            this.renderSpecsTable(updatedSpecs);
-            this.saveSpecsToDatabase(this.currentSpecsProductId, updatedSpecs);
-
-            this.showSuccess(`Đã cập nhật thông số: ${this.formatSpecKey(newKey)} = ${newValue}`);
-        }
-
-        finalizeNewSpec(updatedSpecs, key, value) {
-            this.currentSpecsProduct.chi_tiet = updatedSpecs;
-            this.renderSpecsTable(updatedSpecs);
-            this.saveSpecsToDatabase(this.currentSpecsProductId, updatedSpecs);
-            this.showSuccess(`Đã thêm thông số: ${this.formatSpecKey(key)} = ${value}`);
-        }
-
-        deleteSpec(key) {
-            Swal.fire({
-                title: 'Xác nhận xóa?',
-                html: `Bạn có chắc muốn xóa thông số <strong>"${Utils.escapeHtml(this.formatSpecKey(key))}"</strong>?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#667eea',
-                confirmButtonText: 'Xóa',
-                cancelButtonText: 'Hủy'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    this.removeSpec(key);
-                }
-            });
-        }
-
-        removeSpec(key) {
-            const product = this.currentSpecsProduct;
-            if (!product) {
-                this.showError('Không tìm thấy sản phẩm');
-                return;
-            }
-
-            const updatedSpecs = { ...product.chi_tiet };
-            delete updatedSpecs[key];
-
-            product.chi_tiet = updatedSpecs;
-            this.renderSpecsTable(updatedSpecs);
-            this.saveSpecsToDatabase(this.currentSpecsProductId, updatedSpecs);
-
-            this.showSuccess(`Đã xóa thông số: ${this.formatSpecKey(key)}`);
-        }
-
-        async saveSpecsToDatabase(productId, specsData) {
-            try {
-                await ProductAPIService.updateProductSpecs(productId, specsData);
-            } catch (error) {
-                this.showError('Lỗi khi lưu thông số: ' + error.message);
-                throw error;
-            }
-        }
 
         formatSpecKey(key) {
             return key
@@ -3392,7 +3049,7 @@
         updatePaginationControls() {
             const prevPageBtn = document.getElementById('brandsPrevPage');
             const nextPageBtn = document.getElementById('brandsNextPage');
-            const paginationInfo = document.querySelector('.table-pagination .pagination-info');
+            const paginationInfo = document.querySelector('#brandModal .table-pagination .pagination-info');
 
             // Cập nhật trạng thái nút Previous
             if (prevPageBtn) {
@@ -3406,7 +3063,8 @@
 
             // Cập nhật thông tin trang
             if (paginationInfo) {
-                paginationInfo.textContent = `Trang ${this.currentPage} của ${this.totalPages}`;
+                const displayTotalPages = this.totalPages === 0 ? 1 : this.totalPages;
+                paginationInfo.textContent = `Trang ${this.currentPage}/${displayTotalPages}`;
             }
         }
 
@@ -3436,8 +3094,18 @@
 
             const currentBrands = this.getCurrentPageBrands();
 
-            if (currentCount) currentCount.textContent = currentBrands.length;
             if (totalCount) totalCount.textContent = filteredBrands.length;
+            
+            if (currentCount) {
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
+                const endIndex = Math.min(startIndex + currentBrands.length - 1, filteredBrands.length);
+                
+                if (filteredBrands.length === 0) {
+                    currentCount.textContent = '0';
+                } else {
+                    currentCount.textContent = `${startIndex}-${endIndex}`;
+                }
+            }
         }
 
         renderBrandsTable() {
@@ -4423,7 +4091,8 @@
             }
 
             if (paginationInfo) {
-                paginationInfo.textContent = `Trang ${this.currentPage} của ${this.totalPages}`;
+                const displayTotalPages = this.totalPages === 0 ? 1 : this.totalPages;
+                paginationInfo.textContent = `Trang ${this.currentPage}/${displayTotalPages}`;
             }
         }
 
@@ -4451,8 +4120,18 @@
 
             const currentCategories = this.getCurrentPageCategories();
 
-            if (currentCount) currentCount.textContent = currentCategories.length;
             if (totalCount) totalCount.textContent = filteredCategories.length;
+            
+            if (currentCount) {
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
+                const endIndex = Math.min(startIndex + currentCategories.length - 1, filteredCategories.length);
+                
+                if (filteredCategories.length === 0) {
+                    currentCount.textContent = '0';
+                } else {
+                    currentCount.textContent = `${startIndex}-${endIndex}`;
+                }
+            }
         }
 
         renderCategoriesTable() {
@@ -5616,16 +5295,16 @@ class SimpleImageUploadManager {
             try {
                 console.log('📤 Uploading main image via API...');
                 
-                // Lấy thông tin sản phẩm
+                // Dùng slug từ biến toàn cục hoặc tạo slug mới nếu là sản phẩm mới
                 const productName = document.getElementById('productName')?.value || '';
-                // Nếu đang edit, lấy ID từ hidden field
-                const productId = document.getElementById('mongoDetailId')?.value || '';
-                const productSku = productId || Date.now().toString(); // Dùng ID hoặc timestamp
+                const productSku = document.getElementById('productId')?.value || `SP${Date.now()}`;
+                const productSlug = window.currentProductSlug || `${productName}-${productSku}`.toLowerCase().replace(/\s+/g, '-');
+                
+                console.log('📦 Upload main image with slug:', productSlug);
                 
                 const formData = new FormData();
                 formData.append('productMainImage', file);
-                formData.append('productName', productName);
-                formData.append('productSku', productSku);
+                formData.append('productSlug', productSlug);
 
                 const response = await fetch('/api/upload/product-main-image', {
                     method: 'POST',
@@ -5657,17 +5336,18 @@ class SimpleImageUploadManager {
             try {
                 console.log(`📤 Uploading ${files.length} additional images via API`);
                 
-                // Lấy thông tin sản phẩm
+                // Dùng slug từ biến toàn cục hoặc tạo slug mới nếu là sản phẩm mới
                 const productName = document.getElementById('productName')?.value || '';
-                const productId = document.getElementById('mongoDetailId')?.value || '';
-                const productSku = productId || Date.now().toString();
+                const productSku = document.getElementById('productId')?.value || `SP${Date.now()}`;
+                const productSlug = window.currentProductSlug || `${productName}-${productSku}`.toLowerCase().replace(/\s+/g, '-');
+                
+                console.log('📦 Upload additional images with slug:', productSlug);
                 
                 const formData = new FormData();
                 files.forEach(file => {
                     formData.append('productAdditionalImages', file);
                 });
-                formData.append('productName', productName);
-                formData.append('productSku', productSku);
+                formData.append('productSlug', productSlug);
 
                 const response = await fetch('/api/upload/product-additional-images', {
                     method: 'POST',
@@ -6976,12 +6656,14 @@ class SimpleImageUploadManager {
                 formData.append('productVideos', file);
             });
             
-            // Thêm thông tin sản phẩm
+            // Dùng slug từ biến toàn cục hoặc tạo slug mới nếu là sản phẩm mới
             const productName = document.getElementById('productName')?.value || '';
-            const productId = document.getElementById('mongoDetailId')?.value || '';
-            const productSku = productId || Date.now().toString();
-            formData.append('productName', productName);
-            formData.append('productSku', productSku);
+            const productSku = document.getElementById('productId')?.value || `SP${Date.now()}`;
+            const productSlug = window.currentProductSlug || `${productName}-${productSku}`.toLowerCase().replace(/\s+/g, '-');
+            
+            console.log('📹 Upload videos with slug:', productSlug);
+            
+            formData.append('productSlug', productSlug);
 
             const response = await fetch('/api/upload/product-videos', {
                 method: 'POST',
@@ -7791,6 +7473,18 @@ class ProductSpecsManager {
         this.initSortable();
     }
 
+    // Hàm auto-resize textarea
+    autoResizeTextarea(textarea) {
+        // Reset về 0 trước để tính toán chính xác
+        textarea.style.height = '0px';
+        textarea.style.height = 'auto';
+        
+        // Tính chiều cao dựa trên scrollHeight (bao gồm tất cả nội dung)
+        const scrollHeight = textarea.scrollHeight;
+        const minHeight = 38; // Chiều cao tối thiểu
+        textarea.style.height = Math.max(scrollHeight, minHeight) + 'px';
+    }
+
     bindEvents() {
         // Thêm thông số mới
         document.getElementById('addProductSpecBtn')?.addEventListener('click', () => {
@@ -7799,9 +7493,12 @@ class ProductSpecsManager {
 
         // Event delegation cho các nút xóa và chỉnh sửa
         document.addEventListener('click', (e) => {
-            {{!-- if (e.target.closest('.btn-edit-spec')) {
-                this.editSpec(e.target.closest('.btn-edit-spec'));
-            } --}}
+            if (e.target.closest('.btn-edit-spec')) {
+                this.enableEditMode(e.target.closest('.btn-edit-spec'));
+            }
+            if (e.target.closest('.btn-save-spec')) {
+                this.saveSpecEdit(e.target.closest('.btn-save-spec'));
+            }
             if (e.target.closest('.btn-delete-spec')) {
                 this.deleteSpec(e.target.closest('.btn-delete-spec'));
             }
@@ -7818,10 +7515,15 @@ class ProductSpecsManager {
                     
                     const spec = this.specs.find(s => s.id == specId);
                     if (spec) {
-                        spec.key = keyInput.value.trim();
-                        spec.value = valueInput.value.trim();
+                        spec.key = keyInput.value;
+                        spec.value = valueInput.value;
                     }
                 }
+            }
+            
+            // Auto-resize textarea
+            if (e.target.classList.contains('auto-resize')) {
+                this.autoResizeTextarea(e.target);
             }
         });
     }
@@ -7864,17 +7566,111 @@ class ProductSpecsManager {
         console.log('➕ Added new spec:', newSpec);
     }
 
-    editSpec(button) {
+    enableEditMode(button) {
         const row = button.closest('tr');
-        const specId = row.getAttribute('data-spec-id');
-        const keyInput = row.querySelector('.spec-key-input');
-        const valueInput = row.querySelector('.spec-value-input');
+        const specKey = row.getAttribute('data-spec-key');
         
-        const spec = this.specs.find(s => s.id == specId);
-        if (spec) {
-            spec.key = keyInput.value.trim();
-            spec.value = valueInput.value.trim();
-            console.log('✏️ Updated spec:', spec);
+        if (!specKey) return;
+
+        // Lấy cells
+        const keyCell = row.querySelector('.spec-key');
+        const valueCell = row.querySelector('.spec-value');
+        const actionsCell = row.querySelector('.spec-actions');
+        
+        const currentKey = keyCell.textContent.trim();
+        const currentValue = valueCell.textContent.trim();
+        
+        // Chuyển cells thành input
+        keyCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${currentKey}" data-original="${currentKey}">`;
+        valueCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${currentValue}" data-original="${currentValue}">`;
+        
+        // Đổi nút Edit thành Save
+        actionsCell.innerHTML = `
+            <button class="btn-spec-action btn-save-spec" title="Lưu">
+                <i class="fas fa-check"></i>
+            </button>
+            <button class="btn-spec-action btn-delete-spec" title="Xóa">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        // Focus vào input value
+        valueCell.querySelector('input')?.focus();
+    }
+
+    async saveSpecEdit(button) {
+        const row = button.closest('tr');
+        const keyCell = row.querySelector('.spec-key');
+        const valueCell = row.querySelector('.spec-value');
+        const actionsCell = row.querySelector('.spec-actions');
+        
+        const keyInput = keyCell.querySelector('input');
+        const valueInput = valueCell.querySelector('input');
+        
+        if (!keyInput || !valueInput) return;
+        
+        const newKey = keyInput.value.trim();
+        const newValue = valueInput.value.trim();
+        
+        if (!newKey || !newValue) {
+            alert('Vui lòng nhập đầy đủ tên và giá trị thông số');
+            return;
+        }
+        
+        // Cập nhật lại attribute
+        row.setAttribute('data-spec-key', newKey);
+        
+        // Chuyển input thành text
+        keyCell.innerHTML = newKey;
+        valueCell.innerHTML = newValue;
+        
+        // Đổi nút Save thành Edit
+        actionsCell.innerHTML = `
+            <button class="btn-spec-action btn-edit-spec" title="Sửa thông số">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-spec-action btn-delete-spec" title="Xóa">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        
+        console.log('✅ Spec updated:', { key: newKey, value: newValue });
+        
+        // Nếu đang chỉnh sửa sản phẩm có sẵn, lưu ngay vào MongoDB
+        const productIdInput = document.getElementById('productId');
+        const mongoDetailIdInput = document.getElementById('mongoDetailId');
+        
+        console.log('🔍 Checking IDs:', {
+            productId: productIdInput?.value,
+            mongoDetailId: mongoDetailIdInput?.value
+        });
+        
+        if (productIdInput && productIdInput.value && mongoDetailIdInput && mongoDetailIdInput.value) {
+            const productId = productIdInput.value;
+            try {
+                // Lấy tất cả specs hiện tại từ bảng
+                const updatedSpecs = this.getSpecsData();
+                
+                console.log('💾 Saving specs to MongoDB...', { productId, updatedSpecs });
+                
+                // Lưu vào MongoDB thông qua API
+                await ProductAPIService.updateProductSpecs(productId, updatedSpecs);
+                
+                console.log('✅ Saved to MongoDB successfully!');
+                
+                // Hiển thị thông báo
+                const toast = document.createElement('div');
+                toast.className = 'toast-notification success';
+                toast.innerHTML = '<i class="fas fa-check-circle"></i> Đã lưu vào MongoDB';
+                toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; z-index: 99999; box-shadow: 0 4px 12px rgba(0,0,0,0.15);';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            } catch (error) {
+                console.error('❌ MongoDB save error:', error);
+                alert('Lỗi khi lưu vào MongoDB: ' + error.message);
+            }
+        } else {
+            console.log('ℹ️ Product ID or MongoDB Detail ID not found - this is a new product, will save when form is submitted');
         }
     }
 
@@ -7915,14 +7711,12 @@ class ProductSpecsManager {
                     </div>
                 </td>
                 <td>
-                    <input type="text" class="form-control spec-key-input" 
-                        value="${spec.key || ''}" 
-                        placeholder="Nhập tên thông số (ví dụ: Màn hình, RAM)">
+                    <textarea class="form-control spec-key-input auto-resize" rows="1"
+                        placeholder="Nhập tên thông số (ví dụ: Màn hình, RAM)">${spec.key || ''}</textarea>
                 </td>
                 <td>
-                    <input type="text" class="form-control spec-value-input" 
-                        value="${spec.value || ''}" 
-                        placeholder="Nhập giá trị (ví dụ: 6.7 inch, 8GB)">
+                    <textarea class="form-control spec-value-input auto-resize" rows="1"
+                        placeholder="Nhập giá trị (ví dụ: 6.7 inch, 8GB)">${spec.value || ''}</textarea>
                 </td>
                 <td>
                     <div class="d-flex gap-1 justify-content-center">
@@ -7940,6 +7734,13 @@ class ProductSpecsManager {
             this.sortable.destroy();
         }
         this.initSortable();
+        
+        // Auto-resize tất cả textarea sau khi render
+        requestAnimationFrame(() => {
+            tbody.querySelectorAll('.auto-resize').forEach(textarea => {
+                this.autoResizeTextarea(textarea);
+            });
+        });
         
         console.log('🔄 Rendered specs table with', this.specs.length, 'items');
     }
@@ -7989,8 +7790,27 @@ class ProductSpecsManager {
         
         this.specs = [];
         Object.entries(specsData).forEach(([key, value]) => {
-            this.addNewSpec(key, value);
+            // Chuyển đổi value về string nếu là object hoặc array
+            let displayValue = value;
+            if (typeof value === 'object' && value !== null) {
+                if (Array.isArray(value)) {
+                    displayValue = value.join(', ');
+                } else {
+                    displayValue = JSON.stringify(value);
+                }
+            }
+            this.addNewSpec(key, displayValue);
         });
+        
+        // Đảm bảo auto-resize sau khi load xong
+        setTimeout(() => {
+            const tbody = document.getElementById('productSpecsBody');
+            if (tbody) {
+                tbody.querySelectorAll('.auto-resize').forEach(textarea => {
+                    this.autoResizeTextarea(textarea);
+                });
+            }
+        }, 100);
     }
 
     clearSpecs() {
@@ -8441,6 +8261,8 @@ class ProductVariantsManager {
 
     getVariantsData() {
         console.log('📦 Getting variants data...');
+        console.log('📊 Current variantTypes:', this.variantTypes);
+        console.log('📊 Current combinations:', this.combinations);
         
         // Trả về cấu trúc mới: variant_options + variant_combinations
         const variantOptions = this.variantTypes
@@ -8459,49 +8281,69 @@ class ProductVariantsManager {
             attributes: c.attributes
         }));
 
-        console.log('✅ Variants data:', { variantOptions, variantCombinations });
-        
-        return {
+        const result = {
             variant_options: variantOptions,
             variant_combinations: variantCombinations
         };
+
+        console.log('✅ Variants data to return:', JSON.stringify(result, null, 2));
+        
+        return result;
     }
 
     loadVariantsData(variantsData) {
-        console.log('📥 Loading variants data:', variantsData);
+        console.log('📥 Loading variants data:', JSON.stringify(variantsData, null, 2));
         
         if (!variantsData) {
-            console.warn('⚠️ Invalid variants data:', variantsData);
+            console.warn('⚠️ No variants data provided');
+            return;
+        }
+
+        // Check if variantsData is an object
+        if (typeof variantsData !== 'object') {
+            console.error('❌ Invalid variants data type:', typeof variantsData);
             return;
         }
 
         // Load variant options
         if (variantsData.variant_options && Array.isArray(variantsData.variant_options)) {
+            console.log(`📋 Loading ${variantsData.variant_options.length} variant options...`);
             this.variantTypes = [];
-            variantsData.variant_options.forEach(variant => {
+            variantsData.variant_options.forEach((variant, index) => {
                 if (variant.name && variant.values) {
-                    console.log('➕ Adding variant type:', variant.name, 'with values:', variant.values);
+                    console.log(`➕ [${index}] Adding variant type: "${variant.name}" with values:`, variant.values);
                     this.addVariantType(variant.name, variant.values);
                 }
             });
+        } else {
+            console.warn('⚠️ No variant_options found or not an array');
         }
 
         // Load variant combinations
         if (variantsData.variant_combinations && Array.isArray(variantsData.variant_combinations)) {
-            this.combinations = variantsData.variant_combinations.map((combo, index) => ({
-                id: 'comb_' + Date.now() + '_' + index,
-                sku: combo.sku || '',
-                name: combo.name || '',
-                price: combo.price || 0,
-                stock: combo.stock || 0,
-                active: combo.active !== undefined ? combo.active : true,
-                attributes: combo.attributes || {}
-            }));
+            console.log(`🔗 Loading ${variantsData.variant_combinations.length} variant combinations...`);
+            this.combinations = variantsData.variant_combinations.map((combo, index) => {
+                const mapped = {
+                    id: 'comb_' + Date.now() + '_' + index,
+                    sku: combo.sku || '',
+                    name: combo.name || '',
+                    price: combo.price || 0,
+                    stock: combo.stock || 0,
+                    active: combo.active !== undefined ? combo.active : true,
+                    attributes: combo.attributes || {}
+                };
+                console.log(`🔗 [${index}] Loaded combination:`, mapped);
+                return mapped;
+            });
             
             this.renderCombinations();
+        } else {
+            console.warn('⚠️ No variant_combinations found or not an array');
         }
         
         console.log('✅ Loaded variants data');
+        console.log('📊 Final variantTypes:', this.variantTypes);
+        console.log('📊 Final combinations:', this.combinations);
     }
 
     clearVariants() {
@@ -8529,6 +8371,18 @@ class AdditionalInfoManager {
         console.log('📋 Initializing AdditionalInfoManager...');
         this.bindEvents();
         this.renderEmpty();
+    }
+
+    // Hàm auto-resize textarea
+    autoResizeTextarea(textarea) {
+        // Reset về 0 trước để tính toán chính xác
+        textarea.style.height = '0px';
+        textarea.style.height = 'auto';
+        
+        // Tính chiều cao dựa trên scrollHeight (bao gồm tất cả nội dung)
+        const scrollHeight = textarea.scrollHeight;
+        const minHeight = 42; // Chiều cao tối thiểu
+        textarea.style.height = Math.max(scrollHeight, minHeight) + 'px';
     }
 
     bindEvents() {
@@ -8587,10 +8441,10 @@ class AdditionalInfoManager {
 
         container.innerHTML = this.infoItems.map(item => {
             return '<div class="additional-info-item" data-id="' + item.id + '">' +
-                '<input type="text" class="info-key-input" data-id="' + item.id + '" ' +
-                    'placeholder="Nhập tên (VD: Bảo hành)" value="' + (item.key || '') + '">' +
-                '<input type="text" class="info-value-input" data-id="' + item.id + '" ' +
-                    'placeholder="Nhập giá trị (VD: 12 tháng)" value="' + (item.value || '') + '">' +
+                '<textarea class="info-key-input auto-resize" data-id="' + item.id + '" rows="1" ' +
+                    'placeholder="Nhập tên (VD: Bảo hành)">' + (item.key || '') + '</textarea>' +
+                '<textarea class="info-value-input auto-resize" data-id="' + item.id + '" rows="1" ' +
+                    'placeholder="Nhập giá trị (VD: 12 tháng)">' + (item.value || '') + '</textarea>' +
                 '<button type="button" class="btn-remove-info" data-id="' + item.id + '" title="Xóa">' +
                     '<i class="fas fa-trash"></i>' +
                 '</button>' +
@@ -8598,6 +8452,13 @@ class AdditionalInfoManager {
         }).join('');
 
         this.bindItemEvents();
+        
+        // Auto-resize tất cả textarea sau khi render
+        requestAnimationFrame(() => {
+            container.querySelectorAll('.auto-resize').forEach(textarea => {
+                this.autoResizeTextarea(textarea);
+            });
+        });
     }
 
     bindItemEvents() {
@@ -8607,6 +8468,9 @@ class AdditionalInfoManager {
                 const id = parseInt(e.target.getAttribute('data-id'));
                 const valueInput = document.querySelector(`.info-value-input[data-id="${id}"]`);
                 this.updateInfoItem(id, e.target.value, valueInput ? valueInput.value : '');
+                
+                // Auto-resize
+                this.autoResizeTextarea(e.target);
             });
         });
 
@@ -8615,6 +8479,9 @@ class AdditionalInfoManager {
                 const id = parseInt(e.target.getAttribute('data-id'));
                 const keyInput = document.querySelector(`.info-key-input[data-id="${id}"]`);
                 this.updateInfoItem(id, keyInput ? keyInput.value : '', e.target.value);
+                
+                // Auto-resize
+                this.autoResizeTextarea(e.target);
             });
         });
 
@@ -8669,14 +8536,34 @@ class AdditionalInfoManager {
 
         entries.forEach(([key, value]) => {
             console.log('➕ Adding info:', key, '=', value);
+            // Chuyển đổi value về string nếu là object hoặc array
+            let displayValue = value;
+            if (typeof value === 'object' && value !== null) {
+                if (Array.isArray(value)) {
+                    displayValue = value.join(', ');
+                } else {
+                    displayValue = JSON.stringify(value);
+                }
+            }
             this.infoItems.push({
                 id: this.nextId++,
                 key: key,
-                value: value
+                value: displayValue
             });
         });
 
         this.render();
+        
+        // Đảm bảo auto-resize sau khi load xong
+        setTimeout(() => {
+            const container = document.getElementById('additionalInfoContainer');
+            if (container) {
+                container.querySelectorAll('.auto-resize').forEach(textarea => {
+                    this.autoResizeTextarea(textarea);
+                });
+            }
+        }, 100);
+        
         console.log('✅ Loaded additional info:', this.infoItems);
     }
 
@@ -9612,10 +9499,6 @@ document.addEventListener('DOMContentLoaded', function() {
         text-align: center;
     } --}}
 
-    .col-specs {
-        width: 0px;
-    }
-
     .col-actions {
         width: 100px;
     }
@@ -9691,27 +9574,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     .featured-icon {
         color: var(--warning);
-    }
-
-    .btn-view-specs {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.85rem;
-        transition: var(--transition);
-        width: 100%;
-        justify-content: center;
-    }
-
-    .btn-view-specs:hover {
-        background: var(--primary-dark);
-        transform: translateY(-1px);
     }
 
     .action-buttons {
@@ -9907,114 +9769,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /* Technical Specifications Modal Styles */
-    .specs-modal-content {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .specs-product-info h6 {
-        margin: 0 0 4px 0;
-        color: var(--gray-800);
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    .specs-product-sku {
-        margin: 0;
-        color: var(--gray-500);
-        font-size: 0.9rem;
-    }
-
-    .specs-list-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-
-    .specs-list-title {
-        margin: 0;
-        color: var(--gray-700);
-        font-size: 1rem;
-        font-weight: 600;
-    }
-
-    .specs-table-container {
-        border: 1px solid var(--gray-200);
-        border-radius: 8px;
-        overflow: hidden;
-    }
-
-    .specs-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .specs-table th {
-        background: var(--gray-50);
-        padding: 12px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 1px solid var(--gray-200);
-        font-size: 0.9rem;
-    }
-
-    .specs-table td {
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--gray-200);
-    }
-
-    .specs-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .specs-table tr:hover {
-        background: var(--gray-50);
-    }
-
-    .spec-actions {
-        display: flex;
-        gap: 6px;
-        justify-content: center;
-    }
-
-    .btn-spec-action {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: white;
-        font-size: 0.8rem;
-    }
-
-    .btn-delete-spec {
-        background: var(--danger);
-    }
-
-    .btn-delete-spec:hover {
-        background: #dc2626;
-        transform: scale(1.1);
-    }
-
-    .no-specs-message {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--gray-500);
-    }
-
-    .no-specs-icon {
-        font-size: 3rem;
-        margin-bottom: 16px;
-        color: var(--gray-300);
-    }
-
     /* Form Styles */
     .form-sections {
         display: flex;
@@ -10177,27 +9931,6 @@ document.addEventListener('DOMContentLoaded', function() {
         color: white;
         font-size: 12px;
         font-weight: bold;
-    }
-
-    /* Spec Edit Modal Styles */
-    #specEditModal .modal-content {
-        border-radius: 12px;
-        box-shadow: var(--shadow-lg);
-    }
-
-    #specEditModal .modal-header {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-        color: white;
-        border-bottom: none;
-    }
-
-    #specEditModal .modal-title {
-        font-weight: 600;
-    }
-
-    #specEditModal .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
 
     /* Responsive Design */
@@ -11370,13 +11103,6 @@ document.addEventListener('DOMContentLoaded', function() {
     } --}}
 
     /* Căn giữa cho nút xem thông số */
-    .btn-view-specs {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 0 auto;
-    }
-
     /* Đảm bảo price info cũng được căn giữa */
     .price-info {
         display: flex;
@@ -12064,6 +11790,7 @@ document.addEventListener('DOMContentLoaded', function() {
     width: 100%;
     margin-bottom: 0;
     border-collapse: collapse;
+    table-layout: auto;
 }
 
 .specs-table th {
@@ -12078,10 +11805,15 @@ document.addEventListener('DOMContentLoaded', function() {
     top: 0;
 }
 
+.specs-table tr {
+    height: auto;
+}
+
 .specs-table td {
     padding: 0.75rem;
     border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+    vertical-align: top;
+    height: auto;
 }
 
 .specs-table tr:last-child td {
@@ -12092,12 +11824,39 @@ document.addEventListener('DOMContentLoaded', function() {
     background-color: #f8fafc;
 }
 
+.specs-table textarea,
 .specs-table input {
     width: 100%;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
+    resize: none;
+    overflow: hidden;
+    overflow-y: hidden;
+    min-height: 38px;
+    max-height: none;
+    height: auto;
+    font-family: inherit;
+    line-height: 1.5;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.specs-table textarea:focus,
+.specs-table input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Auto-resize textarea */
+.auto-resize {
+    overflow: hidden !important;
+    overflow-y: hidden !important;
+    resize: none !important;
+    height: auto;
 }
 
 /* Drag and Drop Styles */
@@ -12817,6 +12576,7 @@ document.addEventListener('DOMContentLoaded', function() {
     border: 1px solid var(--gray-200);
     border-radius: 8px;
     transition: all 0.2s ease;
+    align-items: start;
 }
 
 .additional-info-item:hover {
@@ -12824,20 +12584,33 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
+.additional-info-item textarea,
 .additional-info-item input {
     padding: 10px 12px;
     border: 1px solid var(--gray-300);
     border-radius: 6px;
     font-size: 0.9rem;
     transition: all 0.2s ease;
+    resize: none;
+    overflow: hidden;
+    overflow-y: hidden;
+    min-height: 42px;
+    max-height: none;
+    height: auto;
+    font-family: inherit;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
+.additional-info-item textarea:focus,
 .additional-info-item input:focus {
     border-color: var(--primary);
     outline: none;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.additional-info-item textarea::placeholder,
 .additional-info-item input::placeholder {
     color: var(--gray-400);
 }
@@ -13420,6 +13193,28 @@ document.addEventListener('DOMContentLoaded', function() {
     .video-link-actions {
         order: 3;
     }
+}
+
+/* SweetAlert2 z-index override */
+.swal-high-z-index {
+    z-index: 999999 !important;
+}
+
+.swal2-container {
+    z-index: 999999 !important;
+}
+
+.swal2-popup {
+    z-index: 999999 !important;
+}
+
+/* Override Bootstrap modal z-index when SweetAlert is shown */
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.modal {
+    z-index: 1050 !important;
 }
 
 </style>

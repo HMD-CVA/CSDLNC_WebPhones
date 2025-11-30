@@ -317,18 +317,17 @@ app.post('/api/upload/product-main-image', upload.single('productMainImage'), ha
         }
 
         // Lấy thông tin sản phẩm để tạo folder
-        const { productName, productSku, oldImageUrl } = req.body;
+        const { productSlug, oldImageUrl } = req.body;
         
-        console.log('📦 Product info received:', { productName, productSku });
+        console.log('📦 Product info received:', { productSlug });
         
-        // Tạo tên folder: products/ten-san-pham_ma-sku/images
+        // Tạo tên folder: products/slug/images
         let folderPath = 'products';
-        if (productName && productSku) {
-            const folderName = generateSlug(`${productName}_${productSku}`);
-            folderPath = `products/${folderName}/images`;
+        if (productSlug) {
+            folderPath = `products/${productSlug}/images`;
             console.log(`📁 Using folder path: ${folderPath}`);
         } else {
-            console.warn('⚠️ Missing productName or productSku, using default folder: products');
+            console.warn('⚠️ Missing productSlug, using default folder: products');
         }
 
         // Kiểm tra nếu có oldImageUrl trong body thì xóa ảnh cũ
@@ -374,18 +373,17 @@ app.post('/api/upload/product-additional-images', upload.array('productAdditiona
         }
 
         // Lấy thông tin sản phẩm để tạo folder
-        const { productName, productSku } = req.body;
+        const { productSlug } = req.body;
         
-        console.log('📦 Product info received:', { productName, productSku });
+        console.log('📦 Product info received:', { productSlug });
         
-        // Tạo tên folder: products/ten-san-pham_ma-sku/images
+        // Tạo tên folder: products/slug/images
         let folderPath = 'products/images';
-        if (productName && productSku) {
-            const folderName = generateSlug(`${productName}_${productSku}`);
-            folderPath = `products/${folderName}/images`;
+        if (productSlug) {
+            folderPath = `products/${productSlug}/images`;
             console.log(`📁 Using folder path: ${folderPath}`);
         } else {
-            console.warn('⚠️ Missing productName or productSku, using default folder: products/images');
+            console.warn('⚠️ Missing productSlug, using default folder: products/images');
         }
 
         const uploadPromises = req.files.map(file => 
@@ -1825,10 +1823,15 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         }
 
         // Thêm variants (biến thể) nếu có
-        if (variants && Array.isArray(variants)) {
+        if (variants && typeof variants === 'object') {
+            // Variants có cấu trúc: {variant_options: [], variant_combinations: []}
             documentData.variants = variants;
+            console.log('✅ Variants data saved:', JSON.stringify(variants, null, 2));
         } else {
-            documentData.variants = [];
+            documentData.variants = {
+                variant_options: [],
+                variant_combinations: []
+            };
         }
 
         // Thêm chi tiết bổ sung nếu có (object tự do)
@@ -1858,6 +1861,7 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         // Thêm thông tin khác (key-value pairs tự do)
         if (thong_tin_khac && typeof thong_tin_khac === 'object') {
             documentData.thong_tin_khac = thong_tin_khac;
+            console.log('✅ Thong_tin_khac data saved:', JSON.stringify(thong_tin_khac, null, 2));
         } else {
             documentData.thong_tin_khac = {};
         }
@@ -1971,7 +1975,7 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
             hinh_anh: hinh_anh ? hinh_anh.length : 0,
             videos: videos ? videos.length : 0,
             video_links: video_links ? video_links.length : 0,
-            variants: variants ? variants.length : 0,
+            variants: variants ? (typeof variants === 'object' ? JSON.stringify(variants) : variants.length) : 0,
             thong_tin_khac: thong_tin_khac ? Object.keys(thong_tin_khac).length : 0,
             trang_thai,
             san_pham_noi_bat,
@@ -2222,18 +2226,17 @@ app.post('/api/upload/product-videos', uploadWithVideos.array('productVideos', 5
         console.log(`⬆️ Starting upload for ${req.files.length} videos...`);
 
         // Lấy thông tin sản phẩm để tạo folder
-        const { productName, productSku } = req.body;
+        const { productSlug } = req.body;
         
-        console.log('📦 Product info received:', { productName, productSku });
+        console.log('📦 Product info received:', { productSlug });
         
-        // Tạo tên folder: products/ten-san-pham_ma-sku/videos
+        // Tạo tên folder: products/slug/videos
         let folderPath = 'products/videos';
-        if (productName && productSku) {
-            const folderName = generateSlug(`${productName}_${productSku}`);
-            folderPath = `products/${folderName}/videos`;
+        if (productSlug) {
+            folderPath = `products/${productSlug}/videos`;
             console.log(`📁 Using folder path: ${folderPath}`);
         } else {
-            console.warn('⚠️ Missing productName or productSku, using default folder: products/videos');
+            console.warn('⚠️ Missing productSlug, using default folder: products/videos');
         }
 
         const uploadPromises = req.files.map(file => 
@@ -2281,13 +2284,12 @@ app.post('/api/upload/product-video', uploadWithVideos.single('productVideo'), h
         console.log('⬆️ Starting single video upload...');
 
         // Lấy thông tin sản phẩm để tạo folder
-        const { productName, productSku, oldVideoUrl } = req.body;
+        const { productSlug, oldVideoUrl } = req.body;
         
-        // Tạo tên folder: products/ten-san-pham_ma-sku/videos
+        // Tạo tên folder: products/slug/videos
         let folderPath = 'products/videos';
-        if (productName && productSku) {
-            const folderName = generateSlug(`${productName}_${productSku}`);
-            folderPath = `products/${folderName}/videos`;
+        if (productSlug) {
+            folderPath = `products/${productSlug}/videos`;
         }
 
         // Kiểm tra nếu có oldVideoUrl trong body thì xóa video cũ
@@ -3649,6 +3651,380 @@ app.delete('/api/wards/:id', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Lỗi khi xóa phường/xã'
+        });
+    }
+});
+
+// ===== USERS MANAGEMENT =====
+
+// Admin render route for Users management page
+app.get('/admin/nguoidung', async (req, res) => {
+    try {
+        // Lấy danh sách users từ SQL
+        const users = await DataModel.SQL.User.findAll();
+        
+        res.render('nguoidung', {
+            layout: 'AdminMain',
+            users: users || []
+        });
+    } catch (error) {
+        console.error('Render Users Page Error:', error);
+        res.status(500).send('Lỗi khi tải trang người dùng');
+    }
+});
+
+// GET /api/users - list users with filters
+app.get('/api/users', async (req, res) => {
+    try {
+        const { search, status } = req.query;
+
+        // Lấy dữ liệu từ SQL với filters
+        const filters = {};
+        if (status !== undefined) filters.status = parseInt(status);
+        
+        let users = await DataModel.SQL.User.findAll(filters);
+
+        // Apply search filter if provided
+        if (search) {
+            const searchLower = search.toLowerCase();
+            users = users.filter(u =>
+                (u.name && u.name.toLowerCase().includes(searchLower)) ||
+                (u.email && u.email.toLowerCase().includes(searchLower)) ||
+                (u.phone && u.phone.toLowerCase().includes(searchLower))
+            );
+        }
+
+        res.json({ success: true, data: users });
+    } catch (error) {
+        console.error('Users GET Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách người dùng' });
+    }
+});
+
+// POST /api/users - create user
+app.post('/api/users', async (req, res) => {
+    try {
+        const { name, email, phone, vung_id, status, password, additionalFields } = req.body;
+
+        // Validate required fields
+        if (!name || !email) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Tên và email là bắt buộc' 
+            });
+        }
+
+        // Check if email already exists
+        const existingUser = await DataModel.SQL.User.findByEmail(email);
+        if (existingUser) {
+            return res.status(409).json({ 
+                success: false, 
+                message: 'Email đã tồn tại' 
+            });
+        }
+
+        // Hash password (in production, use bcrypt)
+        const hashedPassword = password; // TODO: Implement proper password hashing
+
+        // Create user in SQL
+        const newUser = await DataModel.SQL.User.create({
+            name,
+            email,
+            phone: phone || null,
+            vung_id: vung_id || 'bac',
+            status: status !== undefined ? parseInt(status) : 1,
+            password: hashedPassword
+        });
+
+        // Create corresponding MongoDB profile and update SQL with mongo_profile_id
+        try {
+            const mongoData = {
+                sql_user_id: newUser.id,
+                ...additionalFields
+            };
+            
+            const mongoProfile = await DataModel.Mongo.UserDetail.create(mongoData);
+            
+            // Update SQL user with MongoDB profile ID
+            await DataModel.SQL.User.update(newUser.id, {
+                ...newUser,
+                mongo_profile_id: mongoProfile._id.toString()
+            });
+            
+            // Add mongo_profile_id to response
+            newUser.mongo_profile_id = mongoProfile._id.toString();
+        } catch (mongoError) {
+            console.warn('⚠️ MongoDB UserDetail creation failed:', mongoError);
+            // Continue even if MongoDB fails
+        }
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Tạo người dùng thành công', 
+            data: newUser 
+        });
+    } catch (error) {
+        console.error('Users CREATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Lỗi khi tạo người dùng' 
+        });
+    }
+});
+
+// GET /api/users/:id/profile - get MongoDB profile
+app.get('/api/users/:id/profile', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Get user from SQL to get mongo_profile_id
+        const user = await DataModel.SQL.User.findById(id);
+        if (!user || !user.mongo_profile_id) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy profile' 
+            });
+        }
+        
+        // Get profile from MongoDB
+        const profile = await DataModel.Mongo.UserDetail.findById(user.mongo_profile_id);
+        if (!profile) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy profile trong MongoDB' 
+            });
+        }
+        
+        // Convert to plain object and remove internal fields
+        const profileData = profile.toObject();
+        delete profileData.__v;
+        
+        // Convert additionalFields array back to object for frontend
+        if (profileData.additionalFields && Array.isArray(profileData.additionalFields)) {
+            const fieldsObject = {};
+            profileData.additionalFields.forEach(item => {
+                if (item.key) {
+                    fieldsObject[item.key] = item.value || '';
+                }
+            });
+            // Replace array with object
+            Object.keys(profileData).forEach(key => {
+                if (key !== '_id' && key !== 'sql_user_id' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'additionalFields') {
+                    delete profileData[key];
+                }
+            });
+            Object.assign(profileData, fieldsObject);
+            delete profileData.additionalFields;
+        }
+        
+        res.json(profileData);
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+});
+
+// PUT /api/users/:id - update user
+app.put('/api/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, phone, vung_id, status, password, additionalFields } = req.body;
+        
+        console.log('📝 PUT /api/users/:id received:', { id, additionalFields });
+
+        // Check if user exists
+        const existingUser = await DataModel.SQL.User.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy người dùng' 
+            });
+        }
+
+        // Check email collision if email changed
+        if (email && email !== existingUser.email) {
+            const userWithSameEmail = await DataModel.SQL.User.findByEmail(email);
+            if (userWithSameEmail && userWithSameEmail.id !== id) {
+                return res.status(409).json({ 
+                    success: false, 
+                    message: 'Email đã tồn tại' 
+                });
+            }
+        }
+
+        const updateData = {
+            name: name || existingUser.name,
+            email: email || existingUser.email,
+            phone: phone !== undefined ? phone : existingUser.phone,
+            vung_id: vung_id || existingUser.vung_id,
+            status: status !== undefined ? parseInt(status) : existingUser.status
+        };
+
+        // Only update password if provided
+        if (password && password.length >= 8) {
+            updateData.password = password; // TODO: Implement proper password hashing
+        }
+
+        const updatedUser = await DataModel.SQL.User.update(id, updateData);
+
+        // Update MongoDB additional fields (convert object to array)
+        if (existingUser.mongo_profile_id) {
+            try {
+                console.log('🔍 MongoDB update attempt for profile:', existingUser.mongo_profile_id);
+                console.log('📦 additionalFields received (object):', additionalFields);
+                
+                // Convert object to array of {key, value}
+                const fieldsArray = [];
+                if (additionalFields && typeof additionalFields === 'object') {
+                    Object.entries(additionalFields).forEach(([key, value]) => {
+                        fieldsArray.push({ key, value: String(value || '') });
+                    });
+                }
+                
+                console.log('📋 Converted to array:', fieldsArray);
+                
+                // Update MongoDB with array structure
+                const result = await DataModel.Mongo.UserDetail.findByIdAndUpdate(
+                    existingUser.mongo_profile_id,
+                    { 
+                        $set: { additionalFields: fieldsArray }
+                    },
+                    { new: true, runValidators: false }
+                );
+                
+                console.log('✅ MongoDB update result:', result?.toObject());
+            } catch (mongoError) {
+                console.error('❌ MongoDB update failed:', mongoError);
+            }
+        } else {
+            console.log('⚠️ User has no mongo_profile_id');
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Cập nhật người dùng thành công', 
+            data: updatedUser 
+        });
+    } catch (error) {
+        console.error('Users UPDATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Lỗi khi cập nhật người dùng' 
+        });
+    }
+});
+
+// DELETE /api/users/:id - delete user (soft delete)
+app.delete('/api/users/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const deleted = await DataModel.SQL.User.delete(id);
+        
+        if (!deleted) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy người dùng' 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Xóa người dùng thành công' 
+        });
+    } catch (error) {
+        console.error('Users DELETE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi xóa người dùng' 
+        });
+    }
+});
+
+// PUT /api/users/:id/status - toggle/update status
+app.put('/api/users/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        const existingUser = await DataModel.SQL.User.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy người dùng' 
+            });
+        }
+
+        const newStatus = status !== undefined ? parseInt(status) : (existingUser.status ? 0 : 1);
+        
+        const updatedUser = await DataModel.SQL.User.updateStatus(id, newStatus);
+
+        res.json({ 
+            success: true, 
+            message: 'Cập nhật trạng thái thành công', 
+            data: updatedUser 
+        });
+    } catch (error) {
+        console.error('Users STATUS Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi cập nhật trạng thái' 
+        });
+    }
+});
+
+// GET /api/users/:id/detail - Get MongoDB extended user details
+app.get('/api/users/:id/detail', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const userDetail = await DataModel.Mongo.UserDetail.findOne({ sql_user_id: id });
+        
+        if (!userDetail) {
+            return res.json({ 
+                success: true, 
+                data: null 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            data: userDetail 
+        });
+    } catch (error) {
+        console.error('User Detail GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy chi tiết người dùng' 
+        });
+    }
+});
+
+// PUT /api/users/:id/detail - Update MongoDB extended user details
+app.put('/api/users/:id/detail', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const detailData = req.body;
+
+        const updatedDetail = await DataModel.Mongo.UserDetail.findOneAndUpdate(
+            { sql_user_id: id },
+            { $set: detailData },
+            { upsert: true, new: true }
+        );
+
+        res.json({ 
+            success: true, 
+            message: 'Cập nhật chi tiết người dùng thành công',
+            data: updatedDetail 
+        });
+    } catch (error) {
+        console.error('User Detail UPDATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi cập nhật chi tiết người dùng' 
         });
     }
 });
