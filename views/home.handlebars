@@ -52,7 +52,7 @@
     <div class="ListContainer1">
       <h1>TẤT CẢ SẢN PHẨM</h1>
 
-      <div class="products">
+      <div class="products" id="productGrid">
         {{#if sanphams}}
           {{#each sanphams}}
             {{> product}}
@@ -154,6 +154,19 @@
 
     bannerNext.addEventListener('click', nextSlide);
     bannerPrev.addEventListener('click', prevSlide);
+
+    // Auto slide every 10 seconds
+    let autoSlideInterval = setInterval(nextSlide, 10000);
+
+    // Pause auto slide on hover
+    bannerTrack.addEventListener('mouseenter', function() {
+      clearInterval(autoSlideInterval);
+    });
+
+    // Resume auto slide on mouse leave
+    bannerTrack.addEventListener('mouseleave', function() {
+      autoSlideInterval = setInterval(nextSlide, 10000);
+    });
 
     // Lấy tất cả các nút "XEM NHANH"
     const viewButtons = document.querySelectorAll('.product-view-btn');

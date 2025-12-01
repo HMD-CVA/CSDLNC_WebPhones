@@ -2,6 +2,7 @@ import express from 'express';
 import { engine } from 'express-handlebars';
 import db from './server.js';
 import DataModel from './app/model/index.js';
+import sql from 'mssql';
 
 import mongoose, { mongo } from 'mongoose';
 
@@ -456,6 +457,14 @@ app.get('/', async (req, res) => {
     // Lấy tất cả sản phẩm từ SQL Server
     const sanphams = await DataModel.SQL.Product.findAll();
     
+    // Lấy danh mục và thương hiệu
+    const categories = await DataModel.SQL.Category.findAll();
+    const brands = await DataModel.SQL.Brand.findAll();
+    
+    // Lấy vùng miền và tỉnh thành
+    const regions = await DataModel.SQL.Region.findAll();
+    const provinces = await DataModel.SQL.Province.findAll();
+    
     // Format dữ liệu sản phẩm
     const formattedProducts = sanphams.map(product => ({
       ...product,
@@ -492,7 +501,11 @@ app.get('/', async (req, res) => {
       layout: 'HomeMain.handlebars', 
       sanphams: formattedProducts,
       flashSaleProducts,
-      iphoneProducts
+      iphoneProducts,
+      categories,
+      brands,
+      regions,
+      provinces
     });
   } catch (err) {
     console.error('Error:', err);
@@ -505,6 +518,176 @@ app.get('/admin', (req, res) => {
     try {
         res.render('AD_Dashboard', { layout: 'AdminMain' , dashboardPage: true});
     } catch (err) {
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// Trang giỏ hàng
+app.get('/cart', (req, res) => {
+    try {
+        // Lấy giỏ hàng từ localStorage sẽ được xử lý ở client-side
+        res.render('cart', { 
+            layout: 'HomeMain.handlebars',
+            cartItems: null, // Sẽ load từ localStorage
+            cartCount: 0
+        });
+    } catch (err) {
+        console.error('Error loading cart page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// Trang đăng nhập
+app.get('/login', (req, res) => {
+    try {
+        res.render('login', { 
+            layout: false // Không dùng layout vì login có design riêng
+        });
+    } catch (err) {
+        console.error('Error loading login page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// Trang đăng ký
+app.get('/register', (req, res) => {
+    try {
+        res.render('register', { 
+            layout: false // Không dùng layout vì register có design riêng
+        });
+    } catch (err) {
+        console.error('Error loading register page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// Trang chi tiết sản phẩm
+app.get('/product/:id', async (req, res) => {
+    try {
+        const productId = req.params.id;
+        console.log('🔍 Loading product detail:', productId);
+
+        // Lấy thông tin sản phẩm từ SQL Server
+        const product = await DataModel.SQL.Product.findById(productId);
+        
+        if (!product) {
+            return res.status(404).send('Không tìm thấy sản phẩm');
+        }
+
+        // Lấy thông tin chi tiết từ MongoDB
+        let mongoDetail = null;
+        let thongSoKyThuat = [];
+        let hinhAnhPhu = [];
+        let moTaChiTiet = '';
+        let variants = null;
+        let videos = [];
+        let videoLinks = [];
+        
+        try {
+            // Ưu tiên query bằng mongo_detail_id nếu có (nhanh hơn vì query theo _id)
+            if (product.mongo_detail_id) {
+                console.log('🔍 Fetching MongoDB by mongo_detail_id:', product.mongo_detail_id);
+                mongoDetail = await DataModel.Mongo.ProductDetail.findById(product.mongo_detail_id).lean();
+            } else {
+                // Fallback: query bằng sql_product_id
+                console.log('🔍 Fetching MongoDB by sql_product_id:', productId);
+                mongoDetail = await DataModel.Mongo.ProductDetail.findOne({ 
+                    sql_product_id: productId 
+                }).lean();
+            }
+            
+            if (mongoDetail) {
+                console.log('✅ Found MongoDB detail:', mongoDetail._id);
+                console.log('📋 MongoDB fields:', Object.keys(mongoDetail));
+                
+                // Lấy thông số kỹ thuật từ MongoDB
+                if (mongoDetail.thong_so_ky_thuat && Array.isArray(mongoDetail.thong_so_ky_thuat)) {
+                    thongSoKyThuat = mongoDetail.thong_so_ky_thuat.map(spec => ({
+                        ten: spec.ten ? spec.ten.replace(/\n/g, '<br>') : spec.ten,
+                        gia_tri: spec.gia_tri ? spec.gia_tri.replace(/\n/g, '<br>') : spec.gia_tri
+                    }));
+                    console.log(`📋 Specs count: ${thongSoKyThuat.length}`);
+                }
+                
+                // Lấy variants (phiên bản sản phẩm)
+                if (mongoDetail.variants) {
+                    variants = mongoDetail.variants;
+                    console.log(`🎨 Variants:`, variants);
+                }
+                
+                // Lấy hình ảnh phụ
+                if (mongoDetail.hinh_anh && Array.isArray(mongoDetail.hinh_anh)) {
+                    hinhAnhPhu = mongoDetail.hinh_anh;
+                    console.log(`🖼️ Additional images: ${hinhAnhPhu.length}`);
+                }
+                
+                // Lấy videos
+                if (mongoDetail.videos && Array.isArray(mongoDetail.videos)) {
+                    videos = mongoDetail.videos;
+                    console.log(`🎬 Videos: ${videos.length}`);
+                }
+                
+                // Lấy video links (YouTube, Vimeo, etc.)
+                if (mongoDetail.video_links && Array.isArray(mongoDetail.video_links)) {
+                    videoLinks = mongoDetail.video_links;
+                    console.log(`🔗 Video links: ${videoLinks.length}`);
+                }
+                
+                // Lấy mô tả chi tiết
+                if (mongoDetail.mo_ta_chi_tiet) {
+                    moTaChiTiet = mongoDetail.mo_ta_chi_tiet;
+                }
+            } else {
+                console.log('⚠️ No MongoDB detail found for product:', productId);
+            }
+        } catch (mongoError) {
+            console.error('❌ Error fetching MongoDB detail:', mongoError);
+        }
+
+        // Format giá tiền
+        const formattedProduct = {
+            ...product,
+            id: product.id,
+            gia_ban_formatted: new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(product.gia_ban),
+            gia_niem_yet_formatted: product.gia_niem_yet ? new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(product.gia_niem_yet) : null,
+            tiet_kiem_formatted: product.gia_niem_yet ? new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(product.gia_niem_yet - product.gia_ban) : null,
+            is_discount: product.gia_niem_yet && product.gia_niem_yet > product.gia_ban,
+            phan_tram_giam: product.gia_niem_yet ? 
+                Math.round((1 - product.gia_ban / product.gia_niem_yet) * 100) : 0,
+            // Thêm dữ liệu từ MongoDB
+            thong_so_ky_thuat: thongSoKyThuat,
+            hinh_anh_phu: hinhAnhPhu,
+            mo_ta_chi_tiet: moTaChiTiet || product.mo_ta || '',
+            variants: variants,
+            videos: videos,
+            video_links: videoLinks,
+            // Thêm giá gốc từ SQL để dùng cho variants
+            sql_gia_niem_yet: product.gia_niem_yet
+        };
+
+        console.log('📦 Product detail loaded:', {
+            id: formattedProduct.id,
+            name: formattedProduct.ten_san_pham,
+            specs: thongSoKyThuat.length,
+            images: hinhAnhPhu.length,
+            hasDescription: !!moTaChiTiet
+        });
+
+        res.render('productDetail', {
+            layout: 'HomeMain.handlebars',
+            product: formattedProduct
+        });
+    } catch (err) {
+        console.error('Error loading product detail:', err);
         res.status(500).send('Lỗi server!');
     }
 });
@@ -1795,16 +1978,60 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             slug: slug || `temp-${Date.now()}`
         };
 
-        // Thêm thông số kỹ thuật nếu có
-        if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
-            // Chuyển đổi từ object sang array format
-            documentData.thong_so_ky_thuat = Object.entries(thong_so_ky_thuat).map(([ten, gia_tri]) => ({
+        // Function to aggregate specs with variant values
+        function aggregateSpecsWithVariants(specs, variants) {
+            if (!specs || typeof specs !== 'object') return [];
+            
+            // Convert specs to array format
+            let specsArray = Object.entries(specs).map(([ten, gia_tri]) => ({
                 ten: ten.trim(),
                 gia_tri: gia_tri
             }));
-        } else {
-            documentData.thong_so_ky_thuat = [];
+            
+            // If no variants, return specs as-is
+            if (!variants || !variants.variant_options || !Array.isArray(variants.variant_options)) {
+                return specsArray;
+            }
+            
+            // Build mapping of spec keys to variant values
+            const variantValuesBySpec = {};
+            
+            variants.variant_options.forEach(option => {
+                if (!option.name || !option.values || !Array.isArray(option.values)) return;
+                
+                const optionName = option.name.trim();
+                const uniqueValues = [...new Set(option.values)]; // Remove duplicates
+                
+                // Try to find matching spec by name (case-insensitive)
+                const matchingSpecIndex = specsArray.findIndex(spec => 
+                    spec.ten.toLowerCase() === optionName.toLowerCase() ||
+                    spec.ten.toLowerCase().includes(optionName.toLowerCase()) ||
+                    optionName.toLowerCase().includes(spec.ten.toLowerCase())
+                );
+                
+                if (matchingSpecIndex !== -1) {
+                    // Store variant values for this spec
+                    variantValuesBySpec[specsArray[matchingSpecIndex].ten] = uniqueValues.join('/');
+                    console.log(`📊 Aggregated spec "${specsArray[matchingSpecIndex].ten}": ${uniqueValues.join('/')}`);
+                }
+            });
+            
+            // Update specs with aggregated values
+            specsArray = specsArray.map(spec => {
+                if (variantValuesBySpec[spec.ten]) {
+                    return {
+                        ten: spec.ten,
+                        gia_tri: variantValuesBySpec[spec.ten]
+                    };
+                }
+                return spec;
+            });
+            
+            return specsArray;
         }
+        
+        // Thêm thông số kỹ thuật nếu có (tự động tổng hợp từ variants)
+        documentData.thong_so_ky_thuat = aggregateSpecsWithVariants(thong_so_ky_thuat, variants);
 
         // Thêm hình ảnh nếu có
         if (hinh_anh && Array.isArray(hinh_anh)) {
@@ -1828,16 +2055,42 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         }
 
         // Thêm variants (biến thể) nếu có
+        let minPrice = null;
+        let minOriginalPrice = null;
         if (variants && typeof variants === 'object') {
             // Variants có cấu trúc: {variant_options: [], variant_combinations: []}
             documentData.variants = variants;
             console.log('✅ Variants data saved:', JSON.stringify(variants, null, 2));
+            
+            // Tính giá rẻ nhất từ variant_combinations
+            if (variants.variant_combinations && Array.isArray(variants.variant_combinations)) {
+                variants.variant_combinations.forEach(combo => {
+                    if (combo.price) {
+                        const price = parseFloat(combo.price);
+                        const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
+                        
+                        if (minPrice === null || price < minPrice) {
+                            minPrice = price;
+                            // Lấy giá niêm yết tương ứng với giá bán rẻ nhất
+                            minOriginalPrice = originalPrice;
+                        }
+                    }
+                });
+                console.log('💰 Min price from variants:', {
+                    gia_ban: minPrice,
+                    gia_niem_yet: minOriginalPrice
+                });
+            }
         } else {
             documentData.variants = {
                 variant_options: [],
                 variant_combinations: []
             };
         }
+        
+        // Lưu giá vào documentData để update SQL sau
+        documentData.calculated_price = minPrice;
+        documentData.calculated_original_price = minOriginalPrice;
 
         // Thêm chi tiết bổ sung nếu có (object tự do)
         if (chi_tiet && typeof chi_tiet === 'object') {
@@ -1891,11 +2144,43 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         const savedDetail = await newProductDetail.save();
         
         console.log('✅ MongoDB document created successfully:', savedDetail._id);
+        
+        // Cập nhật giá trong SQL Server nếu có variants
+        if (minPrice !== null && sql_product_id) {
+            try {
+                const sqlProduct = await DataModel.SQL.Product.findById(sql_product_id);
+                if (sqlProduct) {
+                    const updatePriceData = {
+                        gia_ban: minPrice,
+                        mongo_detail_id: savedDetail._id.toString()
+                    };
+                    
+                    // Chỉ cập nhật gia_niem_yet nếu có giá trị
+                    if (minOriginalPrice !== null && minOriginalPrice > minPrice) {
+                        updatePriceData.gia_niem_yet = minOriginalPrice;
+                    } else {
+                        updatePriceData.gia_niem_yet = null; // Không có giảm giá
+                    }
+                    
+                    await DataModel.SQL.Product.update(updatePriceData, sql_product_id);
+                    console.log('✅ Updated SQL product prices:', {
+                        gia_ban: minPrice,
+                        gia_niem_yet: updatePriceData.gia_niem_yet
+                    });
+                }
+            } catch (sqlError) {
+                console.error('⚠️ Failed to update SQL price:', sqlError);
+            }
+        }
 
         res.status(201).json({
             success: true,
             message: 'Tạo document MongoDB thành công',
-            data: savedDetail
+            data: savedDetail,
+            calculated_prices: {
+                gia_ban: minPrice,
+                gia_niem_yet: minOriginalPrice
+            }
         });
 
     } catch (error) {
@@ -1988,16 +2273,60 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
             chi_tiet: chi_tiet ? 'yes' : 'no'
         });
 
-        // Chuyển đổi thông số kỹ thuật từ object sang array
-        const thongSoKyThuatArray = [];
-        if (thong_so_ky_thuat && typeof thong_so_ky_thuat === 'object') {
-            Object.entries(thong_so_ky_thuat).forEach(([ten, gia_tri]) => {
-                thongSoKyThuatArray.push({
-                    ten: ten.trim(),
-                    gia_tri: gia_tri
-                });
+        // Function to aggregate specs with variant values
+        function aggregateSpecsWithVariants(specs, variants) {
+            if (!specs || typeof specs !== 'object') return [];
+            
+            // Convert specs to array format
+            let specsArray = Object.entries(specs).map(([ten, gia_tri]) => ({
+                ten: ten.trim(),
+                gia_tri: gia_tri
+            }));
+            
+            // If no variants, return specs as-is
+            if (!variants || !variants.variant_options || !Array.isArray(variants.variant_options)) {
+                return specsArray;
+            }
+            
+            // Build mapping of spec keys to variant values
+            const variantValuesBySpec = {};
+            
+            variants.variant_options.forEach(option => {
+                if (!option.name || !option.values || !Array.isArray(option.values)) return;
+                
+                const optionName = option.name.trim();
+                const uniqueValues = [...new Set(option.values)]; // Remove duplicates
+                
+                // Try to find matching spec by name (case-insensitive)
+                const matchingSpecIndex = specsArray.findIndex(spec => 
+                    spec.ten.toLowerCase() === optionName.toLowerCase() ||
+                    spec.ten.toLowerCase().includes(optionName.toLowerCase()) ||
+                    optionName.toLowerCase().includes(spec.ten.toLowerCase())
+                );
+                
+                if (matchingSpecIndex !== -1) {
+                    // Store variant values for this spec
+                    variantValuesBySpec[specsArray[matchingSpecIndex].ten] = uniqueValues.join('/');
+                    console.log(`📊 Aggregated spec "${specsArray[matchingSpecIndex].ten}": ${uniqueValues.join('/')}`);
+                }
             });
+            
+            // Update specs with aggregated values
+            specsArray = specsArray.map(spec => {
+                if (variantValuesBySpec[spec.ten]) {
+                    return {
+                        ten: spec.ten,
+                        gia_tri: variantValuesBySpec[spec.ten]
+                    };
+                }
+                return spec;
+            });
+            
+            return specsArray;
         }
+        
+        // Chuyển đổi thông số kỹ thuật từ object sang array và tổng hợp từ variants
+        const thongSoKyThuatArray = aggregateSpecsWithVariants(thong_so_ky_thuat, variants);
 
         const updateData = {
             updatedAt: new Date()
@@ -2006,9 +2335,32 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         if (sql_product_id !== undefined) updateData.sql_product_id = sql_product_id;
         if (thong_so_ky_thuat !== undefined) updateData.thong_so_ky_thuat = thongSoKyThuatArray;
         if (hinh_anh !== undefined) updateData.hinh_anh = hinh_anh;
-        if (videos !== undefined) updateData.videos = videos;
-        if (video_links !== undefined) updateData.video_links = video_links;
-        if (variants !== undefined) updateData.variants = variants;
+        // Xử lý variants và tính giá
+        let minPrice = null;
+        let minOriginalPrice = null;
+        if (variants !== undefined) {
+            updateData.variants = variants;
+            
+            // Tính giá rẻ nhất từ variant_combinations
+            if (variants.variant_combinations && Array.isArray(variants.variant_combinations)) {
+                variants.variant_combinations.forEach(combo => {
+                    if (combo.price) {
+                        const price = parseFloat(combo.price);
+                        const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
+                        
+                        if (minPrice === null || price < minPrice) {
+                            minPrice = price;
+                            minOriginalPrice = originalPrice;
+                        }
+                    }
+                });
+                console.log('💰 Updated min prices from variants:', {
+                    gia_ban: minPrice,
+                    gia_niem_yet: minOriginalPrice
+                });
+            }
+        }
+        
         if (chi_tiet !== undefined) updateData.chi_tiet = chi_tiet;
         if (link_avatar !== undefined) updateData.link_avatar = link_avatar;
         if (mo_ta_chi_tiet !== undefined) updateData.mo_ta_chi_tiet = mo_ta_chi_tiet;
@@ -2031,11 +2383,42 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         }
 
         console.log('✅ MongoDB document updated:', mongoId);
+        
+        // Cập nhật giá trong SQL Server nếu có variants
+        if (minPrice !== null && updatedDetail.sql_product_id) {
+            try {
+                const sqlProduct = await DataModel.SQL.Product.findById(updatedDetail.sql_product_id);
+                if (sqlProduct) {
+                    const updatePriceData = {
+                        gia_ban: minPrice
+                    };
+                    
+                    // Chỉ cập nhật gia_niem_yet nếu có giá trị và lớn hơn giá bán
+                    if (minOriginalPrice !== null && minOriginalPrice > minPrice) {
+                        updatePriceData.gia_niem_yet = minOriginalPrice;
+                    } else {
+                        updatePriceData.gia_niem_yet = null; // Không có giảm giá
+                    }
+                    
+                    await DataModel.SQL.Product.update(updatePriceData, updatedDetail.sql_product_id);
+                    console.log('✅ Updated SQL product prices:', {
+                        gia_ban: minPrice,
+                        gia_niem_yet: updatePriceData.gia_niem_yet
+                    });
+                }
+            } catch (sqlError) {
+                console.error('⚠️ Failed to update SQL price:', sqlError);
+            }
+        }
 
         res.json({
             success: true,
             message: 'Cập nhật document MongoDB thành công',
-            data: updatedDetail
+            data: updatedDetail,
+            calculated_prices: {
+                gia_ban: minPrice,
+                gia_niem_yet: minOriginalPrice
+            }
         });
 
     } catch (error) {
@@ -3508,6 +3891,81 @@ app.delete('/api/provinces/:id', async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Lỗi khi xóa tỉnh/thành'
+        });
+    }
+});
+
+// GET /api/products/by-region/:regionId - Lấy sản phẩm theo vùng miền
+app.get('/api/products/by-region/:regionId', async (req, res) => {
+    try {
+        const { regionId } = req.params;
+        console.log('🔍 Fetching products for region:', regionId);
+        
+        // Lấy tất cả sản phẩm có trong kho thuộc vùng miền này
+        const query = `
+            SELECT 
+                p.id,
+                p.ten_san_pham,
+                p.ma_sku,
+                p.gia_ban,
+                p.gia_niem_yet,
+                p.link_anh,
+                p.trang_thai,
+                p.ngay_tao,
+                ISNULL(SUM(inv.so_luong_kha_dung), 0) as tong_ton_kho
+            FROM products p
+            LEFT JOIN inventory inv ON p.id = inv.san_pham_id AND inv.so_luong_kha_dung > 0
+            LEFT JOIN warehouses w ON inv.kho_id = w.id
+            LEFT JOIN wards wd ON w.phuong_xa_id = wd.id
+            LEFT JOIN provinces prov ON wd.tinh_thanh_id = prov.id
+            LEFT JOIN regions r ON prov.vung_id = r.ma_vung
+            WHERE p.trang_thai = 1
+                AND (r.id = @regionId OR r.id IS NULL)
+            GROUP BY 
+                p.id, p.ten_san_pham, p.ma_sku, 
+                p.gia_ban, p.gia_niem_yet, p.link_anh, p.trang_thai, p.ngay_tao
+            HAVING ISNULL(SUM(inv.so_luong_kha_dung), 0) > 0
+            ORDER BY p.ngay_tao DESC
+        `;
+        
+        const request = new sql.Request();
+        const result = await request
+            .input('regionId', sql.UniqueIdentifier, regionId)
+            .query(query);
+        
+        console.log('📦 Found products:', result.recordset.length);
+        
+        const products = result.recordset.map(product => ({
+            ...product,
+            gia_ban_formatted: new Intl.NumberFormat('vi-VN').format(product.gia_ban),
+            gia_khuyen_mai_formatted: product.gia_niem_yet 
+                ? new Intl.NumberFormat('vi-VN').format(product.gia_niem_yet)
+                : null,
+            tiet_kiem: product.gia_niem_yet && product.gia_niem_yet > product.gia_ban
+                ? product.gia_niem_yet - product.gia_ban
+                : 0,
+            tiet_kiem_formatted: product.gia_niem_yet && product.gia_niem_yet > product.gia_ban
+                ? new Intl.NumberFormat('vi-VN').format(product.gia_niem_yet - product.gia_ban)
+                : null,
+            phan_tram_giam: product.gia_niem_yet && product.gia_niem_yet > product.gia_ban
+                ? Math.round(((product.gia_niem_yet - product.gia_ban) / product.gia_niem_yet) * 100)
+                : 0,
+            ten_kho: 'Kho có sẵn' // Placeholder, có thể query riêng nếu cần
+        }));
+        
+        res.json({
+            success: true,
+            data: products,
+            count: products.length
+        });
+    } catch (error) {
+        console.error('❌ Products by region API Error:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack:', error.stack);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy sản phẩm theo vùng miền',
+            error: error.message
         });
     }
 });

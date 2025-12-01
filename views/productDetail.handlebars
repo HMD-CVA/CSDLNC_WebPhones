@@ -1,0 +1,1722 @@
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Chi tiết sản phẩm - CellphoneS Style -->
+<div class="cps-product-detail-wrapper">
+  <div class="container py-4">
+    
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
+        <li class="breadcrumb-item"><a href="/#products">Điện thoại</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{product.ten_san_pham}}</li>
+      </ol>
+    </nav>
+
+    <div class="row">
+      <!-- Cột trái: Hình ảnh -->
+      <div class="col-lg-5 col-md-6 mb-4">
+        <div class="cps-product-gallery">
+          <!-- Ảnh chính -->
+          <div class="cps-main-image">
+            <img id="mainProductImage" src="{{product.link_anh}}" alt="{{product.ten_san_pham}}">
+            
+            <!-- Discount tag - will be updated by variant selection -->
+            <div class="cps-discount-tag" id="discountTag" style="display: none;">
+              <span id="discountTagText"></span>
+            </div>
+            
+            <!-- Navigation buttons -->
+            <button class="cps-gallery-nav cps-gallery-prev" id="prevImageBtn">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="cps-gallery-nav cps-gallery-next" id="nextImageBtn">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            
+            <!-- Image counter -->
+            <div class="cps-image-counter" id="imageCounter">1 / 1</div>
+          </div>
+
+          <!-- Ảnh thumbnail (nếu có nhiều ảnh) -->
+          <div class="cps-thumbnail-list" id="thumbnailList">
+            {{#each product.hinh_anh_phu}}
+            <div class="cps-thumb{{#if @first}} active{{/if}}" data-image="{{this}}" data-index="{{@index}}">
+              <img src="{{this}}" alt="Ảnh {{@index}}">
+            </div>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+
+      <!-- Cột phải: Thông tin sản phẩm -->
+      <div class="col-lg-7 col-md-6">
+        <div class="cps-product-info">
+          
+          <!-- Tên sản phẩm -->
+          <h1 class="cps-product-title">{{product.ten_san_pham}}</h1>
+
+          <!-- Đánh giá và lượt xem -->
+          <div class="cps-rating-section">
+            <div class="cps-stars">
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star"></i>
+              <i class="fas fa-star-half-alt"></i>
+              <span class="cps-rating-number">4.5</span>
+            </div>
+            <div class="cps-divider">|</div>
+            <div class="cps-views">
+              <i class="fas fa-eye"></i>
+              <span>{{product.luot_xem}} lượt xem</span>
+            </div>
+            <div class="cps-divider">|</div>
+            <div class="cps-sold-count">
+              <i class="fas fa-box"></i>
+              <span>Đã bán {{product.so_luong_ban}}</span>
+            </div>
+          </div>
+
+          <!-- Variants (Phiên bản sản phẩm) - CellphoneS Style -->
+          {{#if product.variants}}
+          {{#if product.variants.variant_options}}
+          <div class="cps-variants-section">
+            {{#each product.variants.variant_options}}
+            <div class="cps-variant-group">
+              <div class="cps-variant-label">{{this.name}}:</div>
+              <div class="cps-variant-options">
+                {{#each this.values}}
+                <button class="cps-variant-option" 
+                        data-option-type="{{../this.name}}" 
+                        data-option-value="{{this}}">
+                  {{this}}
+                </button>
+                {{/each}}
+              </div>
+            </div>
+            {{/each}}
+            
+            <!-- Thông tin variant đã chọn -->
+            <div class="cps-selected-variant-info" id="selectedVariantInfo">
+              <div class="cps-variant-price-display">
+                <div class="cps-variant-current-price" id="variantPrice">Vui lòng chọn phiên bản</div>
+                <div class="cps-variant-original-price" id="variantOriginalPrice" style="display: none;"></div>
+                <div class="cps-variant-discount-badge" id="variantDiscountBadge" style="display: none;">
+                  <span id="variantDiscountPercent"></span>
+                </div>
+              </div>
+              <div class="cps-variant-availability" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <span id="variantStockText"></span>
+              </div>
+            </div>
+          </div>
+          {{else}}
+          <!-- Giá sản phẩm (nếu không có variant) -->
+          <div class="cps-price-section">
+            <div class="cps-current-price">{{product.gia_ban_formatted}}</div>
+            {{#if product.is_discount}}
+            <div class="cps-original-price">{{product.gia_niem_yet_formatted}}</div>
+            <div class="cps-save-amount">Tiết kiệm {{product.tiet_kiem_formatted}}</div>
+            {{/if}}
+          </div>
+          {{/if}}
+          {{else}}
+          <!-- Giá sản phẩm (nếu không có variant) -->
+          <div class="cps-price-section">
+            <div class="cps-current-price">{{product.gia_ban_formatted}}</div>
+            {{#if product.is_discount}}
+            <div class="cps-original-price">{{product.gia_niem_yet_formatted}}</div>
+            <div class="cps-save-amount">Tiết kiệm {{product.tiet_kiem_formatted}}</div>
+            {{/if}}
+          </div>
+          {{/if}}
+
+          <!-- Trạng thái kho -->
+          <div class="cps-stock-section">
+            <div class="cps-stock-label">Tình trạng:</div>
+            {{#if product.trang_thai}}
+            <div class="cps-stock-status in-stock">
+              <i class="fas fa-check-circle"></i>
+              Còn hàng
+            </div>
+            {{else}}
+            <div class="cps-stock-status out-of-stock">
+              <i class="fas fa-times-circle"></i>
+              Hết hàng
+            </div>
+            {{/if}}
+          </div>
+
+          <!-- Khuyến mãi -->
+          <div class="cps-promotions">
+            <h3 class="cps-promo-title">
+              <i class="fas fa-gift"></i>
+              Khuyến mãi đặc biệt
+            </h3>
+            <ul class="cps-promo-list">
+              <li><i class="fas fa-check-circle"></i> Giảm thêm 500.000đ khi thu cũ đổi mới</li>
+              <li><i class="fas fa-check-circle"></i> Trả góp 0% lãi suất trong 6 tháng</li>
+              <li><i class="fas fa-check-circle"></i> Bảo hành chính hãng 12 tháng</li>
+              <li><i class="fas fa-check-circle"></i> Miễn phí vận chuyển toàn quốc</li>
+            </ul>
+          </div>
+
+          <!-- Chọn số lượng -->
+          <div class="cps-quantity-section">
+            <label class="cps-quantity-label">Số lượng:</label>
+            <div class="cps-quantity-control">
+              <button class="cps-qty-btn" id="decreaseQty">
+                <i class="fas fa-minus"></i>
+              </button>
+              <input type="number" class="cps-qty-input" id="quantityInput" value="1" min="1" max="99">
+              <button class="cps-qty-btn" id="increaseQty">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Nút hành động -->
+          <div class="cps-action-buttons">
+            <button class="cps-btn-add-cart" id="addToCartBtn">
+              <i class="fas fa-shopping-cart"></i>
+              THÊM VÀO GIỎ HÀNG
+            </button>
+            <button class="cps-btn-buy-now" id="buyNowBtn">
+              <i class="fas fa-bolt"></i>
+              MUA NGAY
+            </button>
+          </div>
+
+          <!-- Dịch vụ bổ sung -->
+          <div class="cps-services">
+            <div class="cps-service-item">
+              <i class="fas fa-shield-alt"></i>
+              <span>Bảo hành chính hãng</span>
+            </div>
+            <div class="cps-service-item">
+              <i class="fas fa-truck"></i>
+              <span>Giao hàng miễn phí</span>
+            </div>
+            <div class="cps-service-item">
+              <i class="fas fa-sync-alt"></i>
+              <span>Đổi trả 7 ngày</span>
+            </div>
+            <div class="cps-service-item">
+              <i class="fas fa-headset"></i>
+              <span>Hỗ trợ 24/7</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Gallery Section -->
+    {{#if product.videos}}
+    {{#if product.videos.length}}
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="cps-video-section">
+          <h2 class="cps-video-title">
+            <i class="fas fa-play-circle"></i>
+            Video sản phẩm
+          </h2>
+          <div class="cps-video-gallery">
+            {{#each product.videos}}
+            <div class="cps-video-item">
+              <video controls preload="metadata" class="cps-video-player">
+                <source src="{{this}}" type="video/mp4">
+                Trình duyệt của bạn không hỗ trợ video.
+              </video>
+            </div>
+            {{/each}}
+            
+            {{#if product.video_links}}
+            {{#each product.video_links}}
+            <div class="cps-video-item">
+              <div class="cps-video-embed-container" data-video-url="{{this}}">
+                <!-- Iframe will be inserted here by JavaScript -->
+              </div>
+            </div>
+            {{/each}}
+            {{/if}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+    {{else}}
+    {{#if product.video_links}}
+    {{#if product.video_links.length}}
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="cps-video-section">
+          <h2 class="cps-video-title">
+            <i class="fas fa-play-circle"></i>
+            Video sản phẩm
+          </h2>
+          <div class="cps-video-gallery">
+            {{#each product.video_links}}
+            <div class="cps-video-item">
+              <div class="cps-video-embed-container" data-video-url="{{this}}">
+                <!-- Iframe will be inserted here by JavaScript -->
+              </div>
+            </div>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{/if}}
+    {{/if}}
+    {{/if}}
+
+    <!-- Thông tin chi tiết -->
+    <div class="row mt-5">
+      <div class="col-12">
+        <div class="cps-product-tabs">
+          <!-- Tab Navigation -->
+          <ul class="nav nav-tabs cps-tabs-nav" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="specs-tab" data-bs-toggle="tab" data-bs-target="#specs" type="button">
+                <i class="fas fa-info-circle"></i> Thông số kỹ thuật
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button">
+                <i class="fas fa-file-alt"></i> Mô tả sản phẩm
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button">
+                <i class="fas fa-star"></i> Đánh giá (125)
+              </button>
+            </li>
+          </ul>
+
+          <!-- Tab Content -->
+          <div class="tab-content cps-tabs-content">
+            <!-- Thông số kỹ thuật -->
+            <div class="tab-pane fade show active" id="specs" role="tabpanel">
+              <div class="cps-specs-table">
+                {{#if product.thong_so_ky_thuat.length}}
+                  <table class="table table-bordered">
+                    <tbody>
+                      {{#each product.thong_so_ky_thuat}}
+                      <tr>
+                        <td class="spec-label">{{{this.ten}}}</td>
+                        <td class="spec-value">{{{this.gia_tri}}}</td>
+                      </tr>
+                      {{/each}}
+                    </tbody>
+                  </table>
+                {{else}}
+                  <div class="text-center py-5">
+                    <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 15px;"></i>
+                    <p style="color: #999;">Chưa có thông số kỹ thuật</p>
+                  </div>
+                {{/if}}
+              </div>
+            </div>
+
+            <!-- Mô tả sản phẩm -->
+            <div class="tab-pane fade" id="description" role="tabpanel">
+              <div class="cps-description">
+                <h3>Giới thiệu {{product.ten_san_pham}}</h3>
+                {{#if product.mo_ta_chi_tiet}}
+                  <div>{{{product.mo_ta_chi_tiet}}}</div>
+                {{else}}
+                  <p>{{product.ten_san_pham}} là sản phẩm chất lượng cao với thiết kế hiện đại và công nghệ tiên tiến.</p>
+                  
+                  <h4>Điểm nổi bật</h4>
+                  <ul>
+                    <li>Thiết kế cao cấp, sang trọng</li>
+                    <li>Hiệu năng mạnh mẽ, vượt trội</li>
+                    <li>Chất lượng đảm bảo</li>
+                    <li>Giá cả hợp lý</li>
+                  </ul>
+                {{/if}}
+              </div>
+            </div>
+
+            <!-- Đánh giá -->
+            <div class="tab-pane fade" id="reviews" role="tabpanel">
+              <div class="cps-reviews">
+                <div class="cps-review-summary">
+                  <div class="cps-avg-rating">
+                    <div class="cps-rating-number">4.5</div>
+                    <div class="cps-stars-large">
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <div class="cps-review-count">125 đánh giá</div>
+                  </div>
+                </div>
+
+                <!-- Danh sách đánh giá -->
+                <div class="cps-review-list">
+                  <div class="cps-review-item">
+                    <div class="cps-reviewer-info">
+                      <div class="cps-reviewer-avatar">
+                        <i class="fas fa-user-circle"></i>
+                      </div>
+                      <div class="cps-reviewer-details">
+                        <div class="cps-reviewer-name">Nguyễn Văn A</div>
+                        <div class="cps-review-stars">
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="cps-review-content">
+                      Sản phẩm rất tốt, giao hàng nhanh, đóng gói cẩn thận. Máy đẹp, chạy mượt, camera chụp đẹp!
+                    </div>
+                    <div class="cps-review-date">2 ngày trước</div>
+                  </div>
+
+                  <div class="cps-review-item">
+                    <div class="cps-reviewer-info">
+                      <div class="cps-reviewer-avatar">
+                        <i class="fas fa-user-circle"></i>
+                      </div>
+                      <div class="cps-reviewer-details">
+                        <div class="cps-reviewer-name">Trần Thị B</div>
+                        <div class="cps-review-stars">
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="fas fa-star"></i>
+                          <i class="far fa-star"></i>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="cps-review-content">
+                      Máy đẹp, pin trâu. Tuy nhiên giá hơi cao so với mặt bằng chung.
+                    </div>
+                    <div class="cps-review-date">5 ngày trước</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f8f9fa;
+}
+
+.cps-product-detail-wrapper {
+  background: #fff;
+  min-height: 100vh;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+.breadcrumb-item a {
+  color: #666;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.breadcrumb-item a:hover {
+  color: #d70018;
+}
+
+.breadcrumb-item.active {
+  color: #333;
+}
+
+/* Gallery */
+.cps-product-gallery {
+  position: sticky;
+  top: 20px;
+}
+
+.cps-main-image {
+  position: relative;
+  background: #f8f9fa;
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 20px;
+  border: 2px solid #e8ecef;
+}
+
+.cps-main-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.cps-discount-tag {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: linear-gradient(135deg, #d70018, #ff0033);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(215, 0, 24, 0.3);
+}
+
+.cps-thumbnail-list {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  overflow-x: auto;
+}
+
+.cps-thumb {
+  width: 80px;
+  height: 80px;
+  border: 2px solid #e8ecef;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.cps-thumb:hover,
+.cps-thumb.active {
+  border-color: #d70018;
+}
+
+.cps-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 5px;
+}
+
+/* Gallery Navigation */
+.cps-gallery-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  opacity: 0;
+}
+
+.cps-main-image:hover .cps-gallery-nav {
+  opacity: 1;
+}
+
+.cps-gallery-prev {
+  left: 10px;
+}
+
+.cps-gallery-next {
+  right: 10px;
+}
+
+.cps-gallery-nav:hover {
+  background: #d70018;
+  color: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.cps-gallery-nav:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.cps-image-counter {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+/* Product Info */
+.cps-product-info {
+  padding: 0 15px;
+}
+
+.cps-product-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 15px;
+  line-height: 1.3;
+}
+
+.cps-rating-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.cps-stars {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cps-stars i {
+  color: #ffa500;
+  font-size: 16px;
+}
+
+.cps-rating-number {
+  color: #666;
+  font-weight: 600;
+  margin-left: 5px;
+}
+
+.cps-divider {
+  color: #d0d7de;
+}
+
+.cps-views,
+.cps-sold-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #666;
+  font-size: 14px;
+}
+
+.cps-views i,
+.cps-sold-count i {
+  color: #d70018;
+}
+
+/* Price Section */
+.cps-price-section {
+  background: linear-gradient(135deg, #fff5f5, #fff);
+  border: 2px solid #ffe0e0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.cps-current-price {
+  font-size: 32px;
+  font-weight: 700;
+  color: #d70018;
+  margin-bottom: 8px;
+}
+
+.cps-original-price {
+  font-size: 18px;
+  color: #999;
+  text-decoration: line-through;
+  margin-bottom: 5px;
+}
+
+.cps-save-amount {
+  display: inline-block;
+  background: #d70018;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Stock Section */
+.cps-stock-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e8ecef;
+}
+
+.cps-stock-label {
+  font-weight: 600;
+  color: #666;
+}
+
+.cps-stock-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.cps-stock-status.in-stock {
+  color: #28a745;
+}
+
+.cps-stock-status.out-of-stock {
+  color: #dc3545;
+}
+
+/* Promotions */
+.cps-promotions {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.cps-promo-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d70018;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cps-promo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cps-promo-list li {
+  padding: 8px 0;
+  color: #333;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cps-promo-list i {
+  color: #28a745;
+  font-size: 16px;
+}
+
+/* Quantity */
+.cps-quantity-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.cps-quantity-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.cps-quantity-control {
+  display: flex;
+  align-items: center;
+  border: 2px solid #e8ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cps-qty-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #f8f9fa;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cps-qty-btn:hover {
+  background: #d70018;
+  color: white;
+}
+
+.cps-qty-input {
+  width: 60px;
+  height: 40px;
+  border: none;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.cps-qty-input::-webkit-outer-spin-button,
+.cps-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+/* Action Buttons */
+.cps-action-buttons {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.cps-btn-add-cart,
+.cps-btn-buy-now {
+  flex: 1;
+  height: 50px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cps-btn-add-cart {
+  background: white;
+  border: 2px solid #d70018;
+  color: #d70018;
+}
+
+.cps-btn-add-cart:hover {
+  background: #d70018;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(215, 0, 24, 0.3);
+}
+
+.cps-btn-buy-now {
+  background: linear-gradient(135deg, #d70018, #ff0033);
+  color: white;
+  box-shadow: 0 4px 12px rgba(215, 0, 24, 0.3);
+}
+
+.cps-btn-buy-now:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(215, 0, 24, 0.4);
+}
+
+/* Variants - CellphoneS Style */
+.cps-variants-section {
+  margin-bottom: 25px;
+}
+
+.cps-variant-group {
+  margin-bottom: 20px;
+}
+
+.cps-variant-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.cps-variant-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cps-variant-option {
+  min-width: 100px;
+  padding: 10px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.cps-variant-option:hover {
+  border-color: #d70018;
+  color: #d70018;
+}
+
+.cps-variant-option.active {
+  border-color: #d70018;
+  background: #d70018;
+  color: white;
+  box-shadow: 0 2px 8px rgba(215, 0, 24, 0.3);
+}
+
+.cps-variant-option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.cps-selected-variant-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #fff5f5, #fff);
+  border: 2px solid #ffe0e0;
+  border-radius: 12px;
+}
+
+.cps-variant-price-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.cps-variant-current-price {
+  font-size: 28px;
+  font-weight: 700;
+  color: #d70018;
+}
+
+.cps-variant-original-price {
+  font-size: 18px;
+  color: #999;
+  text-decoration: line-through;
+  font-weight: 400;
+}
+
+.cps-variant-discount-badge {
+  display: inline-block;
+  background: #d70018;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.cps-variant-availability {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cps-variant-availability.out-of-stock {
+  color: #dc3545;
+}
+
+.cps-variant-availability i {
+  font-size: 16px;
+}
+
+/* Services */
+.cps-services {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.cps-service-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.cps-service-item i {
+  color: #d70018;
+  font-size: 20px;
+}
+
+/* Video Section */
+.cps-video-section {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid #e8ecef;
+}
+
+.cps-video-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cps-video-title i {
+  color: #d70018;
+  font-size: 28px;
+}
+
+.cps-video-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.cps-video-item {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+}
+
+.cps-video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.cps-video-embed-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #000;
+}
+
+.cps-video-embed-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Tabs */
+.cps-product-tabs {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e8ecef;
+}
+
+.cps-tabs-nav {
+  border-bottom: 2px solid #e8ecef;
+  padding: 0;
+}
+
+.cps-tabs-nav .nav-link {
+  border: none;
+  color: #666;
+  font-weight: 600;
+  padding: 18px 25px;
+  transition: all 0.3s;
+}
+
+.cps-tabs-nav .nav-link:hover {
+  color: #d70018;
+}
+
+.cps-tabs-nav .nav-link.active {
+  color: #d70018;
+  border-bottom: 3px solid #d70018;
+  background: transparent;
+}
+
+.cps-tabs-content {
+  padding: 30px;
+}
+
+/* Specs Table */
+.cps-specs-table .table {
+  margin: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.cps-specs-table td {
+  padding: 15px !important;
+  border-bottom: 1px solid #e8ecef;
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  vertical-align: top !important;
+  overflow-wrap: break-word !important;
+}
+
+.spec-label {
+  font-weight: 600;
+  color: #666;
+  width: 30%;
+  white-space: pre-line !important;
+}
+
+.spec-value {
+  color: #333;
+  white-space: pre-line !important;
+  word-wrap: break-word !important;
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+/* Description */
+.cps-description h3 {
+  font-size: 22px;
+  color: #1f2937;
+  margin-bottom: 15px;
+}
+
+.cps-description h4 {
+  font-size: 18px;
+  color: #333;
+  margin: 20px 0 10px;
+}
+
+.cps-description p {
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 15px;
+}
+
+.cps-description ul {
+  color: #666;
+  line-height: 1.8;
+}
+
+/* Reviews */
+.cps-review-summary {
+  text-align: center;
+  padding: 30px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+.cps-avg-rating .cps-rating-number {
+  font-size: 48px;
+  font-weight: 700;
+  color: #d70018;
+}
+
+.cps-stars-large {
+  font-size: 24px;
+  color: #ffa500;
+  margin: 10px 0;
+}
+
+.cps-review-count {
+  color: #666;
+  font-size: 14px;
+}
+
+.cps-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cps-review-item {
+  padding: 20px;
+  border: 1px solid #e8ecef;
+  border-radius: 12px;
+}
+
+.cps-reviewer-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.cps-reviewer-avatar i {
+  font-size: 48px;
+  color: #d0d7de;
+}
+
+.cps-reviewer-name {
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.cps-review-stars {
+  color: #ffa500;
+  font-size: 14px;
+}
+
+.cps-review-content {
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 10px;
+}
+
+.cps-review-date {
+  color: #999;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cps-product-title {
+    font-size: 22px;
+  }
+
+  .cps-current-price {
+    font-size: 26px;
+  }
+
+  .cps-action-buttons {
+    flex-direction: column;
+  }
+
+  .cps-services {
+    grid-template-columns: 1fr;
+  }
+  
+  .cps-video-gallery {
+    grid-template-columns: 1fr;
+  }
+  
+  .cps-video-title {
+    font-size: 20px;
+  }
+}
+</style>
+
+<script>
+// Product Detail JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+  
+  // Quantity Controls
+  const decreaseBtn = document.getElementById('decreaseQty');
+  const increaseBtn = document.getElementById('increaseQty');
+  const quantityInput = document.getElementById('quantityInput');
+
+  decreaseBtn?.addEventListener('click', function() {
+    const currentValue = parseInt(quantityInput.value) || 1;
+    if (currentValue > 1) {
+      quantityInput.value = currentValue - 1;
+    }
+  });
+
+  increaseBtn?.addEventListener('click', function() {
+    const currentValue = parseInt(quantityInput.value) || 1;
+    const maxValue = parseInt(quantityInput.getAttribute('max')) || 99;
+    if (currentValue < maxValue) {
+      quantityInput.value = currentValue + 1;
+    }
+  });
+
+  // Add to Cart
+  const addToCartBtn = document.getElementById('addToCartBtn');
+  addToCartBtn?.addEventListener('click', function() {
+    const quantity = quantityInput.value;
+    const productId = '{{product.id}}';
+    
+    console.log('🛒 Thêm vào giỏ:', productId, 'Số lượng:', quantity);
+    
+    // Animation
+    const originalHTML = this.innerHTML;
+    this.innerHTML = '<i class="fas fa-check"></i> ĐÃ THÊM VÀO GIỎ';
+    this.style.background = '#28a745';
+    this.style.borderColor = '#28a745';
+    this.style.color = 'white';
+    
+    setTimeout(() => {
+      this.innerHTML = originalHTML;
+      this.style.background = '';
+      this.style.borderColor = '';
+      this.style.color = '';
+    }, 2000);
+    
+    // TODO: Gọi API thêm vào giỏ
+    // fetch('/api/cart/add', { method: 'POST', body: JSON.stringify({ productId, quantity }) })
+  });
+
+  // Buy Now
+  const buyNowBtn = document.getElementById('buyNowBtn');
+  buyNowBtn?.addEventListener('click', function() {
+    const quantity = quantityInput.value;
+    const productId = '{{product.id}}';
+    
+    console.log('⚡ Mua ngay:', productId, 'Số lượng:', quantity);
+    
+    // TODO: Chuyển đến trang thanh toán
+    // window.location.href = `/checkout?product=${productId}&quantity=${quantity}`;
+  });
+
+  // Thumbnail Click - Cập nhật để sử dụng data-image
+  const thumbnails = document.querySelectorAll('.cps-thumb');
+  const mainImage = document.getElementById('mainProductImage');
+  const imageCounter = document.getElementById('imageCounter');
+  const prevBtn = document.getElementById('prevImageBtn');
+  const nextBtn = document.getElementById('nextImageBtn');
+  
+  // Collect all images (main + thumbnails)
+  let allImages = [];
+  let currentImageIndex = 0;
+  let autoSlideInterval = null;
+  
+  function initializeGallery() {
+    // Collect images from thumbnails
+    thumbnails.forEach(thumb => {
+      const imgSrc = thumb.getAttribute('data-image');
+      if (imgSrc) {
+        allImages.push(imgSrc);
+      }
+    });
+    
+    // Set first image as main
+    if (allImages.length > 0 && mainImage) {
+      mainImage.src = allImages[0];
+    }
+    
+    // Update counter
+    updateCounter();
+    
+    // Start auto slide
+    startAutoSlide();
+  }
+  
+  function updateCounter() {
+    if (imageCounter && allImages.length > 0) {
+      imageCounter.textContent = `${currentImageIndex + 1} / ${allImages.length}`;
+    }
+  }
+  
+  function showImage(index) {
+    if (index < 0) {
+      currentImageIndex = allImages.length - 1;
+    } else if (index >= allImages.length) {
+      currentImageIndex = 0;
+    } else {
+      currentImageIndex = index;
+    }
+    
+    // Update main image
+    if (mainImage) {
+      mainImage.src = allImages[currentImageIndex];
+    }
+    
+    // Update thumbnails active state
+    thumbnails.forEach((thumb, idx) => {
+      if (idx === currentImageIndex) {
+        thumb.classList.add('active');
+      } else {
+        thumb.classList.remove('active');
+      }
+    });
+    
+    updateCounter();
+  }
+  
+  function startAutoSlide() {
+    stopAutoSlide(); // Clear any existing interval
+    
+    if (allImages.length > 1) {
+      autoSlideInterval = setInterval(() => {
+        showImage(currentImageIndex + 1);
+      }, 10000); // 10 seconds
+    }
+  }
+  
+  function stopAutoSlide() {
+    if (autoSlideInterval) {
+      clearInterval(autoSlideInterval);
+      autoSlideInterval = null;
+    }
+  }
+  
+  // Thumbnail click
+  thumbnails.forEach((thumb, index) => {
+    thumb.addEventListener('click', function() {
+      stopAutoSlide();
+      const thumbIndex = parseInt(this.getAttribute('data-index'));
+      // If main image thumbnail (index -1), show index 0
+      // Otherwise show thumbIndex + 1
+      const targetIndex = thumbIndex === -1 ? 0 : thumbIndex + 1;
+      showImage(targetIndex);
+      startAutoSlide();
+    });
+  });
+  
+  // Previous button
+  prevBtn?.addEventListener('click', function() {
+    stopAutoSlide();
+    showImage(currentImageIndex - 1);
+    startAutoSlide();
+  });
+  
+  // Next button
+  nextBtn?.addEventListener('click', function() {
+    stopAutoSlide();
+    showImage(currentImageIndex + 1);
+    startAutoSlide();
+  });
+  
+  // Pause on hover
+  mainImage?.addEventListener('mouseenter', stopAutoSlide);
+  mainImage?.addEventListener('mouseleave', startAutoSlide);
+  
+  // Initialize gallery
+  initializeGallery();
+
+  // Video Embed Handler - Load iframes immediately
+  const videoEmbedContainers = document.querySelectorAll('.cps-video-embed-container');
+  
+  videoEmbedContainers.forEach(container => {
+    const videoUrl = container.getAttribute('data-video-url');
+    if (!videoUrl) return;
+    
+    // Convert URL to embed URL
+    let embedUrl = '';
+    
+    // YouTube
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      let videoId = '';
+      if (videoUrl.includes('youtu.be/')) {
+        videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+      } else if (videoUrl.includes('youtube.com/watch?v=')) {
+        videoId = videoUrl.split('v=')[1].split('&')[0];
+      } else if (videoUrl.includes('youtube.com/embed/')) {
+        videoId = videoUrl.split('embed/')[1].split('?')[0];
+      }
+      
+      if (videoId) {
+        // Remove autoplay, let user click play button
+        embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0`;
+      }
+    }
+    // Vimeo
+    else if (videoUrl.includes('vimeo.com')) {
+      const videoId = videoUrl.split('vimeo.com/')[1].split('?')[0];
+      if (videoId) {
+        embedUrl = `https://player.vimeo.com/video/${videoId}`;
+      }
+    }
+    
+    // Create and insert iframe immediately
+    if (embedUrl) {
+      const iframe = document.createElement('iframe');
+      iframe.src = embedUrl;
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.loading = 'lazy'; // Lazy load for performance
+      
+      container.appendChild(iframe);
+      
+      console.log('🎬 Video loaded:', embedUrl);
+    }
+  });
+
+  // Variant Selection - CellphoneS Style
+  const variantOptions = document.querySelectorAll('.cps-variant-option');
+  const selectedVariantInfo = document.getElementById('selectedVariantInfo');
+  const variantPriceElem = document.getElementById('variantPrice');
+  const variantOriginalPriceElem = document.getElementById('variantOriginalPrice');
+  const variantStockText = document.getElementById('variantStockText');
+  
+  // Store variant data from server
+  const variantData = {
+    options: {{{json product.variants.variant_options}}},
+    combinations: {{{json product.variants.variant_combinations}}}
+  };
+  
+  // Get SQL original price for fallback
+  const sqlOriginalPrice = {{#if product.sql_gia_niem_yet}}{{product.sql_gia_niem_yet}}{{else}}null{{/if}};
+  
+  // Store specs data for dynamic update
+  const specsData = {{{json product.thong_so_ky_thuat}}};
+  
+  let selectedOptions = {};
+  
+  variantOptions.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const optionType = this.getAttribute('data-option-type');
+      const optionValue = this.getAttribute('data-option-value');
+      
+      // Deselect other options of same type
+      document.querySelectorAll(`[data-option-type="${optionType}"]`).forEach(opt => {
+        opt.classList.remove('active');
+      });
+      
+      // Select this option
+      this.classList.add('active');
+      selectedOptions[optionType] = optionValue;
+      
+      console.log('🎨 Selected options:', selectedOptions);
+      
+      // Find matching combination
+      updateVariantInfo();
+    });
+  });
+  
+  function updateVariantInfo() {
+    if (!variantData.combinations) return;
+    
+    const variantDiscountBadge = document.getElementById('variantDiscountBadge');
+    const variantDiscountPercent = document.getElementById('variantDiscountPercent');
+    const discountTag = document.getElementById('discountTag');
+    const discountTagText = document.getElementById('discountTagText');
+    
+    // Find combination that matches selected options
+    const matchingCombo = variantData.combinations.find(combo => {
+      if (!combo.attributes) return false;
+      
+      // Check if all selected options match
+      for (let key in selectedOptions) {
+        const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
+        if (combo.attributes[normalizedKey] !== selectedOptions[key]) {
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    if (matchingCombo) {
+      console.log('✅ Found matching combination:', matchingCombo);
+      console.log('💰 Price:', matchingCombo.price);
+      console.log('💰 Original Price from combo:', matchingCombo.original_price);
+      console.log('💰 SQL Original Price:', sqlOriginalPrice);
+      
+      // Update price
+      if (matchingCombo.price) {
+        variantPriceElem.textContent = new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND'
+        }).format(matchingCombo.price);
+      }
+      
+      // Update original price - use combo's original_price or fallback to SQL
+      const originalPriceToUse = matchingCombo.original_price || sqlOriginalPrice;
+      
+      if (originalPriceToUse) {
+        // Show original price
+        const formattedOriginalPrice = new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND'
+        }).format(originalPriceToUse);
+        
+        variantOriginalPriceElem.textContent = formattedOriginalPrice;
+        variantOriginalPriceElem.style.display = 'inline-block';
+        
+        console.log('✅ Showing original price:', formattedOriginalPrice);
+        
+        // Calculate and show discount percentage if price is lower
+        if (originalPriceToUse > matchingCombo.price) {
+          const discountPercent = Math.round((1 - matchingCombo.price / originalPriceToUse) * 100);
+          
+          // Update discount badge in price section
+          if (variantDiscountBadge && variantDiscountPercent) {
+            variantDiscountPercent.textContent = `-${discountPercent}%`;
+            variantDiscountBadge.style.display = 'inline-block';
+          }
+          
+          // Update discount tag on image
+          if (discountTag && discountTagText) {
+            discountTagText.textContent = `-${discountPercent}%`;
+            discountTag.style.display = 'block';
+          }
+          
+          console.log('✅ Showing discount:', discountPercent + '%');
+        } else {
+          if (variantDiscountBadge) {
+            variantDiscountBadge.style.display = 'none';
+          }
+          if (discountTag) {
+            discountTag.style.display = 'none';
+          }
+        }
+      } else {
+        console.log('⚠️ No original price found');
+        variantOriginalPriceElem.style.display = 'none';
+        if (variantDiscountBadge) {
+          variantDiscountBadge.style.display = 'none';
+        }
+        if (discountTag) {
+          discountTag.style.display = 'none';
+        }
+      }
+      
+      // Update stock
+      const availabilityElem = document.querySelector('.cps-variant-availability');
+      if (availabilityElem) {
+        availabilityElem.style.display = 'flex';
+        if (matchingCombo.stock && matchingCombo.stock > 0) {
+          variantStockText.textContent = `Còn ${matchingCombo.stock} sản phẩm`;
+          availabilityElem.classList.remove('out-of-stock');
+          availabilityElem.querySelector('i').className = 'fas fa-check-circle';
+        } else {
+          variantStockText.textContent = 'Hết hàng';
+          availabilityElem.classList.add('out-of-stock');
+          availabilityElem.querySelector('i').className = 'fas fa-times-circle';
+        }
+      }
+      
+      // Store selected variant for add to cart
+      window.selectedVariant = matchingCombo;
+      
+      // Update specs table with selected variant
+      updateSpecsTable();
+    } else {
+      variantPriceElem.textContent = 'Vui lòng chọn đầy đủ phiên bản';
+      variantOriginalPriceElem.style.display = 'none';
+      if (variantDiscountBadge) {
+        variantDiscountBadge.style.display = 'none';
+      }
+      const availabilityElem = document.querySelector('.cps-variant-availability');
+      if (availabilityElem) {
+        availabilityElem.style.display = 'none';
+      }
+      window.selectedVariant = null;
+    }
+  }
+  
+  // Function to update specs table based on selected variant
+  function updateSpecsTable() {
+    const specsTableBody = document.querySelector('#specs .cps-specs-table tbody');
+    if (!specsTableBody) return;
+    
+    // Clear current table
+    specsTableBody.innerHTML = '';
+    
+    // Create a copy of specs data for display
+    let displaySpecs = specsData ? [...specsData] : [];
+    
+    // Track which variant options are already in specs
+    const existingSpecNames = displaySpecs.map(s => s.ten.toLowerCase().trim());
+    
+    // Add variant options that don't exist in specs
+    if (variantData && variantData.options && Array.isArray(variantData.options)) {
+      variantData.options.forEach(option => {
+        if (!option.name || !option.values || !Array.isArray(option.values)) return;
+        
+        const optionName = option.name.trim();
+        const optionNameLower = optionName.toLowerCase();
+        
+        // Check if this variant option already exists in specs (exact or partial match)
+        const alreadyExists = existingSpecNames.some(specName => 
+          specName === optionNameLower || 
+          specName.includes(optionNameLower) || 
+          optionNameLower.includes(specName)
+        );
+        
+        if (!alreadyExists) {
+          // Auto-add this variant option to display specs
+          const uniqueValues = [...new Set(option.values)];
+          const aggregatedValue = uniqueValues.join('/');
+          
+          displaySpecs.push({
+            ten: optionName,
+            gia_tri: aggregatedValue,
+            _isAutoAdded: true // Mark as auto-added for debugging
+          });
+          
+          console.log(`➕ Auto-added spec "${optionName}": ${aggregatedValue}`);
+        }
+      });
+    }
+    
+    // Build table with all specs (original + auto-added)
+    displaySpecs.forEach(spec => {
+      const row = document.createElement('tr');
+      
+      const labelCell = document.createElement('td');
+      labelCell.className = 'spec-label';
+      labelCell.innerHTML = spec.ten;
+      
+      const valueCell = document.createElement('td');
+      valueCell.className = 'spec-value';
+      
+      // Check if spec value contains variant options (e.g., "8GB/16GB")
+      let displayValue = spec.gia_tri;
+      
+      // Try to match spec with selected variant options
+      if (selectedOptions && Object.keys(selectedOptions).length > 0) {
+        // Check if value contains slash (multiple options)
+        if (displayValue && displayValue.includes('/')) {
+          const possibleValues = displayValue.split('/').map(v => v.trim());
+          
+          // Try to match with any selected option value
+          for (let optionType in selectedOptions) {
+            const selectedValue = selectedOptions[optionType];
+            
+            // Check if any possible value matches the selected variant
+            const matchedValue = possibleValues.find(pv => {
+              // Normalize for comparison (remove spaces, lowercase)
+              const normalizedPV = pv.toLowerCase().replace(/\s+/g, '');
+              const normalizedSelected = selectedValue.toLowerCase().replace(/\s+/g, '');
+              return normalizedPV.includes(normalizedSelected) || normalizedSelected.includes(normalizedPV);
+            });
+            
+            if (matchedValue) {
+              displayValue = matchedValue;
+              console.log(`📊 Spec "${spec.ten}" matched: ${matchedValue} (from ${spec.gia_tri})`);
+              break;
+            }
+          }
+        }
+      }
+      
+      valueCell.innerHTML = displayValue;
+      
+      row.appendChild(labelCell);
+      row.appendChild(valueCell);
+      specsTableBody.appendChild(row);
+    });
+  }
+  
+  // Initialize specs table on page load
+  updateSpecsTable();
+  
+  // Auto-select first option of each type
+  if (variantData.options) {
+    variantData.options.forEach(optionGroup => {
+      if (optionGroup.values && optionGroup.values.length > 0) {
+        const firstBtn = document.querySelector(`[data-option-type="${optionGroup.name}"][data-option-value="${optionGroup.values[0]}"]`);
+        if (firstBtn) {
+          firstBtn.click();
+        }
+      }
+    });
+  }
+});
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

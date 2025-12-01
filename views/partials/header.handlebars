@@ -15,27 +15,10 @@
                 <div class="cps-location">
                     <i class="fas fa-map-marker-alt text-danger"></i>
                     <select id="locationSelect" class="form-select form-select-sm">
-                        <optgroup label="Miền Bắc">
-                            <option value="hanoi" selected>Hà Nội</option>
-                            <option value="haiphong">Hải Phòng</option>
-                            <option value="quangninh">Quảng Ninh</option>
-                            <option value="thaibinh">Thái Bình</option>
-                            <option value="namdinh">Nam Định</option>
-                        </optgroup>
-                        <optgroup label="Miền Trung">
-                            <option value="danang">Đà Nẵng</option>
-                            <option value="hue">Huế</option>
-                            <option value="quangnam">Quảng Nam</option>
-                            <option value="nhatrang">Nha Trang</option>
-                            <option value="quynhon">Quy Nhơn</option>
-                        </optgroup>
-                        <optgroup label="Miền Nam">
-                            <option value="hochiminh">Hồ Chí Minh</option>
-                            <option value="binhduong">Bình Dương</option>
-                            <option value="dongnai">Đồng Nai</option>
-                            <option value="cantho">Cần Thơ</option>
-                            <option value="vungtau">Vũng Tàu</option>
-                        </optgroup>
+                        <option value="" selected>Chọn vùng miền</option>
+                        {{#each regions}}
+                        <option value="{{this.id}}">{{this.ten_vung}}</option>
+                        {{/each}}
                     </select>
                 </div>
             </div>
@@ -49,31 +32,21 @@
                     </button>
                     <ul class="dropdown-menu cps-mega-dropdown">
                         <li class="row g-0">
+                            {{#each categories}}
+                            {{#unless this.danh_muc_cha_id}}
                             <div class="col-md-3">
-                                <h6 class="dropdown-header"><i class="fas fa-mobile-alt"></i> Điện thoại</h6>
-                                <a class="dropdown-item" href="/category/iphone">iPhone</a>
-                                <a class="dropdown-item" href="/category/samsung">Samsung</a>
-                                <a class="dropdown-item" href="/category/xiaomi">Xiaomi</a>
-                                <a class="dropdown-item" href="/category/oppo">OPPO</a>
+                                <h6 class="dropdown-header">
+                                    <i class="fas fa-{{#if (eq this.ten_danh_muc 'Điện thoại')}}mobile-alt{{else if (eq this.ten_danh_muc 'Laptop')}}laptop{{else if (eq this.ten_danh_muc 'Máy tính bảng')}}tablet-alt{{else}}th{{/if}}"></i>
+                                    {{this.ten_danh_muc}}
+                                </h6>
+                                {{#each ../categories}}
+                                {{#if (eq this.danh_muc_cha_id ../this.id)}}
+                                <a class="dropdown-item" href="/category/{{this.slug}}">{{this.ten_danh_muc}}</a>
+                                {{/if}}
+                                {{/each}}
                             </div>
-                            <div class="col-md-3">
-                                <h6 class="dropdown-header"><i class="fas fa-laptop"></i> Laptop</h6>
-                                <a class="dropdown-item" href="/category/macbook">MacBook</a>
-                                <a class="dropdown-item" href="/category/dell">Dell</a>
-                                <a class="dropdown-item" href="/category/hp">HP</a>
-                                <a class="dropdown-item" href="/category/asus">Asus</a>
-                            </div>
-                            <div class="col-md-3">
-                                <h6 class="dropdown-header"><i class="fas fa-tablet-alt"></i> Tablet</h6>
-                                <a class="dropdown-item" href="/category/ipad">iPad</a>
-                                <a class="dropdown-item" href="/category/samsung-tablet">Samsung Tab</a>
-                            </div>
-                            <div class="col-md-3">
-                                <h6 class="dropdown-header"><i class="fas fa-headphones"></i> Phụ kiện</h6>
-                                <a class="dropdown-item" href="/category/earphone">Tai nghe</a>
-                                <a class="dropdown-item" href="/category/charger">Sạc & Cáp</a>
-                                <a class="dropdown-item" href="/category/case">Ốp lưng</a>
-                            </div>
+                            {{/unless}}
+                            {{/each}}
                         </li>
                     </ul>
                 </div>
@@ -135,10 +108,10 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="cps-user-not-logged">
-                            <a class="dropdown-item" href="#" id="btnLogin">
+                            <a class="dropdown-item" href="/login" id="btnLogin">
                                 <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
                             </a>
-                            <a class="dropdown-item" href="#" id="btnRegister">
+                            <a class="dropdown-item" href="/register" id="btnRegister">
                                 <i class="fas fa-user-plus me-2"></i>Đăng ký
                             </a>
                         </li>
@@ -163,9 +136,9 @@
 
             <!-- Cart -->
             <div class="col-auto">
-                <a href="/cart" class="position-relative text-decoration-none">
+                <a href="/cart" class="position-relative text-decoration-none" id="cartIcon">
                     <i class="fas fa-shopping-cart text-danger fs-5"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="font-size: 9px;">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="cartBadge" style="font-size: 9px; display: none;">
                         0
                     </span>
                     <div class="d-none d-md-block">
@@ -176,3 +149,183 @@
         </div>
     </div>
 </header>
+
+
+<style>
+/* Animate badge */
+@keyframes bounceIn {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.badge-animate {
+    animation: bounceIn 0.5s ease;
+}
+</style>
+
+<script>
+// Cart Management
+(function() {
+    const CartManager = {
+        // Get cart from localStorage
+        getCart: function() {
+            try {
+                const cart = localStorage.getItem('webphones_cart');
+                return cart ? JSON.parse(cart) : [];
+            } catch (error) {
+                console.error('Error loading cart:', error);
+                return [];
+            }
+        },
+
+        // Save cart to localStorage
+        saveCart: function(cart) {
+            try {
+                localStorage.setItem('webphones_cart', JSON.stringify(cart));
+                this.updateCartBadge();
+            } catch (error) {
+                console.error('Error saving cart:', error);
+            }
+        },
+
+        // Add item to cart
+        addToCart: function(productData) {
+            let cart = this.getCart();
+            
+            // Check if product already in cart
+            const existingIndex = cart.findIndex(item => item.id === productData.id);
+            
+            if (existingIndex >= 0) {
+                // Increase quantity
+                cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + 1;
+            } else {
+                // Add new item
+                cart.push({
+                    id: productData.id,
+                    name: productData.name,
+                    image: productData.image,
+                    price: productData.price,
+                    quantity: 1
+                });
+            }
+            
+            this.saveCart(cart);
+            this.showAddToCartNotification(productData.name);
+        },
+
+        // Remove item from cart
+        removeFromCart: function(productId) {
+            let cart = this.getCart();
+            cart = cart.filter(item => item.id !== productId);
+            this.saveCart(cart);
+        },
+
+        // Update cart badge
+        updateCartBadge: function() {
+            const cart = this.getCart();
+            const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+            const badge = document.getElementById('cartBadge');
+            
+            if (badge) {
+                if (totalItems > 0) {
+                    badge.textContent = totalItems > 99 ? '99+' : totalItems;
+                    badge.style.display = 'block';
+                    badge.classList.add('badge-animate');
+                    setTimeout(() => badge.classList.remove('badge-animate'), 500);
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        },
+
+        // Format currency
+        formatCurrency: function(amount) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(amount);
+        },
+
+        // Show notification
+        showAddToCartNotification: function(productName) {
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Đã thêm vào giỏ hàng!</strong>
+                <p class="mb-0 small">${productName}</p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        },
+
+        // Initialize
+        init: function() {
+            this.updateCartBadge();
+            
+            // Listen for cart updates from other tabs
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'webphones_cart') {
+                    this.updateCartBadge();
+                }
+            });
+        }
+    };
+
+    // Make CartManager globally available
+    window.CartManager = CartManager;
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => CartManager.init());
+    } else {
+        CartManager.init();
+    }
+
+    // Update cart buttons to use CartManager
+    document.addEventListener('click', function(e) {
+        const cartBtn = e.target.closest('.cps-btn-cart');
+        if (cartBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const productCard = cartBtn.closest('.cps-product-card');
+            if (productCard) {
+                const productId = cartBtn.getAttribute('data-product-id');
+                const productName = productCard.querySelector('.cps-product-name')?.textContent || '';
+                const productImage = productCard.querySelector('.cps-product-image img')?.src || '';
+                const priceText = productCard.querySelector('.cps-current-price')?.textContent || '0';
+                const price = parseInt(priceText.replace(/[^0-9]/g, '')) || 0;
+                
+                CartManager.addToCart({
+                    id: productId,
+                    name: productName,
+                    image: productImage,
+                    price: price
+                });
+                
+                // Animation
+                const originalHTML = cartBtn.innerHTML;
+                cartBtn.innerHTML = '<i class="fas fa-check"></i>';
+                cartBtn.style.background = '#28a745';
+                cartBtn.style.borderColor = '#28a745';
+                cartBtn.style.color = '#fff';
+                
+                setTimeout(() => {
+                    cartBtn.innerHTML = originalHTML;
+                    cartBtn.style.background = '';
+                    cartBtn.style.borderColor = '';
+                    cartBtn.style.color = '';
+                }, 1500);
+            }
+        }
+    });
+})();
+</script>

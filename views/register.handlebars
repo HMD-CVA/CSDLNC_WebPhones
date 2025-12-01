@@ -1,0 +1,916 @@
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Register Container - CellphoneS Style -->
+<div class="cps-register-wrapper">
+  <div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100 py-5">
+      
+      <!-- Register Card -->
+      <div class="col-lg-6 col-md-8 col-sm-10">
+        <div class="cps-register-card">
+          
+          <!-- Back to Home -->
+          <div class="text-start mb-3">
+            <a href="/" class="btn btn-link text-muted text-decoration-none p-0">
+              <i class="fas fa-arrow-left me-2"></i>Quay lại trang chủ
+            </a>
+          </div>
+
+          <!-- Logo & Header -->
+          <div class="text-center mb-4">
+            <a href="/" class="d-inline-block mb-3">
+              <img src="/icon/logo.png" alt="WebPhones" height="50" onerror="this.style.display='none'">
+            </a>
+            <h3 class="fw-bold text-dark mb-2">Tạo tài khoản mới</h3>
+            <p class="text-muted small mb-0">Đăng ký để nhận ưu đãi độc quyền</p>
+          </div>
+
+          <!-- Alert Container -->
+          <div id="alertContainer"></div>
+
+          <!-- Register Form -->
+          <form id="registerForm" class="needs-validation" novalidate>
+            
+            <!-- Name Row -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="firstName" class="form-label fw-semibold small">
+                  Họ <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="firstName"
+                  placeholder="Nguyễn"
+                  required
+                >
+                <div class="invalid-feedback">Vui lòng nhập họ</div>
+              </div>
+              <div class="col-md-6">
+                <label for="lastName" class="form-label fw-semibold small">
+                  Tên <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="lastName"
+                  placeholder="Văn A"
+                  required
+                >
+                <div class="invalid-feedback">Vui lòng nhập tên</div>
+              </div>
+            </div>
+
+            <!-- Email Input -->
+            <div class="mb-3">
+              <label for="email" class="form-label fw-semibold small">
+                Email <span class="text-danger">*</span>
+              </label>
+              <input 
+                type="email" 
+                class="form-control" 
+                id="email"
+                placeholder="example@email.com"
+                required
+              >
+              <div class="invalid-feedback">Vui lòng nhập email hợp lệ</div>
+            </div>
+
+            <!-- Phone Input -->
+            <div class="mb-3">
+              <label for="phone" class="form-label fw-semibold small">
+                Số điện thoại <span class="text-danger">*</span>
+              </label>
+              <input 
+                type="tel" 
+                class="form-control" 
+                id="phone"
+                placeholder="0912345678"
+                pattern="[0-9]{10}"
+                required
+              >
+              <div class="invalid-feedback">Vui lòng nhập số điện thoại 10 chữ số</div>
+            </div>
+
+            <!-- Password Input -->
+            <div class="mb-3">
+              <label for="password" class="form-label fw-semibold small">
+                Mật khẩu <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="password"
+                  placeholder="Ít nhất 8 ký tự"
+                  minlength="8"
+                  required
+                >
+                <button 
+                  class="btn btn-outline-secondary" 
+                  type="button" 
+                  id="togglePassword"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <div class="invalid-feedback">Mật khẩu phải có ít nhất 8 ký tự</div>
+              
+              <!-- Password Strength Indicator -->
+              <div class="mt-2">
+                <div class="password-strength-bar">
+                  <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                </div>
+                <small class="text-muted" id="passwordStrengthText">Độ mạnh mật khẩu</small>
+              </div>
+            </div>
+
+            <!-- Confirm Password Input -->
+            <div class="mb-3">
+              <label for="confirmPassword" class="form-label fw-semibold small">
+                Xác nhận mật khẩu <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <input 
+                  type="password" 
+                  class="form-control" 
+                  id="confirmPassword"
+                  placeholder="Nhập lại mật khẩu"
+                  required
+                >
+                <button 
+                  class="btn btn-outline-secondary" 
+                  type="button" 
+                  id="toggleConfirmPassword"
+                >
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <div class="invalid-feedback">Mật khẩu xác nhận không khớp</div>
+            </div>
+
+            <!-- Terms & Conditions -->
+            <div class="mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                <label class="form-check-label small text-muted" for="agreeTerms">
+                  Tôi đồng ý với 
+                  <a href="/terms" class="cps-link text-decoration-none">Điều khoản dịch vụ</a> 
+                  và 
+                  <a href="/privacy" class="cps-link text-decoration-none">Chính sách bảo mật</a>
+                  <span class="text-danger">*</span>
+                </label>
+                <div class="invalid-feedback">Bạn phải đồng ý với điều khoản</div>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn cps-btn-primary w-100 py-3 fw-bold mb-3" id="btnRegister">
+              ĐĂNG KÝ TÀI KHOẢN
+            </button>
+
+            <!-- Divider -->
+            <div class="position-relative my-4">
+              <hr>
+              <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">
+                Hoặc đăng ký bằng
+              </span>
+            </div>
+
+            <!-- Social Register -->
+            <div class="row g-2 mb-4">
+              <div class="col-6">
+                <button type="button" class="btn btn-outline-secondary w-100 py-2" id="btnGoogle">
+                  <i class="fab fa-google me-2 google-icon"></i>Google
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="btn btn-outline-secondary w-100 py-2" id="btnFacebook">
+                  <i class="fab fa-facebook-f me-2 facebook-icon"></i>Facebook
+                </button>
+              </div>
+            </div>
+
+            <!-- Login Link -->
+            <div class="text-center">
+              <p class="text-muted small mb-0">
+                Đã có tài khoản? 
+                <a href="/login" class="fw-bold text-decoration-none cps-link">Đăng nhập ngay</a>
+              </p>
+            </div>
+
+          </form>
+
+          <!-- Benefits -->
+          <div class="cps-benefits mt-4 pt-4 border-top">
+            <div class="row g-3">
+              <div class="col-6 col-md-3 text-center">
+                <i class="fas fa-gift text-danger fs-5 mb-2"></i>
+                <p class="small mb-0 fw-semibold">Quà tặng đặc biệt</p>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <i class="fas fa-percent text-danger fs-5 mb-2"></i>
+                <p class="small mb-0 fw-semibold">Giảm giá độc quyền</p>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <i class="fas fa-bell text-danger fs-5 mb-2"></i>
+                <p class="small mb-0 fw-semibold">Thông báo ưu đãi</p>
+              </div>
+              <div class="col-6 col-md-3 text-center">
+                <i class="fas fa-shipping-fast text-danger fs-5 mb-2"></i>
+                <p class="small mb-0 fw-semibold">Miễn phí ship</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* CellphoneS Register Style - Enhanced */
+.cps-register-wrapper {
+  min-height: 100vh;
+  background: #f8f9fa;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated Gradient Background */
+.cps-register-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 250px;
+  background: linear-gradient(135deg, #d70018 0%, #ff3b54 50%, #ff1744 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 8s ease infinite;
+  z-index: 0;
+}
+
+/* Floating Shapes Background */
+.cps-register-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 80px;
+  left: 8%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.07), transparent);
+  border-radius: 50%;
+  animation: floatReverse 18s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, 30px) scale(1.05); }
+  50% { transform: translate(-30px, -20px) scale(0.95); }
+  75% { transform: translate(20px, -30px) scale(1.02); }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+}
+
+.cps-register-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(215, 0, 24, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(215, 0, 24, 0.08);
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: cardSlideIn 0.7s ease-out;
+}
+
+.cps-register-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #d70018, #ff3b54, #ff1744, #d70018);
+  background-size: 200% 100%;
+  border-radius: 20px 20px 0 0;
+  animation: borderGlow 3s linear infinite;
+}
+
+.cps-register-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    0 3px 12px rgba(215, 0, 24, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Form Controls - Enhanced */
+.form-control {
+  border: 2px solid #e8ecef;
+  border-radius: 12px;
+  padding: 0.85rem 1.2rem;
+  font-size: 0.95rem;
+  background: #fafbfc;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.form-control:hover {
+  border-color: #d0d7de;
+  background: white;
+}
+
+.form-control:focus {
+  border-color: #d70018;
+  background: white;
+  box-shadow: 
+    0 0 0 3px rgba(215, 0, 24, 0.06),
+    0 2px 8px rgba(215, 0, 24, 0.08),
+    inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  transform: translateY(-1px);
+}
+
+.form-control::placeholder {
+  color: #9ca3af;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus::placeholder {
+  opacity: 0.5;
+  transform: translateX(5px);
+}
+
+.form-label {
+  color: #1f2937;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: color 0.3s ease;
+}
+
+/* Password Strength Bar - Enhanced */
+.password-strength-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.password-strength-fill {
+  height: 100%;
+  width: 0%;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.password-strength-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.password-strength-fill.weak {
+  width: 33%;
+  background: linear-gradient(90deg, #dc3545, #e74c3c);
+  box-shadow: 0 0 6px rgba(220, 53, 69, 0.3);
+}
+
+.password-strength-fill.medium {
+  width: 66%;
+  background: linear-gradient(90deg, #ffc107, #ffb300);
+  box-shadow: 0 0 6px rgba(255, 193, 7, 0.3);
+}
+
+.password-strength-fill.strong {
+  width: 100%;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  box-shadow: 0 0 6px rgba(40, 167, 69, 0.3);
+}
+
+/* Primary Button - CellphoneS Red Enhanced */
+.cps-btn-primary {
+  background: linear-gradient(135deg, #d70018 0%, #ff0033 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 12px rgba(215, 0, 24, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+}
+
+.cps-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.cps-btn-primary:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.cps-btn-primary:hover {
+  background: linear-gradient(135deg, #b8000f 0%, #d70018 100%);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(215, 0, 24, 0.3),
+    0 3px 10px rgba(0, 0, 0, 0.12),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.cps-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px rgba(215, 0, 24, 0.25),
+    0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cps-btn-primary:disabled {
+  background: linear-gradient(135deg, #999, #bbb);
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Input Group Styling */
+.input-group {
+  position: relative;
+}
+
+.input-group .form-control {
+  border-right: none;
+}
+
+.input-group .form-control:focus {
+  border-right: none;
+}
+
+/* Links */
+.cps-link {
+  color: #d70018;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.cps-link:hover {
+  color: #b8000f;
+  text-decoration: underline !important;
+}
+
+/* Input Group Button */
+.input-group .btn-outline-secondary {
+  border: 2px solid #e8ecef;
+  border-left: none;
+  color: #6c757d;
+  background: #fafbfc;
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1.2rem;
+  transition: all 0.3s ease;
+}
+
+.input-group .btn-outline-secondary:hover {
+  background-color: white;
+  border-color: #e8ecef;
+  border-left: none;
+  color: #d70018;
+}
+
+.input-group .form-control:focus + .btn-outline-secondary {
+  border-color: #d70018;
+  border-left: none;
+}
+
+/* Form Check Styles */
+.form-check-input {
+  width: 1.2em;
+  height: 1.2em;
+  border: 2px solid #d0d7de;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form-check-input:checked {
+  background-color: #d70018;
+  border-color: #d70018;
+  box-shadow: 0 0 0 3px rgba(215, 0, 24, 0.08);
+}
+
+.form-check-input:focus {
+  border-color: #d70018;
+  box-shadow: 0 0 0 3px rgba(215, 0, 24, 0.1);
+}
+
+.form-check-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Divider Styles */
+hr {
+  border-color: #e8ecef;
+  opacity: 1;
+}
+
+/* Social Buttons - Enhanced */
+.btn-outline-secondary {
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #fafbfc;
+  position: relative;
+  overflow: hidden;
+  color: #374151;
+}
+
+.btn-outline-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(215, 0, 24, 0.04), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-outline-secondary:hover::before {
+  left: 100%;
+}
+
+.btn-outline-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #1f2937;
+}
+
+/* Google Icon Styling */
+.google-icon {
+  background: linear-gradient(45deg, #EA4335 0%, #FBBC05 33%, #34A853 66%, #4285F4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+
+/* Facebook Icon Styling */
+.facebook-icon {
+  color: #1877F2;
+}
+
+#btnGoogle:hover .google-icon {
+  filter: brightness(1.1);
+}
+
+#btnFacebook:hover .facebook-icon {
+  color: #0c63d4;
+}
+
+/* Benefits Section - Enhanced */
+.cps-benefits {
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  border: 1px solid #e8ecef;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.cps-benefits i {
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.cps-benefits .col-6:hover i,
+.cps-benefits .col-md-3:hover i {
+  transform: scale(1.1) translateY(-2px);
+  filter: drop-shadow(0 3px 6px rgba(215, 0, 24, 0.25));
+}
+
+.cps-benefits p {
+  transition: color 0.3s ease;
+}
+
+.cps-benefits .col-6:hover p,
+.cps-benefits .col-md-3:hover p {
+  color: #d70018;
+}
+
+/* Alert Styles */
+.alert {
+  border-radius: 8px;
+  border: none;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+  .cps-register-card {
+    padding: 1.5rem;
+  }
+  
+  .cps-benefits {
+    padding: 1rem 0.5rem;
+  }
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+</style>
+
+<script>
+// Toggle Password Visibility
+document.addEventListener('DOMContentLoaded', function() {
+  // Toggle Password
+  const togglePasswordBtn = document.getElementById('togglePassword');
+  const passwordInput = document.getElementById('password');
+  
+  if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener('click', function() {
+      const icon = this.querySelector('i');
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    });
+  }
+
+  // Toggle Confirm Password
+  const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
+  const confirmPasswordInput = document.getElementById('confirmPassword');
+  
+  if (toggleConfirmPasswordBtn) {
+    toggleConfirmPasswordBtn.addEventListener('click', function() {
+      const icon = this.querySelector('i');
+      if (confirmPasswordInput.type === 'password') {
+        confirmPasswordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        confirmPasswordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    });
+  }
+
+  // Password Strength Checker
+  const passwordStrengthFill = document.getElementById('passwordStrengthFill');
+  const passwordStrengthText = document.getElementById('passwordStrengthText');
+  
+  passwordInput.addEventListener('input', function() {
+    const password = this.value;
+    const strength = checkPasswordStrength(password);
+    
+    // Remove all strength classes
+    passwordStrengthFill.classList.remove('weak', 'medium', 'strong');
+    
+    if (password.length === 0) {
+      passwordStrengthFill.style.width = '0%';
+      passwordStrengthText.textContent = 'Độ mạnh mật khẩu';
+      passwordStrengthText.className = 'text-muted';
+    } else if (strength === 'weak') {
+      passwordStrengthFill.classList.add('weak');
+      passwordStrengthText.textContent = 'Yếu';
+      passwordStrengthText.className = 'text-danger';
+    } else if (strength === 'medium') {
+      passwordStrengthFill.classList.add('medium');
+      passwordStrengthText.textContent = 'Trung bình';
+      passwordStrengthText.className = 'text-warning';
+    } else if (strength === 'strong') {
+      passwordStrengthFill.classList.add('strong');
+      passwordStrengthText.textContent = 'Mạnh';
+      passwordStrengthText.className = 'text-success';
+    }
+  });
+  
+  function checkPasswordStrength(password) {
+    let strength = 0;
+    
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]+/)) strength++;
+    if (password.match(/[A-Z]+/)) strength++;
+    if (password.match(/[0-9]+/)) strength++;
+    if (password.match(/[$@#&!]+/)) strength++;
+    
+    if (strength <= 2) return 'weak';
+    if (strength <= 4) return 'medium';
+    return 'strong';
+  }
+
+  // Confirm Password Match Validation
+  confirmPasswordInput.addEventListener('input', function() {
+    if (this.value !== passwordInput.value) {
+      this.setCustomValidity('Mật khẩu xác nhận không khớp');
+    } else {
+      this.setCustomValidity('');
+    }
+  });
+
+  // Form Validation & Submission
+  const form = document.getElementById('registerForm');
+  const btnRegister = document.getElementById('btnRegister');
+  const alertContainer = document.getElementById('alertContainer');
+  
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Check password match
+    if (confirmPasswordInput.value !== passwordInput.value) {
+      confirmPasswordInput.setCustomValidity('Mật khẩu xác nhận không khớp');
+    } else {
+      confirmPasswordInput.setCustomValidity('');
+    }
+    
+    // Bootstrap validation
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      return;
+    }
+    
+    const formData = {
+      firstName: document.getElementById('firstName').value.trim(),
+      lastName: document.getElementById('lastName').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      password: passwordInput.value
+    };
+    
+    // Show loading state
+    btnRegister.disabled = true;
+    btnRegister.innerHTML = `
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      Đang tạo tài khoản...
+    `;
+    
+    try {
+      // Call API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showAlert('Đăng ký thành công! Đang chuyển đến trang đăng nhập...', 'success');
+        
+        // Redirect to login
+        setTimeout(() => {
+          window.location.href = '/login?registered=true';
+        }, 2000);
+        
+      } else {
+        showAlert(result.message || 'Đăng ký thất bại. Vui lòng thử lại!', 'danger');
+        resetButton();
+      }
+      
+    } catch (error) {
+      console.error('Register error:', error);
+      showAlert('Lỗi kết nối. Vui lòng thử lại sau!', 'danger');
+      resetButton();
+    }
+    
+    function resetButton() {
+      btnRegister.disabled = false;
+      btnRegister.innerHTML = 'ĐĂNG KÝ TÀI KHOẢN';
+    }
+  });
+  
+  function showAlert(message, type) {
+    alertContainer.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+      const alert = alertContainer.querySelector('.alert');
+      if (alert) {
+        alert.remove();
+      }
+    }, 5000);
+  }
+  
+  // Social Register Buttons
+  document.getElementById('btnGoogle')?.addEventListener('click', function() {
+    showAlert('Đăng ký với Google đang được phát triển', 'info');
+  });
+  
+  document.getElementById('btnFacebook')?.addEventListener('click', function() {
+    showAlert('Đăng ký với Facebook đang được phát triển', 'info');
+  });
+});
+</script>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

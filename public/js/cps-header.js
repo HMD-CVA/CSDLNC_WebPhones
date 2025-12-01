@@ -69,24 +69,167 @@ document.addEventListener('DOMContentLoaded', function() {
     // Location Selection
     const locationSelect = document.getElementById('locationSelect');
     if (locationSelect) {
-        locationSelect.addEventListener('change', function() {
+        locationSelect.addEventListener('change', async function() {
             const selectedLocation = this.value;
             const locationName = this.options[this.selectedIndex].text;
             console.log('📍 Location changed to:', locationName);
             
-            // Save to localStorage
-            localStorage.setItem('selectedLocation', selectedLocation);
-            localStorage.setItem('selectedLocationName', locationName);
+            if (!selectedLocation) {
+                // Nếu chọn "Chọn vùng miền" thì load tất cả sản phẩm
+                location.reload();
+                return;
+            }
             
-            // TODO: Update prices based on location
-            // fetchPricesByLocation(selectedLocation);
+            try {
+                // Gọi API lấy sản phẩm theo vùng miền
+                const response = await fetch(`/api/products/by-region/${selectedLocation}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateProductList(result.data);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Lọc thành công!',
+                        text: `Đã lọc ${result.count} sản phẩm tại ${locationName}`,
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Không thể lọc sản phẩm theo vùng miền'
+                    });
+                }
+            } catch (error) {
+                console.error('Error filtering products by region:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Lỗi khi lọc sản phẩm'
+                });
+            }
         });
-        
-        // Load saved location
-        const savedLocation = localStorage.getItem('selectedLocation');
-        if (savedLocation) {
-            locationSelect.value = savedLocation;
+    }
+    
+    // Cập nhật danh sách sản phẩm
+    function updateProductList(products) {
+        const productGrid = document.getElementById('productGrid');
+        if (!productGrid) {
+            console.warn('Product grid not found on this page');
+            return;
         }
+        
+        if (products.length === 0) {
+            productGrid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
+                    <h3 style="color: #666; font-size: 18px; margin-bottom: 10px;">Không tìm thấy sản phẩm</h3>
+                    <p style="color: #999; font-size: 14px;">Vùng miền này hiện chưa có sản phẩm trong kho</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Render sản phẩm theo cấu trúc của product.handlebars (cps-product-card)
+        productGrid.innerHTML = products.map(product => {
+            const isDiscount = product.gia_niem_yet && product.gia_niem_yet > product.gia_ban;
+            
+            return `
+            <div class="cps-product-card">
+                <a href="/product/${product.id}" class="cps-product-link">
+                    <div class="cps-product-image">
+                        <img src="${product.link_anh || '/image/default-product.png'}" 
+                             alt="${product.ten_san_pham}" 
+                             loading="lazy">
+                        
+                        ${isDiscount ? `
+                        <div class="cps-discount-badge">
+                            Giảm ${product.phan_tram_giam}%
+                        </div>
+                        ` : ''}
+                        
+                        ${!product.trang_thai ? `
+                        <div class="cps-status-badge out-of-stock">
+                            Hết hàng
+                        </div>
+                        ` : ''}
+                        
+                        ${product.tong_ton_kho ? `
+                        <div class="cps-status-badge" style="top: auto; bottom: 8px; left: 8px; right: auto; background: rgba(0,0,0,0.7); font-size: 10px;">
+                            📦 ${product.tong_ton_kho}
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <h3 class="cps-product-name">${product.ten_san_pham}</h3>
+
+                    <div class="cps-price-wrapper">
+                        <div class="cps-current-price">${product.gia_ban_formatted}₫</div>
+                        ${isDiscount ? `
+                        <div class="cps-original-price">${product.gia_khuyen_mai_formatted}₫</div>
+                        ` : ''}
+                    </div>
+
+                    <div class="cps-product-meta">
+                        <div class="cps-rating">
+                            <i class="fas fa-star"></i>
+                            <span>4.5</span>
+                            <span class="cps-reviews">(${product.luot_xem || 0})</span>
+                        </div>
+                        <div class="cps-sold">
+                            <i class="fas fa-box"></i>
+                            <span>Đã bán ${product.so_luong_ban || 0}</span>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="cps-actions">
+                    <button class="cps-btn-cart" data-product-id="${product.id}" title="Thêm vào giỏ">
+                        <i class="fas fa-shopping-cart"></i>
+                    </button>
+                    <a href="/product/${product.id}" class="cps-btn-buy">
+                        MUA NGAY
+                    </a>
+                </div>
+            </div>
+            `;
+        }).join('');
+        
+        // Re-attach event listeners cho các nút vừa tạo
+        attachProductEventListeners();
+    }
+    
+    // Gắn lại event listeners cho product cards
+    function attachProductEventListeners() {
+        const cpsCartButtons = document.querySelectorAll('.cps-btn-cart');
+        cpsCartButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const productId = this.getAttribute('data-product-id');
+                console.log('🛒 Thêm vào giỏ:', productId);
+                
+                // Animation hiệu ứng
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i>';
+                this.style.background = '#28a745';
+                this.style.borderColor = '#28a745';
+                this.style.color = '#fff';
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.style.background = '';
+                    this.style.borderColor = '';
+                    this.style.color = '';
+                }, 1500);
+                
+                // TODO: Gọi API thêm vào giỏ hàng
+            });
+        });
     }
     
     // Login/Register Buttons
@@ -99,7 +242,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('🔐 Login clicked');
             // TODO: Show login modal or redirect to login page
             // showLoginModal();
-            alert('Chức năng đăng nhập đang được phát triển');
+            Swal.fire({
+                icon: 'info',
+                title: 'Thông báo',
+                text: 'Chức năng đăng nhập đang được phát triển'
+            });
         });
     }
     
@@ -107,7 +254,11 @@ document.addEventListener('DOMContentLoaded', function() {
         btnRegister.addEventListener('click', function() {
             console.log('📝 Register clicked');
             // TODO: Show register modal or redirect to register page
-            alert('Chức năng đăng ký đang được phát triển');
+            Swal.fire({
+                icon: 'info',
+                title: 'Thông báo',
+                text: 'Chức năng đăng ký đang được phát triển'
+            });
         });
     }
     
@@ -126,7 +277,13 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('.cps-user-logged').style.display = 'none';
             document.getElementById('userDisplayName').textContent = 'Đăng nhập';
             
-            alert('Đăng xuất thành công!');
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công!',
+                text: 'Đăng xuất thành công!',
+                timer: 2000,
+                showConfirmButton: false
+            });
         });
     }
     
@@ -154,7 +311,11 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileMenuBtn.addEventListener('click', function() {
             console.log('📱 Mobile menu clicked');
             // TODO: Show mobile menu modal
-            alert('Mobile menu đang được phát triển');
+            Swal.fire({
+                icon: 'info',
+                title: 'Thông báo',
+                text: 'Mobile menu đang được phát triển'
+            });
         });
     }
     
@@ -215,7 +376,16 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCartBadge();
         
         // Show success notification
-        showNotification('Đã thêm sản phẩm vào giỏ hàng!', 'success');
+        Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: 'Đã thêm sản phẩm vào giỏ hàng!',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
     };
     
     window.removeFromCart = function(productId) {
@@ -229,58 +399,5 @@ document.addEventListener('DOMContentLoaded', function() {
         updateCartBadge();
     };
     
-    // Simple notification system
-    function showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 150px;
-            right: 20px;
-            background: ${type === 'success' ? '#28a745' : '#d70018'};
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 10000;
-            animation: slideIn 0.3s ease;
-            font-size: 14px;
-            font-weight: 500;
-        `;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
-    }
-    
-    // Add CSS animations
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
+    // SweetAlert2 is now used for all notifications
 });

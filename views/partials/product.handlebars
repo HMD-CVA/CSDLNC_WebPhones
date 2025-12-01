@@ -50,9 +50,9 @@
         <button class="cps-btn-cart" data-product-id="{{this.id}}" title="Thêm vào giỏ">
             <i class="fas fa-shopping-cart"></i>
         </button>
-        <button class="cps-btn-buy" data-product-id="{{this.id}}">
+        <a href="/product/{{this.id}}" class="cps-btn-buy">
             MUA NGAY
-        </button>
+        </a>
     </div>
 </div>
 
@@ -287,6 +287,10 @@
         transition: all 0.3s ease;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .cps-btn-buy:hover {
@@ -346,20 +350,7 @@
         }, 1500);
         
         // TODO: Gọi API thêm vào giỏ hàng
-        // fetch('/api/cart/add', { ... })
-      });
-    });
-
-    // Xử lý mua ngay - CPS style
-    const cpsBuyButtons = document.querySelectorAll('.cps-btn-buy');
-    cpsBuyButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const productId = this.getAttribute('data-product-id');
-        console.log('⚡ Mua ngay:', productId);
-        
+    // Nút "Mua ngay" giờ là thẻ <a>, không cần JavaScript cho navigation nữa 
         // TODO: Chuyển đến trang thanh toán
         // window.location.href = `/checkout?product=${productId}`;
       });
