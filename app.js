@@ -652,11 +652,16 @@ app.get('/admin/sanpham', async (req, res) => {
         
     } catch (err) {
         console.error('❌ Lỗi trong route /admin/sanpham:', err);
-        res.status(500).render('error', {
-            layout: 'AdminMain',
-            title: 'Lỗi',
-            message: 'Đã xảy ra lỗi khi tải trang quản lý sản phẩm'
-        });
+        res.status(500).send(`
+            <html>
+                <head><title>Lỗi</title></head>
+                <body>
+                    <h1>Đã xảy ra lỗi</h1>
+                    <p>Không thể tải trang quản lý sản phẩm: ${err.message}</p>
+                    <a href="/admin">Quay lại trang chủ</a>
+                </body>
+            </html>
+        `);
     }
 });
 
@@ -4025,6 +4030,423 @@ app.put('/api/users/:id/detail', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             message: 'Lỗi khi cập nhật chi tiết người dùng' 
+        });
+    }
+});
+
+// ==================== INVENTORY & WAREHOUSE ROUTES ====================
+
+// GET /admin/inventory - Render inventory management page
+app.get('/admin/inventory', async (req, res) => {
+    try {
+        console.log('🚀 Loading admin inventory page...');
+        
+        const [inventory, products, warehouses] = await Promise.all([
+            DataModel.SQL.Inventory.findAll(),
+            DataModel.SQL.Product.findAll(),
+            DataModel.SQL.Warehouse.findAll()
+        ]);
+        
+        console.log('📊 Data loaded:');
+        console.log('  - Inventory items:', inventory.length);
+        console.log('  - Products:', products.length);
+        console.log('  - Warehouses:', warehouses.length);
+
+        res.render('inventory', { 
+            layout: 'AdminMain', 
+            title: 'Quản lý Tồn kho', 
+            inventory,
+            products,
+            warehouses
+        });
+        
+    } catch (err) {
+        console.error('❌ Lỗi trong route /admin/inventory:', err);
+        res.status(500).send(`
+            <html>
+                <head><title>Lỗi</title></head>
+                <body>
+                    <h1>Đã xảy ra lỗi</h1>
+                    <p>Không thể tải trang quản lý tồn kho: ${err.message}</p>
+                    <a href="/admin">Quay lại trang chủ</a>
+                </body>
+            </html>
+        `);
+    }
+});
+
+// API ENDPOINTS FOR INVENTORY
+
+// GET /api/inventory - Get all inventory items
+app.get('/api/inventory', async (req, res) => {
+    try {
+        console.log('🔄 API /api/inventory called');
+        
+        const inventory = await DataModel.SQL.Inventory.findAll();
+
+        res.json({ 
+            success: true, 
+            data: { inventory } 
+        });
+        
+    } catch (error) {
+        console.error('Inventory GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy danh sách tồn kho' 
+        });
+    }
+});
+
+// GET /api/inventory/:id - Get single inventory item
+app.get('/api/inventory/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const inventoryItem = await DataModel.SQL.Inventory.findById(id);
+        
+        if (!inventoryItem) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy tồn kho' 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            data: inventoryItem 
+        });
+    } catch (error) {
+        console.error('Inventory GET by ID Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy thông tin tồn kho' 
+        });
+    }
+});
+
+// POST /api/inventory - Create new inventory item
+app.post('/api/inventory', async (req, res) => {
+    try {
+        const inventoryData = req.body;
+        
+        console.log('📥 Creating inventory item:', inventoryData);
+
+        // Validate required fields
+        if (!inventoryData.san_pham_id || !inventoryData.kho_id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Thiếu thông tin sản phẩm hoặc kho' 
+            });
+        }
+
+        const newInventory = await DataModel.SQL.Inventory.create(inventoryData);
+
+        console.log('✅ Inventory item created:', newInventory.id);
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Thêm tồn kho thành công', 
+            data: newInventory 
+        });
+    } catch (error) {
+        console.error('Inventory CREATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi thêm tồn kho: ' + error.message 
+        });
+    }
+});
+
+// PUT /api/inventory/:id - Update inventory item
+app.put('/api/inventory/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const inventoryData = req.body;
+        
+        console.log('📝 Updating inventory item:', id, inventoryData);
+
+        const existingInventory = await DataModel.SQL.Inventory.findById(id);
+        if (!existingInventory) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy tồn kho' 
+            });
+        }
+
+        const updatedInventory = await DataModel.SQL.Inventory.update(id, inventoryData);
+
+        console.log('✅ Inventory item updated:', id);
+
+        res.json({ 
+            success: true, 
+            message: 'Cập nhật tồn kho thành công', 
+            data: updatedInventory 
+        });
+    } catch (error) {
+        console.error('Inventory UPDATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi cập nhật tồn kho: ' + error.message 
+        });
+    }
+});
+
+// PUT /api/inventory/:id/adjust - Adjust stock quantity
+app.put('/api/inventory/:id/adjust', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type, quantity, note } = req.body;
+        
+        console.log('📊 Adjusting stock:', { id, type, quantity, note });
+
+        if (!type || quantity === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Thiếu loại điều chỉnh hoặc số lượng' 
+            });
+        }
+
+        const existingInventory = await DataModel.SQL.Inventory.findById(id);
+        if (!existingInventory) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy tồn kho' 
+            });
+        }
+
+        let newQuantity = existingInventory.so_luong_kha_dung;
+        
+        switch(type) {
+            case 'increase':
+                newQuantity += parseInt(quantity);
+                break;
+            case 'decrease':
+                newQuantity -= parseInt(quantity);
+                if (newQuantity < 0) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Số lượng không đủ để xuất kho' 
+                    });
+                }
+                break;
+            case 'set':
+                newQuantity = parseInt(quantity);
+                break;
+            default:
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Loại điều chỉnh không hợp lệ' 
+                });
+        }
+
+        const updatedInventory = await DataModel.SQL.Inventory.update(id, {
+            so_luong_kha_dung: newQuantity,
+            lan_nhap_hang_cuoi: new Date()
+        });
+
+        console.log('✅ Stock adjusted:', id, 'New quantity:', newQuantity);
+
+        res.json({ 
+            success: true, 
+            message: 'Điều chỉnh tồn kho thành công', 
+            data: updatedInventory 
+        });
+    } catch (error) {
+        console.error('Inventory ADJUST Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi điều chỉnh tồn kho: ' + error.message 
+        });
+    }
+});
+
+// DELETE /api/inventory/:id - Delete inventory item
+app.delete('/api/inventory/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('🗑️ Deleting inventory item:', id);
+
+        const existingInventory = await DataModel.SQL.Inventory.findById(id);
+        if (!existingInventory) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy tồn kho' 
+            });
+        }
+
+        await DataModel.SQL.Inventory.delete(id);
+
+        console.log('✅ Inventory item deleted:', id);
+
+        res.json({ 
+            success: true, 
+            message: 'Xóa tồn kho thành công' 
+        });
+    } catch (error) {
+        console.error('Inventory DELETE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi xóa tồn kho' 
+        });
+    }
+});
+
+// API ENDPOINTS FOR WAREHOUSES
+
+// GET /api/warehouses - Get all warehouses
+app.get('/api/warehouses', async (req, res) => {
+    try {
+        console.log('🔄 API /api/warehouses called');
+        
+        const warehouses = await DataModel.SQL.Warehouse.findAll();
+
+        res.json({ 
+            success: true, 
+            data: { warehouses } 
+        });
+        
+    } catch (error) {
+        console.error('Warehouse GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy danh sách kho' 
+        });
+    }
+});
+
+// GET /api/warehouses/:id - Get single warehouse
+app.get('/api/warehouses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const warehouse = await DataModel.SQL.Warehouse.findById(id);
+        
+        if (!warehouse) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy kho' 
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            data: warehouse 
+        });
+    } catch (error) {
+        console.error('Warehouse GET by ID Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy thông tin kho' 
+        });
+    }
+});
+
+// POST /api/warehouses - Create new warehouse
+app.post('/api/warehouses', async (req, res) => {
+    try {
+        const warehouseData = req.body;
+        
+        console.log('📥 Creating warehouse:', warehouseData);
+
+        // Validate required fields
+        if (!warehouseData.ten_kho || !warehouseData.so_dien_thoai || !warehouseData.dia_chi_chi_tiet) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Thiếu thông tin bắt buộc (tên kho, số điện thoại, địa chỉ)' 
+            });
+        }
+
+        const newWarehouse = await DataModel.SQL.Warehouse.create(warehouseData);
+
+        console.log('✅ Warehouse created:', newWarehouse.id);
+
+        res.status(201).json({ 
+            success: true, 
+            message: 'Thêm kho thành công', 
+            data: newWarehouse 
+        });
+    } catch (error) {
+        console.error('Warehouse CREATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi thêm kho: ' + error.message 
+        });
+    }
+});
+
+// PUT /api/warehouses/:id - Update warehouse
+app.put('/api/warehouses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const warehouseData = req.body;
+        
+        console.log('📝 Updating warehouse:', id, warehouseData);
+
+        const existingWarehouse = await DataModel.SQL.Warehouse.findById(id);
+        if (!existingWarehouse) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy kho' 
+            });
+        }
+
+        const updatedWarehouse = await DataModel.SQL.Warehouse.update(id, warehouseData);
+
+        console.log('✅ Warehouse updated:', id);
+
+        res.json({ 
+            success: true, 
+            message: 'Cập nhật kho thành công', 
+            data: updatedWarehouse 
+        });
+    } catch (error) {
+        console.error('Warehouse UPDATE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi cập nhật kho: ' + error.message 
+        });
+    }
+});
+
+// DELETE /api/warehouses/:id - Delete warehouse
+app.delete('/api/warehouses/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('🗑️ Deleting warehouse:', id);
+
+        const existingWarehouse = await DataModel.SQL.Warehouse.findById(id);
+        if (!existingWarehouse) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy kho' 
+            });
+        }
+
+        // Check if warehouse has inventory items
+        const inventoryCount = await DataModel.SQL.Inventory.countByWarehouse(id);
+        if (inventoryCount > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Không thể xóa kho đang có tồn kho sản phẩm' 
+            });
+        }
+
+        await DataModel.SQL.Warehouse.delete(id);
+
+        console.log('✅ Warehouse deleted:', id);
+
+        res.json({ 
+            success: true, 
+            message: 'Xóa kho thành công' 
+        });
+    } catch (error) {
+        console.error('Warehouse DELETE Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi xóa kho' 
         });
     }
 });

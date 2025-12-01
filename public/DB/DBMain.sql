@@ -1029,3 +1029,445 @@ INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_ar
 ('BRVT-CD-01', N'Xã Xuyên Mộc', @BRVTId, N'xa', 0),
 ('BRVT-CD-02', N'Xã Bông Trang', @BRVTId, N'xa', 0);
 GO
+
+-- ========== CHÈN DỮ LIỆU KHO HÀNG (3 KHO THEO 3 VÙNG) ==========
+
+-- Kho Miền Bắc - Hà Nội
+INSERT INTO warehouses (ten_kho, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
+VALUES (
+    N'Kho Miền Bắc - Hà Nội',
+    (SELECT id FROM wards WHERE ma_phuong_xa = 'HN-CG-02'), -- Phường Dịch Vọng, Cầu Giấy
+    N'Số 123, Đường Xuân Thủy, KCN Dịch Vọng',
+    '0243 456 7890',
+    1
+);
+
+-- Kho Miền Trung - Đà Nẵng
+INSERT INTO warehouses (ten_kho, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
+VALUES (
+    N'Kho Miền Trung - Đà Nẵng',
+    (SELECT id FROM wards WHERE ma_phuong_xa = 'DN-HC-01'), -- Phường Thạch Thang, Hải Châu
+    N'Số 456, Đường Điện Biên Phủ, KCN Hòa Khánh',
+    '0236 789 1234',
+    1
+);
+
+-- Kho Miền Nam - TP.HCM
+INSERT INTO warehouses (ten_kho, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
+VALUES (
+    N'Kho Miền Nam - TP.HCM',
+    (SELECT id FROM wards WHERE ma_phuong_xa = 'HCM-Q7-01'), -- Phường Tân Thuận Đông, Quận 7
+    N'Số 789, Đường Nguyễn Văn Linh, KCN Tân Thuận',
+    '028 9012 3456',
+    1
+);
+GO
+
+SELECT * FROM products;
+
+-- ========== CHÈN DỮ LIỆU TỒN KHO CHO CÁC SẢN PHẨM ==========
+
+-- TỒN KHO - KHO HÀ NỘI (Miền Bắc)
+INSERT INTO inventory (san_pham_id, kho_id, so_luong_kha_dung, so_luong_da_dat, muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi)
+SELECT 
+    p.id,
+    (SELECT id FROM warehouses WHERE ten_kho LIKE N'%Hà Nội%'),
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 85
+        WHEN p.ma_sku = 'SSS23U512' THEN 120
+        WHEN p.ma_sku = 'XM13T256' THEN 200
+        WHEN p.ma_sku = 'OPRENO10' THEN 150
+        WHEN p.ma_sku = 'IP14128' THEN 95
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 180
+        WHEN p.ma_sku = 'SSA54' THEN 140
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 165
+        WHEN p.ma_sku = 'OPA78' THEN 190
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 45
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 75
+        ELSE 100
+    END AS so_luong_kha_dung,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 15
+        WHEN p.ma_sku = 'SSS23U512' THEN 10
+        WHEN p.ma_sku = 'XM13T256' THEN 25
+        WHEN p.ma_sku = 'OPRENO10' THEN 20
+        WHEN p.ma_sku = 'IP14128' THEN 18
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 12
+        WHEN p.ma_sku = 'SSA54' THEN 22
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 18
+        WHEN p.ma_sku = 'OPA78' THEN 15
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 8
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 12
+        ELSE 10
+    END AS so_luong_da_dat,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 20
+        WHEN p.ma_sku = 'SSS23U512' THEN 30
+        WHEN p.ma_sku = 'XM13T256' THEN 40
+        WHEN p.ma_sku = 'OPRENO10' THEN 35
+        WHEN p.ma_sku = 'IP14128' THEN 25
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 30
+        WHEN p.ma_sku = 'SSA54' THEN 35
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 40
+        WHEN p.ma_sku = 'OPA78' THEN 45
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 15
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 20
+        ELSE 20
+    END AS muc_ton_kho_toi_thieu,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 50
+        WHEN p.ma_sku = 'SSS23U512' THEN 80
+        WHEN p.ma_sku = 'XM13T256' THEN 100
+        WHEN p.ma_sku = 'OPRENO10' THEN 90
+        WHEN p.ma_sku = 'IP14128' THEN 60
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 80
+        WHEN p.ma_sku = 'SSA54' THEN 85
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 95
+        WHEN p.ma_sku = 'OPA78' THEN 100
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 40
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 55
+        ELSE 50
+    END AS so_luong_nhap_lai,
+    DATEADD(day, -(ABS(CHECKSUM(NEWID())) % 10 + 1), GETDATE()) AS lan_nhap_hang_cuoi
+FROM products p;
+
+-- TỒN KHO - KHO ĐÀ NẴNG (Miền Trung)
+INSERT INTO inventory (san_pham_id, kho_id, so_luong_kha_dung, so_luong_da_dat, muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi)
+SELECT 
+    p.id,
+    (SELECT id FROM warehouses WHERE ten_kho LIKE N'%Đà Nẵng%'),
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 65
+        WHEN p.ma_sku = 'SSS23U512' THEN 90
+        WHEN p.ma_sku = 'XM13T256' THEN 145
+        WHEN p.ma_sku = 'OPRENO10' THEN 110
+        WHEN p.ma_sku = 'IP14128' THEN 72
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 130
+        WHEN p.ma_sku = 'SSA54' THEN 105
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 125
+        WHEN p.ma_sku = 'OPA78' THEN 155
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 38
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 60
+        ELSE 80
+    END AS so_luong_kha_dung,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 12
+        WHEN p.ma_sku = 'SSS23U512' THEN 8
+        WHEN p.ma_sku = 'XM13T256' THEN 18
+        WHEN p.ma_sku = 'OPRENO10' THEN 14
+        WHEN p.ma_sku = 'IP14128' THEN 11
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 9
+        WHEN p.ma_sku = 'SSA54' THEN 16
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 13
+        WHEN p.ma_sku = 'OPA78' THEN 11
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 6
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 10
+        ELSE 8
+    END AS so_luong_da_dat,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 15
+        WHEN p.ma_sku = 'SSS23U512' THEN 20
+        WHEN p.ma_sku = 'XM13T256' THEN 30
+        WHEN p.ma_sku = 'OPRENO10' THEN 25
+        WHEN p.ma_sku = 'IP14128' THEN 18
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 25
+        WHEN p.ma_sku = 'SSA54' THEN 28
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 30
+        WHEN p.ma_sku = 'OPA78' THEN 35
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 12
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 18
+        ELSE 15
+    END AS muc_ton_kho_toi_thieu,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 40
+        WHEN p.ma_sku = 'SSS23U512' THEN 60
+        WHEN p.ma_sku = 'XM13T256' THEN 70
+        WHEN p.ma_sku = 'OPRENO10' THEN 65
+        WHEN p.ma_sku = 'IP14128' THEN 45
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 60
+        WHEN p.ma_sku = 'SSA54' THEN 70
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 75
+        WHEN p.ma_sku = 'OPA78' THEN 80
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 30
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 45
+        ELSE 40
+    END AS so_luong_nhap_lai,
+    DATEADD(day, -(ABS(CHECKSUM(NEWID())) % 10 + 1), GETDATE()) AS lan_nhap_hang_cuoi
+FROM products p;
+
+-- TỒN KHO - KHO TP.HCM (Miền Nam)
+INSERT INTO inventory (san_pham_id, kho_id, so_luong_kha_dung, so_luong_da_dat, muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi)
+SELECT 
+    p.id,
+    (SELECT id FROM warehouses WHERE ten_kho LIKE N'%TP.HCM%'),
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 105
+        WHEN p.ma_sku = 'SSS23U512' THEN 145
+        WHEN p.ma_sku = 'XM13T256' THEN 235
+        WHEN p.ma_sku = 'OPRENO10' THEN 175
+        WHEN p.ma_sku = 'IP14128' THEN 118
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 210
+        WHEN p.ma_sku = 'SSA54' THEN 168
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 198
+        WHEN p.ma_sku = 'OPA78' THEN 228
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 52
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 90
+        ELSE 120
+    END AS so_luong_kha_dung,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 20
+        WHEN p.ma_sku = 'SSS23U512' THEN 15
+        WHEN p.ma_sku = 'XM13T256' THEN 30
+        WHEN p.ma_sku = 'OPRENO10' THEN 25
+        WHEN p.ma_sku = 'IP14128' THEN 22
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 16
+        WHEN p.ma_sku = 'SSA54' THEN 28
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 23
+        WHEN p.ma_sku = 'OPA78' THEN 19
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 10
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 15
+        ELSE 12
+    END AS so_luong_da_dat,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 25
+        WHEN p.ma_sku = 'SSS23U512' THEN 35
+        WHEN p.ma_sku = 'XM13T256' THEN 50
+        WHEN p.ma_sku = 'OPRENO10' THEN 40
+        WHEN p.ma_sku = 'IP14128' THEN 30
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 40
+        WHEN p.ma_sku = 'SSA54' THEN 42
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 48
+        WHEN p.ma_sku = 'OPA78' THEN 55
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 18
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 25
+        ELSE 25
+    END AS muc_ton_kho_toi_thieu,
+    CASE 
+        WHEN p.ma_sku = 'IP15PM256' THEN 70
+        WHEN p.ma_sku = 'SSS23U512' THEN 90
+        WHEN p.ma_sku = 'XM13T256' THEN 120
+        WHEN p.ma_sku = 'OPRENO10' THEN 100
+        WHEN p.ma_sku = 'IP14128' THEN 75
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Nokia%' THEN 95
+        WHEN p.ma_sku = 'SSA54' THEN 95
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%Poco%' THEN 110
+        WHEN p.ma_sku = 'OPA78' THEN 120
+        WHEN p.ma_sku = 'SSZFLIP4' THEN 50
+        WHEN p.ma_sku LIKE 'SP%' AND p.ten_san_pham LIKE N'%iPhone 16%' THEN 65
+        ELSE 60
+    END AS so_luong_nhap_lai,
+    DATEADD(day, -(ABS(CHECKSUM(NEWID())) % 10 + 1), GETDATE()) AS lan_nhap_hang_cuoi
+FROM products p;
+GO
+
+
+[
+  {
+    "id": "2c4fea31-0570-4812-8554-433c4595006d",
+    "ma_sku": "SP1764446294151",
+    "ten_san_pham": "Xiaomi Poco X5 Pro",
+    "danh_muc_id": "f5b79d05-21a1-4015-9c32-f8e767e27429",
+    "thuong_hieu_id": "0534a2ad-0ea5-4b25-b9d8-5477cf1f670b",
+    "gia_niem_yet": 749000000.0,
+    "gia_ban": 649000000.0,
+    "mongo_detail_id": "692b4c81f573133c3d9bbb55",
+    "trang_thai": "1",
+    "luot_xem": 380,
+    "so_luong_ban": 34,
+    "ngay_tao": "2025-11-29T19:00:30.1933333",
+    "ngay_cap_nhat": "2025-11-29T19:58:14.29",
+    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764445312/webPhone/products/xiaomi-poco-x5-pro1764445310359/images/elqusxxlegyn7kujtjkk.png"
+  },
+  {
+    "id": "f9b69fd2-f9cd-40d5-a392-4548957f186f",
+    "ma_sku": "SP1764445511101",
+    "ten_san_pham": "Nokia G22",
+    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
+    "thuong_hieu_id": "f51a2333-f561-4311-8d61-5b6020bad19e",
+    "gia_niem_yet": 499000000.0,
+    "gia_ban": 429000000.0,
+    "mongo_detail_id": "692b4d47cd08a1004c142bf5",
+    "trang_thai": "0",
+    "luot_xem": 180,
+    "so_luong_ban": 23,
+    "ngay_tao": "2025-11-29T19:00:30.1933333",
+    "ngay_cap_nhat": "2025-11-29T19:45:11.33",
+    "link_anh": null
+  },
+  {
+    "id": "b9c35097-5853-4f18-b336-58f4066cacef",
+    "ma_sku": "SSA54",
+    "ten_san_pham": "Samsung Galaxy A54",
+    "danh_muc_id": "01d4eab0-efe3-43ec-b4e6-1ae5d3b8cd4b",
+    "thuong_hieu_id": "a474c22c-fdcb-409b-aaef-e22981860a07",
+    "gia_niem_yet": 899000000.0,
+    "gia_ban": 799000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 420,
+    "so_luong_ban": 56,
+    "ngay_tao": "2025-11-29T19:00:30.1933333",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.1933333",
+    "link_anh": null
+  },
+  {
+    "id": "e3dee669-ac24-46e4-bc20-59ed123cc55d",
+    "ma_sku": "IP15PM256",
+    "ten_san_pham": "iPhone 15 Pro Max 256GB",
+    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
+    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
+    "gia_niem_yet": 3299000000.0,
+    "gia_ban": 2999000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 1200,
+    "so_luong_ban": 150,
+    "ngay_tao": "2025-11-29T19:00:30.19",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
+    "link_anh": null
+  },
+  {
+    "id": "ac5a9d4b-c52e-4159-8e4d-62211a385404",
+    "ma_sku": "SP1764454004987",
+    "ten_san_pham": "iPhone 16 Pro Max",
+    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
+    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
+    "gia_niem_yet": 3300000000.0,
+    "gia_ban": 2900000000.0,
+    "mongo_detail_id": "692b4e4dcd08a1004c142bfb",
+    "trang_thai": "1",
+    "luot_xem": 0,
+    "so_luong_ban": 0,
+    "ngay_tao": "2025-11-29T19:49:23.3866667",
+    "ngay_cap_nhat": "2025-11-29T22:06:45.2",
+    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764448695/webPhone/products/iphone-16-pro-max-ac5a9d4b-c52e-4159-8e4d-62211a385404/images/wfsgfvdxzaqbdh5ofm1d.png"
+  },
+  {
+    "id": "31a89447-428b-4ad8-9a16-76faeb5d3ce8",
+    "ma_sku": "XM13T256",
+    "ten_san_pham": "Xiaomi 13T 256GB",
+    "danh_muc_id": "f5b79d05-21a1-4015-9c32-f8e767e27429",
+    "thuong_hieu_id": "0534a2ad-0ea5-4b25-b9d8-5477cf1f670b",
+    "gia_niem_yet": 1299000000.0,
+    "gia_ban": 1099000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 600,
+    "so_luong_ban": 45,
+    "ngay_tao": "2025-11-29T19:00:30.19",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
+    "link_anh": null
+  },
+  {
+    "id": "28126e76-8a23-4786-8b1c-8d4777caa5f0",
+    "ma_sku": "SSZFLIP4",
+    "ten_san_pham": "Samsung Galaxy Z Flip4",
+    "danh_muc_id": "01d4eab0-efe3-43ec-b4e6-1ae5d3b8cd4b",
+    "thuong_hieu_id": "a474c22c-fdcb-409b-aaef-e22981860a07",
+    "gia_niem_yet": 1999000000.0,
+    "gia_ban": 1799000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 650,
+    "so_luong_ban": 15,
+    "ngay_tao": "2025-11-29T19:00:30.1933333",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.1933333",
+    "link_anh": null
+  },
+  {
+    "id": "f134b986-0cc2-402c-846d-9db1ae4d7b2e",
+    "ma_sku": "OPA78",
+    "ten_san_pham": "OPPO A78 5G",
+    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
+    "thuong_hieu_id": "3f6fe59c-2e9d-4a87-9808-f6b6a19bce54",
+    "gia_niem_yet": 629000000.0,
+    "gia_ban": 549000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 290,
+    "so_luong_ban": 41,
+    "ngay_tao": "2025-11-29T19:00:30.1933333",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.1933333",
+    "link_anh": null
+  },
+  {
+    "id": "2c9ca700-524e-4c27-b388-beb7ef1a087c",
+    "ma_sku": "SSS23U512",
+    "ten_san_pham": "Samsung Galaxy S23 Ultra 512GB",
+    "danh_muc_id": "01d4eab0-efe3-43ec-b4e6-1ae5d3b8cd4b",
+    "thuong_hieu_id": "a474c22c-fdcb-409b-aaef-e22981860a07",
+    "gia_niem_yet": 2499000000.0,
+    "gia_ban": 2199000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 800,
+    "so_luong_ban": 89,
+    "ngay_tao": "2025-11-29T19:00:30.19",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
+    "link_anh": null
+  },
+  {
+    "id": "9087f3d2-7b95-432c-9517-c163f3f1b45f",
+    "ma_sku": "SP1764449265455",
+    "ten_san_pham": "OKOK",
+    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
+    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
+    "gia_niem_yet": 33333300.0,
+    "gia_ban": 1222200.0,
+    "mongo_detail_id": "692b5bfa77b304edccf558e5",
+    "trang_thai": "1",
+    "luot_xem": 0,
+    "so_luong_ban": 0,
+    "ngay_tao": "2025-11-29T20:47:45.5966667",
+    "ngay_cap_nhat": "2025-11-29T20:47:54.59",
+    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764449268/webPhone/products/okok-sp1764449265455/images/sfwsdrz4jgnxaoo9a0is.png"
+  },
+  {
+    "id": "bd7747b3-3cb2-4403-bdac-e3953efc352a",
+    "ma_sku": "OPRENO10",
+    "ten_san_pham": "OPPO Reno10 5G",
+    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
+    "thuong_hieu_id": "3f6fe59c-2e9d-4a87-9808-f6b6a19bce54",
+    "gia_niem_yet": 899000000.0,
+    "gia_ban": 799000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 450,
+    "so_luong_ban": 67,
+    "ngay_tao": "2025-11-29T19:00:30.19",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
+    "link_anh": null
+  },
+  {
+    "id": "cb77ea2e-2b35-4fbb-bfc8-f7b82fd8dd2c",
+    "ma_sku": "SP1764448917608",
+    "ten_san_pham": "Test Oke thì ngủ",
+    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
+    "thuong_hieu_id": "0534a2ad-0ea5-4b25-b9d8-5477cf1f670b",
+    "gia_niem_yet": 2222100.0,
+    "gia_ban": 1200.0,
+    "mongo_detail_id": "692b5a9d1514aa3f363db4bc",
+    "trang_thai": "1",
+    "luot_xem": 0,
+    "so_luong_ban": 0,
+    "ngay_tao": "2025-11-29T20:41:57.7366667",
+    "ngay_cap_nhat": "2025-11-29T20:42:05.2033333",
+    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764448920/webPhone/products/test-oke-thi-ngu-sp1764448917608/images/ilikfxyu4vvdthauzr6c.jpg"
+  },
+  {
+    "id": "b65768cd-2919-41ff-b1c7-fe0c274d39bb",
+    "ma_sku": "IP14128",
+    "ten_san_pham": "iPhone 14 128GB",
+    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
+    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
+    "gia_niem_yet": 1999000000.0,
+    "gia_ban": 1799000000.0,
+    "mongo_detail_id": null,
+    "trang_thai": "1",
+    "luot_xem": 1500,
+    "so_luong_ban": 120,
+    "ngay_tao": "2025-11-29T19:00:30.19",
+    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
+    "link_anh": null
+  }
+]

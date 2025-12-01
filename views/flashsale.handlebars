@@ -7,15 +7,15 @@
                     <div class="title-icon">⚡</div>
                     <div>
                         <h1>QUẢN LÝ FLASH SALE</h1>
-                        <p>Theo dõi và quản lý các chương trình flash sale</p>
+                        <p>Quản lý các đợt flash sale và sản phẩm khuyến mãi</p>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="btn-primary" id="addFlashSaleBtn">
+                    <button class="btn-primary" onclick="openFlashSaleModal()">
                         <i class="fas fa-plus"></i>
-                        <span>Thêm Flash Sale</span>
+                        <span>Tạo Flash Sale</span>
                     </button>
-                    <button class="btn-secondary" id="refreshBtn">
+                    <button class="btn-secondary" onclick="loadData()">
                         <i class="fas fa-sync-alt"></i>
                         <span>Làm mới</span>
                     </button>
@@ -23,7 +23,7 @@
             </div>
         </div>
 
-        <!-- Stats -->
+        <!-- Stats Overview -->
         <div class="stats-overview">
             <div class="stat-card">
                 <div class="stat-icon total">
@@ -39,7 +39,7 @@
                     <i class="fas fa-fire"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="countActive">0</h3>
+                    <h3 id="activeFlashSales">0</h3>
                     <p>Đang diễn ra</p>
                 </div>
             </div>
@@ -48,7 +48,7 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="countWaiting">0</h3>
+                    <h3 id="waitingFlashSales">0</h3>
                     <p>Sắp diễn ra</p>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                     <i class="fas fa-check-circle"></i>
                 </div>
                 <div class="stat-info">
-                    <h3 id="countEnded">0</h3>
+                    <h3 id="endedFlashSales">0</h3>
                     <p>Đã kết thúc</p>
                 </div>
             </div>
@@ -67,516 +67,260 @@
         <div class="search-filter-bar">
             <div class="search-box">
                 <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Tìm kiếm flash sale theo tên...">
+                <input type="text" id="searchInput" placeholder="Tìm kiếm flash sale...">
             </div>
             <div class="filter-controls">
-                <select class="filter-select" id="statusFilter">
+                <select id="statusFilter" class="filter-select">
                     <option value="">Tất cả trạng thái</option>
-                    <option value="cho">⏳ Chờ</option>
-                    <option value="dang_dien_ra">🔥 Đang diễn ra</option>
-                    <option value="da_ket_thuc">✅ Đã kết thúc</option>
-                    <option value="huy">❌ Đã hủy</option>
+                    <option value="cho">Chờ diễn ra</option>
+                    <option value="dang_dien_ra">Đang diễn ra</option>
+                    <option value="da_ket_thuc">Đã kết thúc</option>
+                    <option value="huy">Đã hủy</option>
                 </select>
-                <button class="clear-filters" id="clearFilters">
-                    <i class="fas fa-times"></i>
-                    Xóa lọc
-                </button>
             </div>
         </div>
 
         <!-- Flash Sales Table -->
         <div class="table-container">
             <div class="table-header">
-                <h3>Danh sách Flash Sale</h3>
-                <div class="table-actions">
-                    <button class="btn-export" id="exportBtn">
-                        <i class="fas fa-download"></i>
-                        Xuất Excel
-                    </button>
-                </div>
+                <h3><i class="fas fa-list"></i> Danh sách Flash Sale</h3>
             </div>
-
             <div class="table-responsive">
-                <table class="products-table" id="flashSalesTable">
+                <table class="simple-table">
                     <thead>
                         <tr>
-                            <th class="col-name">Tên Flash Sale</th>
-                            <th class="col-date">Thời gian</th>
-                            <th class="col-products">Sản phẩm</th>
-                            <th class="col-sold">Đã bán</th>
-                            <th class="col-status">Trạng thái</th>
-                            <th class="col-actions">Thao tác</th>
+                            <th>Tên Flash Sale</th>
+                            <th>Thời gian</th>
+                            <th>Sản phẩm</th>
+                            <th>Đã bán</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {{#if flashSales.length}}
-                        {{#each flashSales}}
-                        <tr data-id="{{this.id}}" data-status="{{this.trang_thai}}">
-                            <td class="col-name">
-                                <div class="flashsale-name">{{this.ten_flash_sale}}</div>
-                                {{#if this.mo_ta}}
-                                <div class="flashsale-desc">{{this.mo_ta}}</div>
-                                {{/if}}
-                            </td>
-                            <td class="col-date">
-                                <div class="date-info">
-                                    <div class="start-date">
-                                        <i class="fas fa-play-circle"></i>
-                                        {{formatDateTime this.ngay_bat_dau}}
-                                    </div>
-                                    <div class="end-date">
-                                        <i class="fas fa-stop-circle"></i>
-                                        {{formatDateTime this.ngay_ket_thuc}}
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="col-products">
-                                <span class="product-count">{{this.so_san_pham}} sản phẩm</span>
-                            </td>
-                            <td class="col-sold">
-                                <span class="sold-count">{{this.tong_da_ban}}</span>
-                            </td>
-                            <td class="col-status">
-                                <span class="status-badge status-{{this.trang_thai}}">
-                                    {{#if (eq this.trang_thai 'cho')}}⏳ Chờ
-                                    {{else if (eq this.trang_thai 'dang_dien_ra')}}🔥 Đang diễn ra
-                                    {{else if (eq this.trang_thai 'da_ket_thuc')}}✅ Đã kết thúc
-                                    {{else if (eq this.trang_thai 'huy')}}❌ Đã hủy
-                                    {{/if}}
-                                </span>
-                            </td>
-                            <td class="col-actions">
-                                <div class="action-buttons">
-                                    <button class="btn-action btn-view" data-id="{{this.id}}" title="Xem chi tiết">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn-action btn-edit" data-id="{{this.id}}" title="Chỉnh sửa">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn-action btn-products" data-id="{{this.id}}" 
-                                        data-name="{{this.ten_flash_sale}}" title="Quản lý sản phẩm">
-                                        <i class="fas fa-box"></i>
-                                    </button>
-                                    <button class="btn-action btn-delete" data-id="{{this.id}}" 
-                                        data-name="{{this.ten_flash_sale}}" title="Xóa">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {{/each}}
-                        {{else}}
+                    <tbody id="flashSalesTableBody">
                         <tr>
-                            <td colspan="6" class="emptyState">
-                                <div class="empty-icon">⚡</div>
-                                <div class="empty-content">
-                                    <h3>Không tìm thấy flash sale</h3>
-                                    <p>Thử thay đổi bộ lọc hoặc thêm flash sale mới</p>
-                                    <button class="btn-primary" id="addFlashSaleEmptyBtn">
-                                        <i class="fas fa-plus"></i>
-                                        Thêm flash sale đầu tiên
-                                    </button>
-                                </div>
-                            </td>
+                            <td colspan="6" class='text-center'>Đang tải dữ liệu...</td>
                         </tr>
-                        {{/if}}
                     </tbody>
                 </table>
-            </div>
-
-            <!-- Table Footer -->
-            <div class="table-footer">
-                <div class="table-info">
-                    Hiển thị <span id="currentCount">{{flashSales.length}}</span> trong tổng số <span
-                        id="totalCount">{{flashSales.length}}</span> flash sale
-                </div>
-                <div class="table-pagination">
-                    <button class="pagination-btn" id="prevPage" disabled>
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="pagination-info">Trang 1 của 1</span>
-                    <button class="pagination-btn" id="nextPage" disabled>
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 
-
-    <!-- Flash Sale Modal -->
-    <div class="modal fade modal-premium" id="flashSaleModal" tabindex="-1" aria-hidden="true">
+    <!-- Flash Sale Modal (Add/Edit) -->
+    <div class="modal fade" id="flashSaleModal" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-bolt"></i>
-                        <span id="modalTitle">Thêm Flash Sale mới</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="flashSaleModalTitle">Thêm Flash Sale</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="flashSaleForm">
                         <input type="hidden" id="flashSaleId">
-
-                        <div class="form-sections">
-                            <!-- Basic Information -->
-                            <div class="form-section">
-                                <h4 class="section-title">
-                                    <i class="fas fa-info-circle"></i>
-                                    Thông tin cơ bản
-                                </h4>
-                                
-                                <div class="form-group">
-                                    <label for="flashSaleName" class="form-label">Tên Flash Sale *</label>
-                                    <input type="text" class="form-control" id="flashSaleName" required
-                                        placeholder="Nhập tên flash sale (VD: Flash Sale cuối tuần)">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="flashSaleDescription" class="form-label">Mô tả</label>
-                                    <textarea class="form-control" id="flashSaleDescription" rows="3"
-                                        placeholder="Mô tả chi tiết về đợt flash sale..."></textarea>
-                                </div>
-                            </div>
-
-                            <!-- Time Range -->
-                            <div class="form-section">
-                                <h4 class="section-title">
-                                    <i class="fas fa-clock"></i>
-                                    Thời gian diễn ra
-                                </h4>
-                                <div class="form-grid-2">
-                                    <div class="form-group">
-                                        <label for="startDate" class="form-label">Ngày bắt đầu *</label>
-                                        <input type="datetime-local" class="form-control" id="startDate" required>
+                        
+                        <!-- Thông tin Flash Sale -->
+                        <div class="section-box mb-4">
+                            <h6 class="section-title"><i class="fas fa-info-circle"></i> Thông tin Flash Sale</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Tên Flash Sale <span class='text-danger'>*</span></label>
+                                        <input type="text" class="form-control" id="flashSaleName" required>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="endDate" class="form-label">Ngày kết thúc *</label>
-                                        <input type="datetime-local" class="form-control" id="endDate" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Trạng thái</label>
+                                        <select class="form-control" id="flashSaleStatus">
+                                            <option value="cho">Chờ diễn ra</option>
+                                            <option value="dang_dien_ra">Đang diễn ra</option>
+                                            <option value="da_ket_thuc">Đã kết thúc</option>
+                                            <option value="huy">Hủy</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Status -->
-                            <div class="form-section">
-                                <h4 class="section-title">
-                                    <i class="fas fa-cog"></i>
-                                    Trạng thái
-                                </h4>
-                                <div class="form-group">
-                                    <label for="flashSaleStatus" class="form-label">Trạng thái *</label>
-                                    <select class="form-select" id="flashSaleStatus" required>
-                                        <option value="cho">⏳ Chờ</option>
-                                        <option value="dang_dien_ra">🔥 Đang diễn ra</option>
-                                        <option value="da_ket_thuc">✅ Đã kết thúc</option>
-                                        <option value="huy">❌ Hủy</option>
-                                    </select>
+                            <div class="form-group mb-3">
+                                <label class="form-label">Mô tả</label>
+                                <textarea class="form-control" id="flashSaleDesc" rows="2"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Thời gian bắt đầu <span class='text-danger'>*</span></label>
+                                        <input type="datetime-local" class="form-control" id="flashSaleStart" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label class="form-label">Thời gian kết thúc <span class='text-danger'>*</span></label>
+                                        <input type="datetime-local" class="form-control" id="flashSaleEnd" required>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Products Section -->
-                            <div class="form-section" id="productsSection">
-                                <h4 class="section-title">
-                                    <i class="fas fa-box"></i>
-                                    Sản phẩm Flash Sale
-                                    <span style="font-size: 0.85rem; color: var(--gray-500); font-weight: normal; margin-left: 8px;">
-                                        (Có thể thêm sau)
-                                    </span>
-                                </h4>
-
-                                <!-- Add Product Form -->
-                                <div class="add-product-form">
-                                    <div class="form-grid-2" style="margin-bottom: 12px;">
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label for="modalProductSelect" class="form-label">Chọn sản phẩm</label>
-                                            <select class="form-select" id="modalProductSelect">
-                                                <option value="">-- Chọn sản phẩm --</option>
+                        <!-- Danh sách sản phẩm -->
+                        <div class="section-box">
+                            <h6 class="section-title"><i class="fas fa-box"></i> Sản phẩm Flash Sale</h6>
+                            
+                            <!-- Form thêm sản phẩm -->
+                            <div class="add-product-form mb-3 p-3" style="background: #f8f9fa; border-radius: 8px;">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label">Sản phẩm</label>
+                                            <select class="form-control form-control-sm" id="modalProductSelect">
+                                                <option value="">Chọn sản phẩm</option>
                                             </select>
                                         </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label for="modalGiaFlashSale" class="form-label">Giá Flash Sale *</label>
-                                            <input type="number" class="form-control" id="modalGiaFlashSale" 
-                                                placeholder="Nhập giá flash sale" min="0">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label">Giá gốc</label>
+                                            <input type="number" class="form-control form-control-sm" id="modalOriginalPrice" readonly>
                                         </div>
                                     </div>
-
-                                    <div class="form-grid-2" style="margin-bottom: 12px;">
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label for="modalSoLuong" class="form-label">Số lượng *</label>
-                                            <input type="number" class="form-control" id="modalSoLuong" 
-                                                placeholder="Nhập số lượng" min="1">
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label for="modalGioiHan" class="form-label">Giới hạn mua/khách</label>
-                                            <input type="number" class="form-control" id="modalGioiHan" 
-                                                placeholder="Không giới hạn" min="1">
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label">Giá sale</label>
+                                            <input type="number" class="form-control form-control-sm" id="modalFlashSalePrice">
                                         </div>
                                     </div>
-
-                                    <button type="button" class="btn btn-sm" id="addProductToListBtn"
-                                        style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 8px 16px; border: none; border-radius: 6px; font-weight: 600;">
-                                        <i class="fas fa-plus"></i>
-                                        Thêm vào danh sách
-                                    </button>
-                                </div>
-
-                                <!-- Products List -->
-                                <div class="products-list-container" style="margin-top: 16px;">
-                                    <table class="table table-sm" id="modalProductsTable" style="display: none;">
-                                        <thead>
-                                            <tr>
-                                                <th width="35%">Sản phẩm</th>
-                                                <th width="15%">Giá gốc</th>
-                                                <th width="15%">Giá FS</th>
-                                                <th width="10%">% Giảm</th>
-                                                <th width="10%">SL</th>
-                                                <th width="10%">Giới hạn</th>
-                                                <th width="5%"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="modalProductsTableBody"></tbody>
-                                    </table>
-                                    <div id="modalNoProducts" style="text-align: center; padding: 20px; color: var(--gray-500);">
-                                        <i class="fas fa-inbox" style="font-size: 2rem; opacity: 0.5; display: block; margin-bottom: 8px;"></i>
-                                        Chưa có sản phẩm nào
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label">SL tồn kho</label>
+                                            <input type="number" class="form-control form-control-sm" id="modalAvailableQty" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label">SL sale</label>
+                                            <input type="number" class="form-control form-control-sm" id="modalSaleQty">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <div class="form-group mb-2">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-primary btn-sm w-100" onclick="addProductToTempList()">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Bảng sản phẩm đã thêm -->
+                            <div class="table-responsive">
+                                <table class="simple-table" id="tempProductsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Sản phẩm</th>
+                                            <th>Giá gốc</th>
+                                            <th>Giá sale</th>
+                                            <th>Giảm</th>
+                                            <th>SL sale</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tempProductsTableBody">
+                                        <tr>
+                                            <td colspan="7" class='text-center'>Chưa có sản phẩm</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i>
-                        Hủy bỏ
-                    </button>
-                    <button type="button" class="btn btn-primary" id="saveFlashSaleBtn">
-                        <i class="fas fa-save"></i>
-                        <span id="saveButtonText">Thêm Flash Sale</span>
+                    <button type="button" class="btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn-primary" onclick="saveFlashSale()">
+                        <i class="fas fa-save"></i> Lưu Flash Sale
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-
-    <!-- Products Management Modal -->
-    <div class="modal fade modal-premium" id="productsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xxl modal-dialog-scrollable">
+    <!-- Products Modal -->
+    <div class="modal fade" id="productsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-box"></i>
-                        <span id="productsModalTitle">Quản lý Sản phẩm Flash Sale</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="productsModalTitle">Quản lý sản phẩm Flash Sale</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="container-fluid">
+                    <input type="hidden" id="currentFlashSaleId">
+                    
+                    <!-- Add Product Form -->
+                    <div class="mb-4 p-3" style="background: #f8f9fa; border-radius: 8px;">
+                        <h6 class="mb-3"><i class="fas fa-plus-circle"></i> Thêm sản phẩm</h6>
                         <div class="row">
-                            <!-- Form Section -->
-                            <div class="col-lg-5">
-                                <div class="form-section-container">
-                                    <div class="form-section">
-                                        <h4 class="section-title">
-                                            <i class="fas fa-edit"></i>
-                                            <span id="productFormTitle">Thêm sản phẩm mới</span>
-                                        </h4>
-
-                                        <form id="productItemForm" class="product-form">
-                                            <input type="hidden" id="flashSaleItemId">
-                                            <input type="hidden" id="currentFlashSaleId">
-
-                                            <div class="form-group">
-                                                <label for="sanPham" class="form-label">
-                                                    <i class="fas fa-box"></i>
-                                                    Sản phẩm *
-                                                </label>
-                                                <select class="form-select form-select-lg" id="sanPham" required>
-                                                    <option value="">-- Chọn sản phẩm --</option>
-                                                </select>
-                                                <div class="form-text">Chọn sản phẩm muốn thêm vào flash sale</div>
-                                            </div>
-
-                                            <div class="form-grid-2">
-                                                <div class="form-group">
-                                                    <label for="giaGoc" class="form-label">
-                                                        <i class="fas fa-tag"></i>
-                                                        Giá gốc *
-                                                    </label>
-                                                    <div class="input-group">
-                                                        <input type="number" class="form-control form-control-lg" 
-                                                            id="giaGoc" required min="0" readonly>
-                                                        <span class="input-group-text">VNĐ</span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="form-group">
-                                                    <label for="giaFlashSale" class="form-label">
-                                                        <i class="fas fa-fire"></i>
-                                                        Giá Flash Sale *
-                                                    </label>
-                                                    <div class="input-group">
-                                                        <input type="number" class="form-control form-control-lg" 
-                                                            id="giaFlashSale" required min="0">
-                                                        <span class="input-group-text">VNĐ</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label class="form-label">
-                                                    <i class="fas fa-percent"></i>
-                                                    Phần trăm giảm giá
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg discount-display" 
-                                                    id="phanTramGiam" readonly placeholder="0%">
-                                            </div>
-
-                                            <div class="form-grid-2">
-                                                <div class="form-group">
-                                                    <label for="soLuongTon" class="form-label">
-                                                        <i class="fas fa-cubes"></i>
-                                                        Số lượng *
-                                                    </label>
-                                                    <input type="number" class="form-control form-control-lg" 
-                                                        id="soLuongTon" required min="1" placeholder="0">
-                                                </div>
-
-                                                <div class="form-group">
-                                                    <label for="gioiHanMua" class="form-label">
-                                                        <i class="fas fa-shopping-cart"></i>
-                                                        Giới hạn mua/khách
-                                                    </label>
-                                                    <input type="number" class="form-control form-control-lg" 
-                                                        id="gioiHanMua" min="1" placeholder="Không giới hạn">
-                                                </div>
-                                            </div>
-
-                                            <div class="form-grid-2">
-                                                <div class="form-group">
-                                                    <label for="thuTu" class="form-label">
-                                                        <i class="fas fa-sort-numeric-down"></i>
-                                                        Thứ tự hiển thị
-                                                    </label>
-                                                    <input type="number" class="form-control form-control-lg" 
-                                                        id="thuTu" min="0" value="0">
-                                                </div>
-
-                                                <div class="form-group">
-                                                    <label for="trangThaiItem" class="form-label">
-                                                        <i class="fas fa-toggle-on"></i>
-                                                        Trạng thái
-                                                    </label>
-                                                    <select class="form-select form-select-lg" id="trangThaiItem">
-                                                        <option value="dang_ban">🟢 Đang bán</option>
-                                                        <option value="het_hang">🔴 Hết hàng</option>
-                                                        <option value="tam_dung">⏸️ Tạm dừng</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-
-                                    <!-- Action Buttons -->
-                                    <div class="form-actions mt-4">
-                                        <button type="button" class="btn btn-secondary btn-lg me-2" id="resetProductForm">
-                                            <i class="fas fa-undo"></i>
-                                            Làm mới form
-                                        </button>
-                                        <button type="button" class="btn btn-primary btn-lg" id="saveProductItemBtn">
-                                            <i class="fas fa-save"></i>
-                                            <span id="saveProductText">Thêm sản phẩm</span>
-                                        </button>
-                                    </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Sản phẩm</label>
+                                    <select class="form-control" id="productSelect">
+                                        <option value="">Chọn sản phẩm</option>
+                                    </select>
                                 </div>
                             </div>
-
-                            <!-- List Section -->
-                            <div class="col-lg-7">
-                                <div class="table-section-container">
-                                    <div class="table-section-header">
-                                        <h4 class="section-title">
-                                            <i class="fas fa-list"></i>
-                                            Danh sách sản phẩm
-                                        </h4>
-                                        <div class="table-controls">
-                                            <div class="search-box-sm">
-                                                <i class="fas fa-search"></i>
-                                                <input type="text" id="productSearch" placeholder="Tìm kiếm sản phẩm...">
-                                            </div>
-                                            <button class="btn btn-outline-primary btn-sm" id="refreshProductsBtn">
-                                                <i class="fas fa-sync-alt"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div class="table-container">
-                                        <div class="table-responsive">
-                                            <table class="products-table" id="productItemsTable">
-                                                <thead>
-                                                    <tr>
-                                                        <th width="25%">Sản phẩm</th>
-                                                        <th width="13%">Giá gốc</th>
-                                                        <th width="13%">Giá FS</th>
-                                                        <th width="8%">% Giảm</th>
-                                                        <th width="8%">SL</th>
-                                                        <th width="8%">Đã bán</th>
-                                                        <th width="15%">Trạng thái</th>
-                                                        <th width="10%">Thao tác</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="productItemsTableBody">
-                                                    <!-- Dynamic products will be loaded here -->
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <!-- Table Footer -->
-                                    <div class="table-footer">
-                                        <div class="table-info">
-                                            Hiển thị <span id="productsCurrentCount">0</span> sản phẩm
-                                        </div>
-                                    </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Giá gốc</label>
+                                    <input type="number" class="form-control" id="originalPrice" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Giá Flash Sale</label>
+                                    <input type="number" class="form-control" id="flashSalePrice">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Số lượng</label>
+                                    <input type="number" class="form-control" id="itemQuantity">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn-primary w-100" onclick="addProductToFlashSale()">
+                                        <i class="fas fa-plus"></i> Thêm
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i>
-                        Đóng
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-
-    <!-- View Details Modal -->
-    <div class="modal fade modal-premium" id="viewModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-eye"></i>
-                        <span id="viewModalTitle">Chi tiết Flash Sale</span>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="view-content" id="viewContent">
-                        <!-- Dynamic content will be loaded here -->
+                    <!-- Products List -->
+                    <div class="table-responsive">
+                        <table class="simple-table">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Giá gốc</th>
+                                    <th>Giá Flash Sale</th>
+                                    <th>Giảm</th>
+                                    <th>Số lượng</th>
+                                    <th>Đã bán</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <tr>
+                                    <td colspan="7" class='text-center'>Chưa có sản phẩm</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i>
-                        Đóng
-                    </button>
+                    <button type="button" class="btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
         </div>
@@ -584,1203 +328,851 @@
 </div>
 
 <style>
-    /* Modern CSS Reset and Base Styles */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-    :root {
-        --primary: #667eea;
-        --primary-dark: #5a6fd8;
-        --secondary: #764ba2;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --danger: #ef4444;
-        --dark: #1f2937;
-        --light: #f8fafc;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-400: #9ca3af;
-        --gray-500: #6b7280;
-        --gray-600: #4b5563;
-        --gray-700: #374151;
-        --gray-800: #1f2937;
-        --border-radius: 12px;
-        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        --transition: all 0.3s ease;
-    }
+:root {
+    --primary: #f59e0b;
+    --primary-dark: #d97706;
+    --secondary: #764ba2;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --dark: #1f2937;
+    --light: #f8fafc;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --border-radius: 12px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
 
-    body {
-        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: var(--light);
-        color: var(--gray-800);
-        line-height: 1.6;
-    }
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--light);
+    color: var(--gray-800);
+    line-height: 1.6;
+}
 
-    .main-content {
-        min-height: 100vh;
-        padding: 24px;
-        max-width: 100%;
-    }
+.main-content {
+    min-height: 100vh;
+    padding: 24px;
+    max-width: 100%;
+}
 
-    /* Header Styles */
-    .dashboard-header {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 28px 32px;
-        margin-bottom: 24px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-        position: relative;
-        overflow: hidden;
-    }
+/* Header Styles */
+.dashboard-header {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    position: relative;
+    overflow: hidden;
+}
 
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    }
+.dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
 
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.title-icon {
+    font-size: 2.75rem;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-title h1 {
+    margin: 0;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.header-title p {
+    margin: 4px 0 0 0;
+    color: var(--gray-500);
+    font-size: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* Button Styles */
+.btn-primary {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--gray-700);
+    border: 2px solid var(--gray-300);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+}
+
+.btn-action {
+    background: transparent;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.btn-view {
+    color: #3b82f6;
+}
+
+.btn-view:hover {
+    background: #eff6ff;
+}
+
+.btn-edit {
+    color: #10b981;
+}
+
+.btn-edit:hover {
+    background: #d1fae5;
+}
+
+.btn-delete {
+    color: #ef4444;
+}
+
+.btn-delete:hover {
+    background: #fee2e2;
+}
+
+/* Stats Overview */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, #fbbf24, #f59e0b);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    box-shadow: var(--shadow);
+}
+
+.stat-icon.total {
+    background: linear-gradient(135deg, #fed7aa, #fdba74);
+    color: #ea580c;
+}
+
+.stat-icon.available {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #d97706;
+}
+
+.stat-icon.busy {
+    background: linear-gradient(135deg, #ddd6fe, #c4b5fd);
+    color: #7c3aed;
+}
+
+.stat-icon.premium {
+    background: linear-gradient(135deg, #a7f3d0, #6ee7b7);
+    color: #059669;
+}
+
+.stat-info h3 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.stat-info p {
+    color: var(--gray-500);
+    margin: 4px 0 0 0;
+}
+
+/* Search and Filter */
+.search-filter-bar {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-box:focus-within {
+    background: white;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.search-box i {
+    color: var(--gray-400);
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.95rem;
+    color: var(--gray-800);
+}
+
+.filter-controls {
+    display: flex;
+    gap: 12px;
+}
+
+.filter-select {
+    padding: 10px 16px;
+    border: 2px solid var(--gray-300);
+    border-radius: 8px;
+    background: white;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Table Styles */
+.table-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid var(--gray-200);
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.simple-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.simple-table th {
+    background: var(--gray-100);
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.simple-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--gray-200);
+    color: var(--gray-700);
+}
+
+.simple-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.simple-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-cho {
+    background: #ddd6fe;
+    color: #7c3aed;
+}
+
+.status-dang_dien_ra {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.status-da_ket_thuc {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+
+.status-huy {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.text-danger {
+    color: #ef4444;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-bottom: 2px solid var(--gray-200);
+    padding: 20px 24px;
+}
+
+.modal-title {
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--gray-700);
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.form-control-sm {
+    padding: 6px 10px;
+    font-size: 0.875rem;
+}
+
+.section-box {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.add-product-form {
+    border: 1px dashed var(--gray-300);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
     .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 20px;
+        flex-direction: column;
+        align-items: flex-start;
     }
-
-    .header-title {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-    }
-
-    .title-icon {
-        font-size: 2.75rem;
-        background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .header-title h1 {
-        margin: 0;
-        font-size: 1.875rem;
-        font-weight: 700;
-        color: var(--gray-800);
-    }
-
-    .header-title p {
-        margin: 4px 0 0 0;
-        color: var(--gray-500);
-        font-size: 1rem;
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    /* Button Styles */
-    .btn-primary {
-        background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: var(--transition);
-        box-shadow: var(--shadow);
-        text-decoration: none;
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
-    }
-
-    .btn-secondary {
-        background: white;
-        color: var(--gray-700);
-        border: 2px solid var(--gray-300);
-        padding: 10px 20px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: var(--transition);
-    }
-
-    .btn-secondary:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-        transform: translateY(-1px);
-    }
-
-    /* Stats Overview */
+    
     .stats-overview {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 24px;
+        grid-template-columns: 1fr;
     }
-
-    .stat-card {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 24px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-        transition: var(--transition);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(to bottom, #fbbf24, #f59e0b);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-    }
-
-    .stat-icon {
-        width: 70px;
-        height: 70px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.75rem;
-        box-shadow: var(--shadow);
-    }
-
-    .stat-icon.total {
-        background: linear-gradient(135deg, #fed7aa, #fdba74);
-        color: #ea580c;
-    }
-
-    .stat-icon.available {
-        background: linear-gradient(135deg, #fef3c7, #fde68a);
-        color: #d97706;
-    }
-
-    .stat-icon.busy {
-        background: linear-gradient(135deg, #ddd6fe, #c4b5fd);
-        color: #7c3aed;
-    }
-
-    .stat-icon.premium {
-        background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
-        color: #059669;
-    }
-
-    .stat-info h3 {
-        margin: 0;
-        font-size: 2rem;
-        color: var(--gray-800);
-        font-weight: 700;
-    }
-
-    .stat-info p {
-        margin: 4px 0 0 0;
-        color: var(--gray-500);
-        font-weight: 500;
-    }
-
-    /* Search and Filter */
+    
     .search-filter-bar {
-        background: white;
-        border-radius: var(--border-radius);
-        padding: 24px;
-        margin-bottom: 24px;
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        flex-wrap: wrap;
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
+        flex-direction: column;
     }
-
+    
     .search-box {
-        display: flex;
-        align-items: center;
-        background: var(--gray-100);
-        border-radius: 10px;
-        padding: 12px 20px;
-        flex: 1;
-        min-width: 400px;
-        border: 2px solid var(--gray-200);
-        transition: var(--transition);
-    }
-
-    .search-box:focus-within {
-        border-color: var(--warning);
-        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
-    }
-
-    .search-box i {
-        color: var(--gray-400);
-        margin-right: 12px;
-    }
-
-    .search-box input {
-        border: none;
-        background: none;
-        outline: none;
-        flex: 1;
-        padding: 4px 0;
-        font-size: 0.95rem;
-        color: var(--gray-800);
-    }
-
-    .filter-controls {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
-    .filter-select {
-        padding: 10px 16px;
-        border: 2px solid var(--gray-200);
-        border-radius: 8px;
-        background: white;
-        color: var(--gray-700);
-        min-width: 160px;
-        cursor: pointer;
-        transition: var(--transition);
-        font-size: 0.9rem;
-    }
-
-    .filter-select:focus {
-        border-color: var(--warning);
-        outline: none;
-    }
-
-    .clear-filters {
-        background: none;
-        border: 2px solid var(--gray-200);
-        color: var(--gray-600);
-        padding: 10px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        transition: var(--transition);
-    }
-
-    .clear-filters:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-300);
-    }
-
-    /* Table Styles */
-    .table-container {
-        background: white;
-        border-radius: var(--border-radius);
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        margin-bottom: 5px;
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 24px;
-        border-bottom: 1px solid var(--gray-200);
-        background: var(--gray-50);
-    }
-
-    .table-header h3 {
-        margin: 0;
-        color: var(--gray-800);
-        font-size: 1.25rem;
-        font-weight: 600;
-    }
-
-    .table-actions {
-        display: flex;
-        gap: 12px;
-    }
-
-    .btn-export {
-        background: white;
-        color: var(--gray-700);
-        border: 2px solid var(--gray-300);
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: var(--transition);
-    }
-
-    .btn-export:hover {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-    }
-
-    .table-responsive {
-        overflow-x: auto;
-    }
-
-    .products-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .products-table th {
-        background: var(--gray-50);
-        padding: 16px 12px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 1px solid var(--gray-200);
-        font-size: 0.9rem;
-        white-space: nowrap;
-    }
-
-    .products-table td {
-        padding: 16px 12px;
-        border-bottom: 1px solid var(--gray-200);
-        vertical-align: middle;
-    }
-
-    .products-table tbody tr {
-        transition: var(--transition);
-    }
-
-    .products-table tbody tr:hover {
-        background: var(--gray-50);
-    }
-
-    .products-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    /* FlashSale Specific Columns */
-    .col-name {
-        min-width: 250px;
-    }
-
-    .col-date {
-        min-width: 200px;
-    }
-
-    .col-products {
-        width: 100px;
-        text-align: center;
-    }
-
-    .col-sold {
-        width: 80px;
-        text-align: center;
-    }
-
-    .col-status {
-        width: 140px;
-    }
-
-    .col-actions {
-        width: 150px;
-    }
-
-    /* Table Content Styles */
-    .flashsale-name {
-        font-weight: 600;
-        color: var(--gray-800);
-        margin-bottom: 4px;
-    }
-
-    .flashsale-desc {
-        font-size: 0.85rem;
-        color: var(--gray-500);
-    }
-
-    .date-info {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .start-date,
-    .end-date {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.85rem;
-    }
-
-    .start-date {
-        color: var(--success);
-    }
-
-    .end-date {
-        color: var(--danger);
-    }
-
-    .product-count,
-    .sold-count {
-        font-weight: 600;
-        color: var(--gray-700);
-    }
-
-    /* Status Badges */
-    .status-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: inline-block;
-    }
-
-    .status-badge.status-cho {
-        background: rgba(251, 191, 36, 0.1);
-        color: #f59e0b;
-    }
-
-    .status-badge.status-dang_dien_ra {
-        background: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-    }
-
-    .status-badge.status-da_ket_thuc {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-    }
-
-    .status-badge.status-huy {
-        background: rgba(107, 114, 128, 0.1);
-        color: #6b7280;
-    }
-
-    /* Action Buttons */
-    .action-buttons {
-        display: flex;
-        gap: 6px;
-        justify-content: center;
-    }
-
-    .btn-action {
-        width: 32px;
-        height: 32px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: white;
-        font-size: 0.9rem;
-    }
-
-    .btn-view {
-        background: var(--primary);
-    }
-
-    .btn-view:hover {
-        background: var(--primary-dark);
-        transform: scale(1.1);
-    }
-
-    .btn-edit {
-        background: var(--warning);
-    }
-
-    .btn-edit:hover {
-        background: #e58e0b;
-        transform: scale(1.1);
-    }
-
-    .btn-products {
-        background: var(--success);
-    }
-
-    .btn-products:hover {
-        background: #059669;
-        transform: scale(1.1);
-    }
-
-    .btn-delete {
-        background: var(--danger);
-    }
-
-    .btn-delete:hover {
-        background: #dc2626;
-        transform: scale(1.1);
-    }
-
-    /* Table Footer */
-    .table-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 24px;
-        border-top: 1px solid var(--gray-200);
-        background: var(--gray-50);
-    }
-
-    .table-info {
-        color: var(--gray-600);
-        font-size: 0.9rem;
-    }
-
-    .table-pagination {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .pagination-btn {
-        width: 32px;
-        height: 32px;
-        border: 1px solid var(--gray-300);
-        background: white;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: var(--transition);
-        color: var(--gray-600);
-    }
-
-    .pagination-btn:hover:not(:disabled) {
-        background: var(--gray-100);
-        border-color: var(--gray-400);
-    }
-
-    .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    .pagination-info {
-        font-size: 0.9rem;
-        color: var(--gray-600);
-    }
-
-    /* Empty State */
-    .emptyState {
-        text-align: center;
-        padding: 60px 20px !important;
-    }
-
-    .emptyState .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 20px;
-        opacity: 0.7;
-    }
-
-    .emptyState .empty-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .emptyState .empty-content h3 {
-        margin: 0;
-        color: var(--gray-800);
-        font-size: 1.5rem;
-        font-weight: 600;
-    }
-
-    .emptyState .empty-content p {
-        margin: 0;
-        color: var(--gray-500);
-        font-size: 1rem;
-    }
-
-    .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 80px 40px;
-        background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow);
-        border: 1px solid var(--gray-200);
-        text-align: center;
-    }
-
-    .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 20px;
-        opacity: 0.7;
-    }
-
-    .empty-content h3 {
-        margin: 0 0 8px 0;
-        color: var(--gray-800);
-        font-size: 1.5rem;
-    }
-
-    .empty-content p {
-        margin: 0 0 24px 0;
-        color: var(--gray-500);
-    }
-
-    /* Loading State */
-    .loading-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 60px 20px;
-    }
-
-    .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid var(--gray-200);
-        border-left: 4px solid var(--warning);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 16px;
-    }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    /* Modal Styles */
-    .modal-premium .modal-content {
-        border: none;
-        border-radius: 16px;
-        box-shadow: var(--shadow-lg);
-        overflow: hidden;
-    }
-
-    .modal-premium .modal-header {
-        background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        color: white;
-        border-bottom: none;
-        padding: 24px 28px;
-    }
-
-    .modal-premium .modal-title {
-        font-weight: 700;
-        font-size: 1.4rem;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .modal-premium .modal-body {
-        padding: 28px;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-
-    .modal-premium .modal-footer {
-        border-top: 1px solid var(--gray-200);
-        padding: 16px 28px;
-        background: white;
-    }
-
-    .modal-premium .btn-close {
-        filter: invert(1) grayscale(100%) brightness(200%);
-    }
-
-    .modal-premium .modal-xl {
-        max-width: 1140px;
-    }
-
-    .modal-premium .modal-xxl {
-        max-width: 1400px;
-    }
-
-    .modal-premium .modal-lg {
-        max-width: 800px;
-    }
-
-    /* Form Styles */
-    .form-sections {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-    }
-
-    .form-section {
-        background: var(--gray-50);
-        border-radius: 12px;
-        padding: 20px;
-    }
-
-    .section-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 16px;
-        color: var(--gray-700);
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-
-    .section-title i {
-        color: var(--warning);
-    }
-
-    .form-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .form-group {
-        margin-bottom: 16px;
-    }
-
-    .form-label {
-        font-weight: 600;
-        color: var(--gray-700);
-        margin-bottom: 8px;
-        font-size: 0.95rem;
-        display: block;
-    }
-
-    .form-control,
-    .form-select {
-        border: 2px solid var(--gray-200);
-        border-radius: 8px;
-        padding: 12px;
-        font-size: 0.95rem;
-        transition: var(--transition);
-        background: white;
         width: 100%;
     }
-
-    .form-control:focus,
-    .form-select:focus {
-        border-color: var(--warning);
-        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
-        outline: none;
-    }
-
-    .form-text {
-        font-size: 0.85rem;
-        color: var(--gray-500);
-        margin-top: 4px;
-    }
-
-    /* Products Modal Specific */
-    .form-section-container {
-        background: var(--gray-50);
-        border-radius: 12px;
-        padding: 20px;
-        height: fit-content;
-    }
-
-    .table-section-container {
-        background: white;
-        border-radius: 12px;
-        padding: 0;
-        border: 1px solid var(--gray-200);
-        overflow: hidden;
-    }
-
-    .table-section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--gray-200);
-        background: var(--gray-50);
-    }
-
-    .table-section-header .section-title {
-        margin: 0;
-    }
-
-    .table-controls {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .search-box-sm {
-        display: flex;
-        align-items: center;
-        background: white;
-        border: 1px solid var(--gray-300);
-        border-radius: 6px;
-        padding: 8px 12px;
-        min-width: 200px;
-    }
-
-    .search-box-sm i {
-        color: var(--gray-400);
-        margin-right: 8px;
-        font-size: 0.9rem;
-    }
-
-    .search-box-sm input {
-        border: none;
-        background: none;
-        outline: none;
-        flex: 1;
-        font-size: 0.85rem;
-        color: var(--gray-800);
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        padding-top: 16px;
-        border-top: 1px solid var(--gray-200);
-        margin-top: 16px;
-    }
-
-    /* Empty State Small */
-    .empty-state-sm {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 40px 20px;
-        text-align: center;
-        color: var(--gray-500);
-    }
-
-    .empty-state-sm .empty-icon {
-        font-size: 3rem;
-        margin-bottom: 16px;
-        opacity: 0.7;
-    }
-
-    .empty-state-sm .empty-content h5 {
-        margin: 0 0 8px 0;
-        color: var(--gray-600);
-        font-size: 1.1rem;
-    }
-
-    .empty-state-sm .empty-content p {
-        margin: 0;
-        font-size: 0.9rem;
-    }
-
-    /* Discount Display */
-    .discount-display {
-        background: var(--gray-100) !important;
-        color: var(--success) !important;
-        font-weight: 600;
-    }
-
-    .input-group {
-        display: flex;
-        border-radius: 8px;
-    }
-
-    .input-group .form-control {
-        border-radius: 8px 0 0 8px;
-        border-right: none;
-    }
-
-    .input-group .input-group-text {
-        background: var(--gray-100);
-        border: 2px solid var(--gray-200);
-        border-left: none;
-        color: var(--gray-600);
-        padding: 12px;
-        border-radius: 0 8px 8px 0;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1200px) {
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        .products-table {
-            min-width: 900px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 16px;
-        }
-
-        .header-content {
-            flex-direction: column;
-            text-align: center;
-        }
-
-        .header-actions {
-            justify-content: center;
-            width: 100%;
-        }
-
-        .search-filter-bar {
-            flex-direction: column;
-        }
-
-        .search-box {
-            min-width: auto;
-            width: 100%;
-        }
-
-        .filter-controls {
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .filter-select {
-            flex: 1;
-            min-width: auto;
-        }
-
-        .table-header {
-            flex-direction: column;
-            gap: 16px;
-            align-items: flex-start;
-        }
-
-        .table-footer {
-            flex-direction: column;
-            gap: 16px;
-            align-items: flex-start;
-        }
-
-        .form-grid-2 {
-            grid-template-columns: 1fr;
-        }
-
-        .stats-overview {
-            grid-template-columns: 1fr;
-        }
-
-        .modal-premium .modal-body .row {
-            flex-direction: column;
-        }
-
-        .modal-premium .modal-body .col-lg-5,
-        .modal-premium .modal-body .col-lg-7 {
-            width: 100%;
-            max-width: 100%;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .header-actions {
-            flex-direction: column;
-            width: 100%;
-        }
-
-        .btn-primary,
-        .btn-secondary {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .modal-premium .modal-footer {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .modal-premium .btn {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-
-    @media (max-width: 1400px) {
-        .modal-premium .modal-xxl {
-            max-width: 95%;
-            margin: 1rem auto;
-        }
-    }
-
-    @media (max-width: 1200px) {
-        .modal-premium .modal-xl {
-            max-width: 95%;
-        }
-    }
+}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-
 <script>
-// Flash Sale Management JavaScript
+// Global state
+let flashSalesData = [];
+let flashSaleItemsData = [];
+let inventoryData = [];
+let tempProductsList = []; // Danh sách sản phẩm tạm khi tạo flash sale
 
-// State management
-let currentPage = 1;
-let totalPages = 1;
-let flashSales = [];
-let currentFlashSaleId = null;
-let flashSaleItems = [];
-let tempProductsList = []; // Danh sách sản phẩm tạm trong modal
-let allProducts = []; // Lưu tất cả sản phẩm để tái sử dụng
+// Utils object
+const Utils = {
+    showLoading: function(message = 'Đang xử lý...') {
+        Swal.fire({
+            title: message,
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading();
+            }
+        });
+    },
+    
+    showSuccess: function(message) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Thành công',
+            text: message,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    },
+    
+    showError: function(message) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: message
+        });
+    },
+    
+    showConfirm: async function(message) {
+        const result = await Swal.fire({
+            title: 'Xác nhận',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Đồng ý',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#f59e0b'
+        });
+        return result.isConfirmed;
+    },
+    
+    formatNumber: function(num) {
+        return new Intl.NumberFormat('vi-VN').format(num || 0);
+    },
+    
+    formatCurrency: function(num) {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(num || 0);
+    },
+    
+    formatDateTime: function(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleString('vi-VN');
+    }
+};
 
-// API endpoints
-const API_BASE = '/api/flashsales';
+// API object
+const API = {
+    get: async function(url) {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok) {
+            console.error('API Error:', response.status, data);
+            throw new Error(data.message || 'Network error');
+        }
+        return data;
+    },
+    
+    post: async function(url, data) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            console.error('API POST Error:', response.status, result);
+            throw new Error(result.message || 'Network error');
+        }
+        return result;
+    },
+    
+    put: async function(url, data) {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            console.error('API PUT Error:', response.status, result);
+            throw new Error(result.message || 'Network error');
+        }
+        return result;
+    },
+    
+    delete: async function(url) {
+        const response = await fetch(url, {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            console.error('API DELETE Error:', response.status, result);
+            throw new Error(result.message || 'Network error');
+        }
+        return result;
+    }
+};
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    loadFlashSales();
-    loadAllProducts(); // Load products khi trang load
+    loadData();
     setupEventListeners();
 });
 
 // Setup event listeners
 function setupEventListeners() {
-    // Search and filter
-    document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') applyFilters();
-    });
-    
+    document.getElementById('searchInput')?.addEventListener('input', applyFilters);
     document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
-    
-    document.getElementById('clearFilters')?.addEventListener('click', () => {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('statusFilter').value = '';
-        currentPage = 1;
-        loadFlashSales();
-    });
-
-    // Create buttons
-    document.getElementById('addFlashSaleBtn')?.addEventListener('click', () => {
-        openFlashSaleModal();
-    });
-    
-    document.getElementById('addFlashSaleEmptyBtn')?.addEventListener('click', () => {
-        openFlashSaleModal();
-    });
-    
-    document.getElementById('refreshBtn')?.addEventListener('click', () => {
-        loadFlashSales();
-    });
-
-    // Form submissions
-    document.getElementById('flashSaleForm')?.addEventListener('submit', handleFlashSaleSubmit);
-    document.getElementById('productItemForm')?.addEventListener('submit', handleProductItemSubmit);
-    
-    // Save buttons
-    document.getElementById('saveFlashSaleBtn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        const form = document.getElementById('flashSaleForm');
-        if (form) {
-            const submitEvent = new Event('submit', { cancelable: true });
-            form.dispatchEvent(submitEvent);
-        }
-    });
-    
-    document.getElementById('saveProductItemBtn')?.addEventListener('click', () => {
-        document.getElementById('productItemForm').dispatchEvent(new Event('submit'));
-    });
-
-    // Pagination
-    document.getElementById('prevPage')?.addEventListener('click', () => changePage(currentPage - 1));
-    document.getElementById('nextPage')?.addEventListener('click', () => changePage(currentPage + 1));
-
-    // Product selection change
-    document.getElementById('sanPham')?.addEventListener('change', handleProductSelect);
-    
-    // Price change to calculate discount
-    document.getElementById('giaFlashSale')?.addEventListener('input', calculateDiscount);
-    
-    // Reset form button
-    document.getElementById('resetProductForm')?.addEventListener('click', () => {
-        document.getElementById('productItemForm').reset();
-        document.getElementById('flashSaleItemId').value = '';
-        document.getElementById('phanTramGiam').value = '';
-    });
-
-    // Modal product management
-    document.getElementById('addProductToListBtn')?.addEventListener('click', addProductToTempList);
+    document.getElementById('productSelect')?.addEventListener('change', handleProductSelect);
+    document.getElementById('flashSalePrice')?.addEventListener('input', updateDiscount);
     document.getElementById('modalProductSelect')?.addEventListener('change', handleModalProductSelect);
-    document.getElementById('modalGiaFlashSale')?.addEventListener('input', updateModalDiscount);
+    document.getElementById('modalFlashSalePrice')?.addEventListener('input', updateModalDiscount);
 }
 
-// Load all products once
-async function loadAllProducts() {
+// Load data
+async function loadData() {
     try {
-        const response = await fetch('/api/sanpham');
-        const data = await response.json();
-
-        if (data.success && data.data && data.data.sanphams) {
-            allProducts = data.data.sanphams;
-            populateModalProductDropdown();
+        Utils.showLoading('Đang tải dữ liệu...');
+        
+        // Load flash sales
+        const fsRes = await API.get('/api/flashsales');
+        if (Array.isArray(fsRes)) {
+            flashSalesData = fsRes;
+        } else if (fsRes && fsRes.data) {
+            flashSalesData = Array.isArray(fsRes.data) ? fsRes.data : (fsRes.data.flashsales || []);
         } else {
-            console.error('Invalid data structure:', data);
-            allProducts = [];
+            flashSalesData = [];
         }
+        
+        // Load inventory - đã bao gồm thông tin sản phẩm và số lượng tồn kho
+        const invRes = await API.get('/api/inventory');
+        if (Array.isArray(invRes)) {
+            inventoryData = invRes;
+        } else if (invRes && invRes.data) {
+            inventoryData = Array.isArray(invRes.data) ? invRes.data : (invRes.data.inventory || []);
+        } else {
+            inventoryData = [];
+        }
+        
+        updateStats();
+        renderFlashSales();
+        
+        Swal.close();
     } catch (error) {
-        console.error('Error loading products:', error);
-        showError('Lỗi tải danh sách sản phẩm');
-        allProducts = [];
+        console.error(error);
+        Utils.showError('Không thể tải dữ liệu');
     }
+}
+
+// Update stats
+function updateStats() {
+    const total = flashSalesData.length;
+    const active = flashSalesData.filter(fs => fs.trang_thai === 'dang_dien_ra').length;
+    const waiting = flashSalesData.filter(fs => fs.trang_thai === 'cho').length;
+    const ended = flashSalesData.filter(fs => fs.trang_thai === 'da_ket_thuc').length;
+    
+    document.getElementById('totalFlashSales').textContent = Utils.formatNumber(total);
+    document.getElementById('activeFlashSales').textContent = Utils.formatNumber(active);
+    document.getElementById('waitingFlashSales').textContent = Utils.formatNumber(waiting);
+    document.getElementById('endedFlashSales').textContent = Utils.formatNumber(ended);
+}
+
+// Render flash sales table
+function renderFlashSales(data = flashSalesData) {
+    const tbody = document.getElementById('flashSalesTableBody');
+    
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan='6' class='text-center'>Không có dữ liệu</td></tr>`;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(fs => `
+        <tr>
+            <td>
+                <strong>${fs.ten_flash_sale || 'N/A'}</strong>
+                ${fs.mo_ta ? `<br><small style='color: var(--gray-500)'>${fs.mo_ta}</small>` : ''}
+            </td>
+            <td>
+                <div>${Utils.formatDateTime(fs.ngay_bat_dau)}</div>
+                <div>${Utils.formatDateTime(fs.ngay_ket_thuc)}</div>
+            </td>
+            <td class='text-center'>${Utils.formatNumber(fs.total_products || 0)}</td>
+            <td class='text-center'>${Utils.formatNumber(fs.total_sold || 0)}</td>
+            <td>
+                <span class='status-badge status-${fs.trang_thai}'>${getStatusText(fs.trang_thai)}</span>
+            </td>
+            <td>
+                <button class='btn-action btn-edit' onclick="openFlashSaleModal('${fs.id}')" title='Sửa'>
+                    <i class='fas fa-edit'></i>
+                </button>
+                <button class='btn-action btn-view' onclick="manageProducts('${fs.id}', '${fs.ten_flash_sale}')" title='Quản lý sản phẩm'>
+                    <i class='fas fa-box'></i>
+                </button>
+                <button class='btn-action btn-delete' onclick="deleteFlashSale('${fs.id}')" title='Xóa'>
+                    <i class='fas fa-trash'></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Apply filters
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    
+    let filtered = flashSalesData;
+    
+    if (search) {
+        filtered = filtered.filter(fs => 
+            (fs.ten_flash_sale || '').toLowerCase().includes(search) ||
+            (fs.mo_ta || '').toLowerCase().includes(search)
+        );
+    }
+    
+    if (status) {
+        filtered = filtered.filter(fs => fs.trang_thai === status);
+    }
+    
+    renderFlashSales(filtered);
+}
+
+// Open flash sale modal
+function openFlashSaleModal(id = null) {
+    const modal = new bootstrap.Modal(document.getElementById('flashSaleModal'));
+    const title = document.getElementById('flashSaleModalTitle');
+    const form = document.getElementById('flashSaleForm');
+    
+    form.reset();
+    document.getElementById('flashSaleId').value = '';
+    tempProductsList = [];
+    
+    // Populate product dropdown
+    populateModalProductDropdown();
+    
+    if (id) {
+        title.textContent = 'Sửa Flash Sale';
+        const fs = flashSalesData.find(f => f.id === id);
+        if (fs) {
+            document.getElementById('flashSaleId').value = fs.id;
+            document.getElementById('flashSaleName').value = fs.ten_flash_sale || '';
+            document.getElementById('flashSaleDesc').value = fs.mo_ta || '';
+            document.getElementById('flashSaleStart').value = formatDateTimeLocal(fs.ngay_bat_dau);
+            document.getElementById('flashSaleEnd').value = formatDateTimeLocal(fs.ngay_ket_thuc);
+            document.getElementById('flashSaleStatus').value = fs.trang_thai || 'cho';
+            
+            // Load existing products
+            loadExistingProducts(id);
+        }
+    } else {
+        title.textContent = 'Thêm Flash Sale';
+        renderTempProductsTable();
+    }
+    
+    modal.show();
 }
 
 // Populate modal product dropdown
 function populateModalProductDropdown() {
-    const selectElement = document.getElementById('modalProductSelect');
-    if (!selectElement) return;
+    const select = document.getElementById('modalProductSelect');
+    if (!select) return;
     
-    selectElement.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+    select.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
     
-    if (!Array.isArray(allProducts) || allProducts.length === 0) {
-        console.warn('No products available');
+    if (!Array.isArray(inventoryData) || inventoryData.length === 0) {
         return;
     }
     
-    allProducts.forEach(product => {
+    // Gộp inventory theo sản phẩm và tính tổng tồn kho
+    const productMap = new Map();
+    
+    inventoryData.forEach(inv => {
+        if (!inv.san_pham_id || !inv.ten_san_pham) return;
+        
+        if (!productMap.has(inv.san_pham_id)) {
+            productMap.set(inv.san_pham_id, {
+                id: inv.san_pham_id,
+                ten_san_pham: inv.ten_san_pham,
+                gia_ban: inv.gia_ban || 0,
+                totalStock: 0
+            });
+        }
+        
+        const product = productMap.get(inv.san_pham_id);
+        product.totalStock += (inv.so_luong_kha_dung || 0);
+    });
+    
+    // Chuyển Map thành array và sort theo tên
+    const products = Array.from(productMap.values())
+        .sort((a, b) => a.ten_san_pham.localeCompare(b.ten_san_pham));
+    
+    products.forEach(product => {
         const option = document.createElement('option');
         option.value = product.id;
-        
-        // Hiển thị: Tên | Giá bán | Tồn kho
-        const priceDisplay = formatCurrency(product.gia_ban || product.gia || 0);
-        const stockDisplay = product.so_luong_ton || 0;
-        option.textContent = `${product.ten_san_pham} | ${priceDisplay} | Tồn: ${stockDisplay}`;
-        
-        // Lưu data attributes
-        option.setAttribute('data-price', product.gia_ban || product.gia || 0);
         option.setAttribute('data-name', product.ten_san_pham);
-        option.setAttribute('data-stock', stockDisplay);
-        
-        selectElement.appendChild(option);
+        option.setAttribute('data-price', product.gia_ban);
+        option.setAttribute('data-stock', product.totalStock);
+        option.textContent = `${product.ten_san_pham} (Tồn: ${product.totalStock})`;
+        select.appendChild(option);
     });
 }
 
@@ -1791,32 +1183,21 @@ function handleModalProductSelect(e) {
     const stock = selectedOption.getAttribute('data-stock');
     
     if (price) {
-        // Auto-fill flash sale price (90% of original)
-        const flashSalePrice = Math.floor(price * 0.9);
-        document.getElementById('modalGiaFlashSale').value = flashSalePrice;
-        
-        // Suggest max quantity based on stock
-        if (stock && parseInt(stock) > 0) {
-            const suggestedQty = Math.min(parseInt(stock), 100); // Max 100 hoặc tồn kho
-            document.getElementById('modalSoLuong').value = suggestedQty;
-            document.getElementById('modalSoLuong').setAttribute('max', stock);
-        }
-        
-        updateModalDiscount();
+        document.getElementById('modalOriginalPrice').value = price;
+        document.getElementById('modalAvailableQty').value = stock;
+        document.getElementById('modalFlashSalePrice').value = '';
+        document.getElementById('modalSaleQty').value = '';
     }
 }
 
 // Update modal discount display
 function updateModalDiscount() {
-    const selectElement = document.getElementById('modalProductSelect');
-    const selectedOption = selectElement.options[selectElement.selectedIndex];
-    const giaGoc = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-    const giaFlashSale = parseFloat(document.getElementById('modalGiaFlashSale').value) || 0;
-
-    // Visual feedback only (not stored anywhere yet)
+    const giaGoc = parseFloat(document.getElementById('modalOriginalPrice').value) || 0;
+    const giaFlashSale = parseFloat(document.getElementById('modalFlashSalePrice').value) || 0;
+    
     if (giaGoc > 0 && giaFlashSale > 0 && giaFlashSale < giaGoc) {
-        const discount = ((giaGoc - giaFlashSale) / giaGoc * 100).toFixed(0);
-        // Could show discount somewhere if needed
+        const discount = Math.round((1 - giaFlashSale / giaGoc) * 100);
+        console.log(`Giảm ${discount}%`);
     }
 }
 
@@ -1827,39 +1208,38 @@ function addProductToTempList() {
     const productId = selectElement.value;
     const productName = selectedOption.getAttribute('data-name');
     const giaGoc = parseFloat(selectedOption.getAttribute('data-price'));
-    const stock = parseInt(selectedOption.getAttribute('data-stock'));
-    const giaFlashSale = parseFloat(document.getElementById('modalGiaFlashSale').value);
-    const soLuong = parseInt(document.getElementById('modalSoLuong').value);
-    const gioiHan = parseInt(document.getElementById('modalGioiHan').value) || null;
-
+    const availableStock = parseInt(selectedOption.getAttribute('data-stock'));
+    const giaFlashSale = parseFloat(document.getElementById('modalFlashSalePrice').value);
+    const soLuong = parseInt(document.getElementById('modalSaleQty').value);
+    
     // Validate
     if (!productId) {
-        showError('Vui lòng chọn sản phẩm');
+        Utils.showError('Vui lòng chọn sản phẩm');
         return;
     }
     if (!giaFlashSale || giaFlashSale <= 0) {
-        showError('Vui lòng nhập giá flash sale hợp lệ');
+        Utils.showError('Vui lòng nhập giá flash sale');
         return;
     }
     if (!soLuong || soLuong <= 0) {
-        showError('Vui lòng nhập số lượng hợp lệ');
+        Utils.showError('Vui lòng nhập số lượng');
         return;
     }
     if (giaFlashSale >= giaGoc) {
-        showError('Giá flash sale phải nhỏ hơn giá gốc');
+        Utils.showError('Giá flash sale phải nhỏ hơn giá gốc');
         return;
     }
-    if (soLuong > stock) {
-        showError(`Số lượng không được vượt quá tồn kho (${stock})`);
+    if (soLuong > availableStock) {
+        Utils.showError(`Số lượng sale không được vượt quá tồn kho (${availableStock})`);
         return;
     }
-
+    
     // Check duplicate
     if (tempProductsList.find(p => p.san_pham_id === productId)) {
-        showError('Sản phẩm đã có trong danh sách');
+        Utils.showError('Sản phẩm đã có trong danh sách');
         return;
     }
-
+    
     // Add to temp list
     tempProductsList.push({
         san_pham_id: productId,
@@ -1867,50 +1247,41 @@ function addProductToTempList() {
         gia_goc: giaGoc,
         gia_flash_sale: giaFlashSale,
         so_luong_ton: soLuong,
-        gioi_han_mua: gioiHan,
-        thu_tu: tempProductsList.length,
-        trang_thai: 'dang_ban'
+        available_stock: availableStock
     });
-
-    renderTempProductsList();
+    
+    renderTempProductsTable();
     
     // Reset form
     document.getElementById('modalProductSelect').value = '';
-    document.getElementById('modalGiaFlashSale').value = '';
-    document.getElementById('modalSoLuong').value = '';
-    document.getElementById('modalGioiHan').value = '';
-    document.getElementById('modalSoLuong').removeAttribute('max');
+    document.getElementById('modalOriginalPrice').value = '';
+    document.getElementById('modalFlashSalePrice').value = '';
+    document.getElementById('modalAvailableQty').value = '';
+    document.getElementById('modalSaleQty').value = '';
 }
 
-// Render temporary products list
-function renderTempProductsList() {
-    const table = document.getElementById('modalProductsTable');
-    const tbody = document.getElementById('modalProductsTableBody');
-    const noProducts = document.getElementById('modalNoProducts');
-
+// Render temporary products table
+function renderTempProductsTable() {
+    const tbody = document.getElementById('tempProductsTableBody');
+    
     if (tempProductsList.length === 0) {
-        table.style.display = 'none';
-        noProducts.style.display = 'block';
+        tbody.innerHTML = `<tr><td colspan='7' class='text-center'>Chưa có sản phẩm</td></tr>`;
         return;
     }
-
-    table.style.display = 'table';
-    noProducts.style.display = 'none';
-
+    
     tbody.innerHTML = tempProductsList.map((product, index) => {
-        const discount = ((product.gia_goc - product.gia_flash_sale) / product.gia_goc * 100).toFixed(0);
+        const discount = product.gia_goc > 0 ? Math.round((1 - product.gia_flash_sale / product.gia_goc) * 100) : 0;
         return `
             <tr>
-                <td style="font-weight: 500;">${product.ten_san_pham}</td>
-                <td>${formatCurrency(product.gia_goc)}</td>
-                <td style="color: #ef4444; font-weight: 600;">${formatCurrency(product.gia_flash_sale)}</td>
-                <td><span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">-${discount}%</span></td>
-                <td>${product.so_luong_ton}</td>
-                <td>${product.gioi_han_mua || '-'}</td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeFromTempList(${index})" 
-                        style="padding: 2px 8px; font-size: 0.75rem;">
-                        <i class="fas fa-times"></i>
+                <td class='text-center'>${index + 1}</td>
+                <td>${product.ten_san_pham}</td>
+                <td class='text-center'>${Utils.formatCurrency(product.gia_goc)}</td>
+                <td class='text-center'>${Utils.formatCurrency(product.gia_flash_sale)}</td>
+                <td class='text-center'><span class='status-badge status-dang_dien_ra'>-${discount}%</span></td>
+                <td class='text-center'>${Utils.formatNumber(product.so_luong_ton)}</td>
+                <td class='text-center'>
+                    <button class='btn-action btn-delete' onclick="removeFromTempList(${index})" title='Xóa'>
+                        <i class='fas fa-trash'></i>
                     </button>
                 </td>
             </tr>
@@ -1921,309 +1292,99 @@ function renderTempProductsList() {
 // Remove from temporary list
 function removeFromTempList(index) {
     tempProductsList.splice(index, 1);
-    renderTempProductsList();
+    renderTempProductsTable();
 }
 
-
-// Load Flash Sales
-async function loadFlashSales(filters = {}) {
+// Load existing products when editing
+async function loadExistingProducts(flashSaleId) {
     try {
-        const queryParams = new URLSearchParams({
-            page: currentPage,
-            limit: 10,
-            ...filters
-        });
-
-        const response = await fetch(`${API_BASE}?${queryParams}`);
-        const data = await response.json();
-
-        if (data.success) {
-            flashSales = data.data;
-            totalPages = data.totalPages || 1;
-            renderFlashSales(flashSales);
-            updatePagination();
-        } else {
-            showNotification('Lỗi tải dữ liệu flash sale', 'error');
+        const res = await API.get(`/api/flashsales/${flashSaleId}/items`);
+        if (Array.isArray(res)) {
+            tempProductsList = res.map(item => ({
+                id: item.id,
+                san_pham_id: item.san_pham_id,
+                ten_san_pham: item.ten_san_pham,
+                gia_goc: item.gia_goc,
+                gia_flash_sale: item.gia_flash_sale,
+                so_luong_ton: item.so_luong_ton || item.so_luong,
+                available_stock: 0
+            }));
+        } else if (res && res.data) {
+            const items = Array.isArray(res.data) ? res.data : (res.data.items || []);
+            tempProductsList = items.map(item => ({
+                id: item.id,
+                san_pham_id: item.san_pham_id,
+                ten_san_pham: item.ten_san_pham,
+                gia_goc: item.gia_goc,
+                gia_flash_sale: item.gia_flash_sale,
+                so_luong_ton: item.so_luong_ton || item.so_luong,
+                available_stock: 0
+            }));
         }
+        renderTempProductsTable();
     } catch (error) {
-        console.error('Error loading flash sales:', error);
-        showNotification('Lỗi kết nối server', 'error');
+        console.error('Error loading existing products:', error);
     }
 }
 
-// Render Flash Sales
-function renderFlashSales(data) {
-    const tbody = document.querySelector('#flashSalesTable tbody');
+// Save flash sale
+async function saveFlashSale() {
+    const id = document.getElementById('flashSaleId').value;
+    const startDate = document.getElementById('flashSaleStart').value;
+    const endDate = document.getElementById('flashSaleEnd').value;
     
-    if (!tbody) {
-        console.error('Table tbody not found');
+    // Validate
+    if (!document.getElementById('flashSaleName').value || !startDate || !endDate) {
+        Utils.showError('Vui lòng điền đầy đủ thông tin bắt buộc');
         return;
     }
     
-    if (!data || data.length === 0) {
-        return;
-    }
-
-    tbody.innerHTML = data.map(fs => `
-        <tr data-id="${fs.id}" data-status="${fs.trang_thai}">
-            <td class="col-name">
-                <div class="flashsale-name">${fs.ten_flash_sale}</div>
-                ${fs.mo_ta ? `<div class="flashsale-desc">${fs.mo_ta}</div>` : ''}
-            </td>
-            <td class="col-date">
-                <div class="date-info">
-                    <div class="start-date">
-                        <i class="fas fa-play-circle"></i>
-                        ${formatDateTime(fs.ngay_bat_dau)}
-                    </div>
-                    <div class="end-date">
-                        <i class="fas fa-stop-circle"></i>
-                        ${formatDateTime(fs.ngay_ket_thuc)}
-                    </div>
-                </div>
-            </td>
-            <td class="col-products">
-                <span class="product-count">${fs.so_san_pham || 0} sản phẩm</span>
-            </td>
-            <td class="col-sold">
-                <span class="sold-count">${fs.tong_da_ban || 0}</span>
-            </td>
-            <td class="col-status">
-                <span class="status-badge status-${fs.trang_thai}">
-                    ${getStatusText(fs.trang_thai)}
-                </span>
-            </td>
-            <td class="col-actions">
-                <div class="action-buttons">
-                    <button class="btn-action btn-view" data-id="${fs.id}" title="Xem chi tiết">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn-action btn-edit" data-id="${fs.id}" title="Chỉnh sửa">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-action btn-products" data-id="${fs.id}" 
-                        data-name="${fs.ten_flash_sale}" title="Quản lý sản phẩm">
-                        <i class="fas fa-box"></i>
-                    </button>
-                    <button class="btn-action btn-delete" data-id="${fs.id}" 
-                        data-name="${fs.ten_flash_sale}" title="Xóa">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-    
-    updateTableInfo(data.length, data.length);
-    attachTableEventListeners();
-}
-
-// Update table info
-function updateTableInfo(current, total) {
-    const currentCountEl = document.getElementById('currentCount');
-    const totalCountEl = document.getElementById('totalCount');
-    
-    if (currentCountEl) currentCountEl.textContent = current;
-    if (totalCountEl) totalCountEl.textContent = total;
-}
-
-// Attach event listeners to table action buttons
-function attachTableEventListeners() {
-    // View buttons
-    document.querySelectorAll('.btn-view').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            viewFlashSale(id);
-        });
-    });
-    
-    // Edit buttons
-    document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            editFlashSale(id);
-        });
-    });
-    
-    // Products buttons
-    document.querySelectorAll('.btn-products').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const name = this.getAttribute('data-name');
-            manageProducts(id, name);
-        });
-    });
-    
-    // Delete buttons
-    document.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const name = this.getAttribute('data-name');
-            deleteFlashSale(id, name);
-        });
-    });
-}
-
-// Apply filters
-function applyFilters() {
-    const status = document.getElementById('statusFilter')?.value;
-    const search = document.getElementById('searchInput')?.value;
-
-    const filters = {};
-    if (status) filters.trang_thai = status;
-    if (search) filters.search = search;
-
-    currentPage = 1;
-    loadFlashSales(filters);
-}
-
-// Pagination
-function changePage(page) {
-    if (page < 1 || page > totalPages) return;
-    currentPage = page;
-    loadFlashSales();
-}
-
-function updatePagination() {
-    const currentPageEl = document.getElementById('currentPage');
-    const totalPagesEl = document.getElementById('totalPages');
-    
-    if (currentPageEl) currentPageEl.textContent = currentPage;
-    if (totalPagesEl) totalPagesEl.textContent = totalPages;
-    
-    const btnPrev = document.getElementById('prevPage');
-    const btnNext = document.getElementById('nextPage');
-    
-    if (btnPrev) btnPrev.disabled = currentPage === 1;
-    if (btnNext) btnNext.disabled = currentPage === totalPages;
-}
-
-// Modal Management
-function openFlashSaleModal(flashSaleId = null) {
-    const modal = new bootstrap.Modal(document.getElementById('flashSaleModal'));
-    const form = document.getElementById('flashSaleForm');
-    const title = document.getElementById('modalTitle');
-    const saveButtonText = document.getElementById('saveButtonText');
-
-    form.reset();
-    tempProductsList = []; // Reset temp products list
-    renderTempProductsList();
-
-    if (flashSaleId) {
-        title.textContent = 'Chỉnh sửa Flash Sale';
-        saveButtonText.textContent = 'Cập nhật';
-        loadFlashSaleData(flashSaleId);
-    } else {
-        title.textContent = 'Thêm Flash Sale mới';
-        saveButtonText.textContent = 'Thêm Flash Sale';
-        document.getElementById('flashSaleId').value = '';
-        // Set default dates
-        const now = new Date();
-        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        document.getElementById('startDate').value = formatDateTimeLocal(now);
-        document.getElementById('endDate').value = formatDateTimeLocal(tomorrow);
-    }
-
-    modal.show();
-}
-
-// Load Flash Sale data for editing
-async function loadFlashSaleData(id) {
-    try {
-        const response = await fetch(`${API_BASE}/${id}`);
-        const data = await response.json();
-
-        if (data.success) {
-            const fs = data.data;
-            document.getElementById('flashSaleId').value = fs.id;
-            document.getElementById('flashSaleName').value = fs.ten_flash_sale;
-            document.getElementById('flashSaleDescription').value = fs.mo_ta || '';
-            document.getElementById('startDate').value = formatDateTimeLocal(fs.ngay_bat_dau);
-            document.getElementById('endDate').value = formatDateTimeLocal(fs.ngay_ket_thuc);
-            document.getElementById('flashSaleStatus').value = fs.trang_thai;
-        }
-    } catch (error) {
-        console.error('Error loading flash sale:', error);
-        showNotification('Lỗi tải dữ liệu', 'error');
-    }
-}
-
-// Handle Flash Sale form submit
-let isSubmitting = false;
-
-async function handleFlashSaleSubmit(e) {
-    e.preventDefault();
-    
-    // Prevent double submission
-    if (isSubmitting) {
-        console.log('⚠️ Already submitting, skipping...');
-        return;
-    }
-
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-
-    // Validate dates
-    if (!startDate || !endDate) {
-        showNotification('Vui lòng chọn ngày bắt đầu và ngày kết thúc', 'error');
-        return;
-    }
-
     if (new Date(startDate) >= new Date(endDate)) {
-        showNotification('Ngày kết thúc phải sau ngày bắt đầu', 'error');
+        Utils.showError('Ngày kết thúc phải sau ngày bắt đầu');
         return;
     }
-
-    const formData = {
+    
+    const data = {
         ten_flash_sale: document.getElementById('flashSaleName').value,
-        mo_ta: document.getElementById('flashSaleDescription').value,
+        mo_ta: document.getElementById('flashSaleDesc').value,
         ngay_bat_dau: new Date(startDate).toISOString(),
         ngay_ket_thuc: new Date(endDate).toISOString(),
         trang_thai: document.getElementById('flashSaleStatus').value
     };
-
-    const flashSaleId = document.getElementById('flashSaleId').value;
-    const url = flashSaleId ? `${API_BASE}/${flashSaleId}` : API_BASE;
-    const method = flashSaleId ? 'PUT' : 'POST';
-
-    isSubmitting = true;
-    console.log('📤 Submitting flash sale:', method, formData);
-
+    
+    console.log('Sending data:', data);
+    
     try {
-        // Save Flash Sale
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-        console.log('📥 Response:', data);
-
-        if (data.success) {
-            const savedFlashSale = data.data;
+        Utils.showLoading('Đang lưu...');
+        
+        let result;
+        if (id) {
+            result = await API.put(`/api/flashsales/${id}`, data);
             
-            // Nếu có sản phẩm trong danh sách tạm, lưu chúng
-            if (!flashSaleId && tempProductsList.length > 0) {
-                console.log('💾 Saving products...');
-                await saveFlashSaleProducts(savedFlashSale.id);
+            // Nếu có sản phẩm mới, xóa hết cũ và thêm mới
+            if (tempProductsList.length > 0) {
+                // Delete old items (optional - có thể để API tự xử lý)
+                // Sau đó thêm các sản phẩm mới
+                await saveFlashSaleProducts(id);
             }
-            
-            showNotification(flashSaleId ? 'Cập nhật thành công' : 'Tạo flash sale thành công', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('flashSaleModal')).hide();
-            loadFlashSales();
-            tempProductsList = []; // Clear temp list
         } else {
-            showNotification(data.message || 'Có lỗi xảy ra', 'error');
+            result = await API.post('/api/flashsales', data);
+            
+            // Sau khi tạo flash sale, thêm sản phẩm
+            if (result.success && result.data && result.data.id && tempProductsList.length > 0) {
+                await saveFlashSaleProducts(result.data.id);
+            }
         }
+        
+        console.log('Server response:', result);
+        
+        Utils.showSuccess('Lưu thành công');
+        bootstrap.Modal.getInstance(document.getElementById('flashSaleModal')).hide();
+        tempProductsList = [];
+        loadData();
     } catch (error) {
-        console.error('❌ Error saving flash sale:', error);
-        showNotification('Lỗi kết nối server', 'error');
-    } finally {
-        isSubmitting = false;
-        console.log('✅ Submission complete');
+        console.error('Save error:', error);
+        Utils.showError('Không thể lưu flash sale: ' + (error.message || 'Lỗi server'));
     }
 }
 
@@ -2232,404 +1393,239 @@ async function saveFlashSaleProducts(flashSaleId) {
     try {
         const savePromises = tempProductsList.map(product => {
             const itemData = {
-                flash_sale_id: flashSaleId,
                 san_pham_id: product.san_pham_id,
                 gia_goc: product.gia_goc,
                 gia_flash_sale: product.gia_flash_sale,
-                so_luong_ton: product.so_luong_ton,
-                gioi_han_mua: product.gioi_han_mua,
-                thu_tu: product.thu_tu,
-                trang_thai: product.trang_thai
+                so_luong_ton: product.so_luong_ton
             };
-
-            return fetch(`${API_BASE}/${flashSaleId}/items`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(itemData)
-            });
+            
+            return API.post(`/api/flashsales/${flashSaleId}/items`, itemData);
         });
-
-        const results = await Promise.all(savePromises);
         
-        // Check if all succeeded
-        const allSuccess = results.every(r => r.ok);
-        if (allSuccess) {
-            console.log(`Đã thêm ${tempProductsList.length} sản phẩm vào flash sale`);
-        } else {
-            console.warn('Một số sản phẩm không được thêm thành công');
-        }
+        await Promise.all(savePromises);
+        console.log(`Đã thêm ${tempProductsList.length} sản phẩm vào flash sale`);
     } catch (error) {
         console.error('Error saving products:', error);
-        showError('Có lỗi khi lưu sản phẩm');
+        throw error;
     }
 }
 
-// Delete Flash Sale
-async function deleteFlashSale(id, name) {
-    const result = await Swal.fire({
-        title: 'Xác nhận xóa',
-        html: `Bạn có chắc chắn muốn xóa flash sale <strong>"${name}"</strong>?<br>Tất cả sản phẩm trong flash sale cũng sẽ bị xóa.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Xóa',
-        cancelButtonText: 'Hủy'
-    });
-
-    if (!result.isConfirmed) return;
-
+// Delete flash sale
+async function deleteFlashSale(id) {
+    const confirmed = await Utils.showConfirm('Bạn có chắc muốn xóa flash sale này?');
+    if (!confirmed) return;
+    
     try {
-        const response = await fetch(`${API_BASE}/${id}`, {
-            method: 'DELETE'
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showNotification('Xóa flash sale thành công', 'success');
-            loadFlashSales();
-        } else {
-            showNotification(data.message || 'Lỗi xóa flash sale', 'error');
-        }
+        Utils.showLoading('Đang xóa...');
+        await API.delete(`/api/flashsales/${id}`);
+        Utils.showSuccess('Xóa thành công');
+        loadData();
     } catch (error) {
-        console.error('Error deleting flash sale:', error);
-        showNotification('Lỗi kết nối server', 'error');
+        console.error(error);
+        Utils.showError('Không thể xóa flash sale');
     }
 }
 
-// View Flash Sale details
-async function viewFlashSale(id) {
-    try {
-        const response = await fetch(`${API_BASE}/${id}/details`);
-        const data = await response.json();
-
-        if (data.success) {
-            const fs = data.data;
-            const content = `
-                <div class="view-section">
-                    <h3>Thông tin chung</h3>
-                    <div class="view-row">
-                        <span class="view-label">Tên Flash Sale:</span>
-                        <span class="view-value">${fs.ten_flash_sale}</span>
-                    </div>
-                    <div class="view-row">
-                        <span class="view-label">Mô tả:</span>
-                        <span class="view-value">${fs.mo_ta || 'Không có'}</span>
-                    </div>
-                    <div class="view-row">
-                        <span class="view-label">Trạng thái:</span>
-                        <span class="view-value">
-                            <span class="status-badge status-${fs.trang_thai}">
-                                ${getStatusText(fs.trang_thai)}
-                            </span>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="view-section">
-                    <h3>Thời gian</h3>
-                    <div class="view-row">
-                        <span class="view-label">Ngày bắt đầu:</span>
-                        <span class="view-value">${formatDateTime(fs.ngay_bat_dau)}</span>
-                    </div>
-                    <div class="view-row">
-                        <span class="view-label">Ngày kết thúc:</span>
-                        <span class="view-value">${formatDateTime(fs.ngay_ket_thuc)}</span>
-                    </div>
-                </div>
-
-                <div class="view-section">
-                    <h3>Thống kê</h3>
-                    <div class="view-row">
-                        <span class="view-label">Số sản phẩm:</span>
-                        <span class="view-value">${fs.so_san_pham || 0} sản phẩm</span>
-                    </div>
-                    <div class="view-row">
-                        <span class="view-label">Tổng đã bán:</span>
-                        <span class="view-value">${fs.tong_da_ban || 0} sản phẩm</span>
-                    </div>
-                    <div class="view-row">
-                        <span class="view-label">Doanh thu:</span>
-                        <span class="view-value">${formatCurrency(fs.doanh_thu || 0)}</span>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('viewContent').innerHTML = content;
-            const modal = new bootstrap.Modal(document.getElementById('viewModal'));
-            modal.show();
-        }
-    } catch (error) {
-        console.error('Error viewing flash sale:', error);
-        showNotification('Lỗi tải dữ liệu', 'error');
-    }
-}
-
-// Edit Flash Sale
-function editFlashSale(id) {
-    openFlashSaleModal(id);
-}
-
-// Load all products for dropdown
-async function loadProducts() {
-    try {
-        const response = await fetch('/api/sanpham');
-        const data = await response.json();
-
-        if (data.success) {
-            const selectElement = document.getElementById('sanPham');
-            selectElement.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
-            
-            data.data.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product.id;
-                option.textContent = `${product.ten_san_pham} - ${formatCurrency(product.gia)}`;
-                option.setAttribute('data-price', product.gia);
-                selectElement.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading products:', error);
-        showNotification('Lỗi tải danh sách sản phẩm', 'error');
-    }
-}
-
-// Products Management
+// Manage products
 async function manageProducts(flashSaleId, flashSaleName) {
-    currentFlashSaleId = flashSaleId;
     document.getElementById('currentFlashSaleId').value = flashSaleId;
-    document.getElementById('productsModalTitle').textContent = `Quản lý Sản phẩm - ${flashSaleName}`;
-
-    // Load products dropdown and flash sale items
-    await Promise.all([
-        loadProducts(),
-        loadFlashSaleItems(flashSaleId)
-    ]);
+    document.getElementById('productsModalTitle').textContent = `Quản lý sản phẩm - ${flashSaleName}`;
+    
+    // Populate product dropdown từ inventory
+    const select = document.getElementById('productSelect');
+    
+    if (!Array.isArray(inventoryData) || inventoryData.length === 0) {
+        select.innerHTML = '<option value="">-- Không có sản phẩm --</option>';
+    } else {
+        // Gộp inventory theo sản phẩm
+        const productMap = new Map();
+        
+        inventoryData.forEach(inv => {
+            if (!inv.san_pham_id || !inv.ten_san_pham) return;
+            
+            if (!productMap.has(inv.san_pham_id)) {
+                productMap.set(inv.san_pham_id, {
+                    id: inv.san_pham_id,
+                    ten_san_pham: inv.ten_san_pham,
+                    gia_ban: inv.gia_ban || 0,
+                    totalStock: 0
+                });
+            }
+            
+            const product = productMap.get(inv.san_pham_id);
+            product.totalStock += (inv.so_luong_kha_dung || 0);
+        });
+        
+        const products = Array.from(productMap.values())
+            .sort((a, b) => a.ten_san_pham.localeCompare(b.ten_san_pham));
+        
+        select.innerHTML = '<option value="">Chọn sản phẩm</option>' +
+            products.map(p => `<option value="${p.id}" data-price="${p.gia_ban}">${p.ten_san_pham} (Tồn: ${p.totalStock})</option>`).join('');
+    }
+    
+    // Load flash sale items
+    await loadFlashSaleItems(flashSaleId);
     
     const modal = new bootstrap.Modal(document.getElementById('productsModal'));
     modal.show();
 }
 
-// Load Flash Sale Items
+// Load flash sale items
 async function loadFlashSaleItems(flashSaleId) {
     try {
-        const response = await fetch(`${API_BASE}/${flashSaleId}/items`);
-        const data = await response.json();
-
-        if (data.success) {
-            flashSaleItems = data.data;
-            renderFlashSaleItems(flashSaleItems);
+        const res = await API.get(`/api/flashsales/${flashSaleId}/items`);
+        if (Array.isArray(res)) {
+            flashSaleItemsData = res;
+        } else if (res && res.data) {
+            flashSaleItemsData = Array.isArray(res.data) ? res.data : (res.data.items || []);
+        } else {
+            flashSaleItemsData = [];
         }
+        
+        renderFlashSaleItems();
     } catch (error) {
-        console.error('Error loading flash sale items:', error);
-        showNotification('Lỗi tải danh sách sản phẩm', 'error');
+        console.error(error);
+        flashSaleItemsData = [];
+        renderFlashSaleItems();
     }
 }
 
-// Render Flash Sale Items
-function renderFlashSaleItems(items) {
-    const tbody = document.getElementById('productItemsTableBody');
+// Render flash sale items
+function renderFlashSaleItems() {
+    const tbody = document.getElementById('productsTableBody');
     
-    if (!items || items.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 30px; color: #6b7280;">
-                    <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.5; margin-bottom: 12px; display: block;"></i>
-                    Chưa có sản phẩm nào
-                </td>
-            </tr>
-        `;
-        document.getElementById('productsCurrentCount').textContent = '0';
+    if (!flashSaleItemsData || flashSaleItemsData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan='7' class='text-center'>Chưa có sản phẩm</td></tr>`;
         return;
     }
-
-    tbody.innerHTML = items.map((item, index) => {
-        const discount = ((item.gia_goc - item.gia_flash_sale) / item.gia_goc * 100).toFixed(0);
+    
+    tbody.innerHTML = flashSaleItemsData.map(item => {
+        const discount = item.gia_goc > 0 ? Math.round((1 - item.gia_flash_sale / item.gia_goc) * 100) : 0;
         return `
             <tr>
-                <td>${item.ten_san_pham}</td>
-                <td>${formatCurrency(item.gia_goc)}</td>
-                <td><strong style="color: #ef4444;">${formatCurrency(item.gia_flash_sale)}</strong></td>
-                <td><span class="badge" style="background: #10b981;">-${discount}%</span></td>
-                <td>${item.so_luong_ton}</td>
-                <td>${item.da_ban || 0}</td>
+                <td>${item.ten_san_pham || 'N/A'}</td>
+                <td>${Utils.formatCurrency(item.gia_goc)}</td>
+                <td>${Utils.formatCurrency(item.gia_flash_sale)}</td>
+                <td><span class='status-badge status-dang_dien_ra'>-${discount}%</span></td>
+                <td class='text-center'>${Utils.formatNumber(item.so_luong)}</td>
+                <td class='text-center'>${Utils.formatNumber(item.da_ban || 0)}</td>
                 <td>
-                    <span class="status-badge status-${item.trang_thai}">
-                        ${getItemStatusText(item.trang_thai)}
-                    </span>
-                </td>
-                <td>
-                    <button class="btn-action btn-edit" onclick="editFlashSaleItem('${item.id}')" title="Sửa">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-action btn-delete" onclick="deleteFlashSaleItem('${item.id}', '${item.ten_san_pham}')" title="Xóa">
-                        <i class="fas fa-trash"></i>
+                    <button class='btn-action btn-delete' onclick="deleteFlashSaleItem('${item.id}')" title='Xóa'>
+                        <i class='fas fa-trash'></i>
                     </button>
                 </td>
             </tr>
         `;
     }).join('');
-    
-    document.getElementById('productsCurrentCount').textContent = items.length;
 }
 
-// Handle product selection
+// Handle product select
 function handleProductSelect(e) {
     const selectedOption = e.target.options[e.target.selectedIndex];
     const price = selectedOption.getAttribute('data-price');
     
     if (price) {
-        document.getElementById('giaGoc').value = price;
-        calculateDiscount();
+        document.getElementById('originalPrice').value = price;
     }
 }
 
-// Calculate discount percentage
-function calculateDiscount() {
-    const giaGoc = parseFloat(document.getElementById('giaGoc').value) || 0;
-    const giaFlashSale = parseFloat(document.getElementById('giaFlashSale').value) || 0;
-
-    if (giaGoc > 0 && giaFlashSale > 0) {
-        const discount = ((giaGoc - giaFlashSale) / giaGoc * 100).toFixed(2);
-        document.getElementById('phanTramGiam').value = `-${discount}%`;
-    } else {
-        document.getElementById('phanTramGiam').value = '';
+// Update discount display
+function updateDiscount() {
+    const original = parseFloat(document.getElementById('originalPrice').value) || 0;
+    const flashSale = parseFloat(document.getElementById('flashSalePrice').value) || 0;
+    
+    if (original > 0 && flashSale > 0) {
+        const discount = Math.round((1 - flashSale / original) * 100);
+        console.log(`Giảm ${discount}%`);
     }
 }
 
-// Handle Product Item form submit
-async function handleProductItemSubmit(e) {
-    e.preventDefault();
-
-    const formData = {
-        flash_sale_id: document.getElementById('currentFlashSaleId').value,
-        san_pham_id: document.getElementById('sanPham').value,
-        gia_goc: parseFloat(document.getElementById('giaGoc').value),
-        gia_flash_sale: parseFloat(document.getElementById('giaFlashSale').value),
-        so_luong_ton: parseInt(document.getElementById('soLuongTon').value),
-        gioi_han_mua: parseInt(document.getElementById('gioiHanMua').value) || null,
-        thu_tu: parseInt(document.getElementById('thuTu').value) || 0,
-        trang_thai: document.getElementById('trangThaiItem').value
-    };
-
-    // Validate
-    if (formData.gia_flash_sale >= formData.gia_goc) {
-        showNotification('Giá flash sale phải nhỏ hơn giá gốc', 'error');
+// Add product to flash sale
+async function addProductToFlashSale() {
+    const flashSaleId = document.getElementById('currentFlashSaleId').value;
+    const productId = document.getElementById('productSelect').value;
+    const giaGoc = parseFloat(document.getElementById('originalPrice').value) || 0;
+    const giaFlashSale = parseFloat(document.getElementById('flashSalePrice').value) || 0;
+    const soLuong = parseInt(document.getElementById('itemQuantity').value) || 0;
+    
+    if (!productId || !giaFlashSale || !soLuong) {
+        Utils.showError('Vui lòng điền đầy đủ thông tin');
         return;
     }
-
-    const itemId = document.getElementById('flashSaleItemId').value;
-    const url = itemId 
-        ? `${API_BASE}/${currentFlashSaleId}/items/${itemId}` 
-        : `${API_BASE}/${currentFlashSaleId}/items`;
-    const method = itemId ? 'PUT' : 'POST';
-
+    
+    if (giaFlashSale >= giaGoc) {
+        Utils.showError('Giá flash sale phải nhỏ hơn giá gốc');
+        return;
+    }
+    
+    // Kiểm tra số lượng tồn kho từ inventory
+    const totalStock = inventoryData
+        .filter(inv => inv.san_pham_id === productId)
+        .reduce((sum, inv) => sum + (inv.so_luong_kha_dung || 0), 0);
+    
+    if (soLuong > totalStock) {
+        Utils.showError(`Số lượng không được vượt quá tồn kho (${totalStock})`);
+        return;
+    }
+    
+    const data = {
+        san_pham_id: productId,
+        gia_goc: giaGoc,
+        gia_flash_sale: giaFlashSale,
+        so_luong_ton: soLuong
+    };
+    
     try {
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showNotification(itemId ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
-            document.getElementById('productItemForm').reset();
-            document.getElementById('flashSaleItemId').value = '';
-            loadFlashSaleItems(currentFlashSaleId);
-        } else {
-            showNotification(data.message || 'Có lỗi xảy ra', 'error');
-        }
+        Utils.showLoading('Đang thêm sản phẩm...');
+        await API.post(`/api/flashsales/${flashSaleId}/items`, data);
+        Utils.showSuccess('Thêm sản phẩm thành công');
+        
+        // Reset form
+        document.getElementById('productSelect').value = '';
+        document.getElementById('originalPrice').value = '';
+        document.getElementById('flashSalePrice').value = '';
+        document.getElementById('itemQuantity').value = '';
+        
+        // Reload items
+        loadFlashSaleItems(flashSaleId);
     } catch (error) {
-        console.error('Error saving product item:', error);
-        showNotification('Lỗi kết nối server', 'error');
+        console.error(error);
+        Utils.showError('Không thể thêm sản phẩm');
     }
 }
 
-// Edit Flash Sale Item
-async function editFlashSaleItem(itemId) {
+// Delete flash sale item
+async function deleteFlashSaleItem(itemId) {
+    const confirmed = await Utils.showConfirm('Bạn có chắc muốn xóa sản phẩm này?');
+    if (!confirmed) return;
+    
     try {
-        const response = await fetch(`${API_BASE}/${currentFlashSaleId}/items/${itemId}`);
-        const data = await response.json();
-
-        if (data.success) {
-            const item = data.data;
-            
-            document.getElementById('flashSaleItemId').value = item.id;
-            document.getElementById('sanPham').value = item.san_pham_id;
-            document.getElementById('giaGoc').value = item.gia_goc;
-            document.getElementById('giaFlashSale').value = item.gia_flash_sale;
-            document.getElementById('soLuongTon').value = item.so_luong_ton;
-            document.getElementById('gioiHanMua').value = item.gioi_han_mua || '';
-            document.getElementById('thuTu').value = item.thu_tu;
-            document.getElementById('trangThaiItem').value = item.trang_thai;
-            
-            calculateDiscount();
-            document.getElementById('productFormTitle').textContent = 'Chỉnh sửa sản phẩm';
-            document.getElementById('saveProductText').textContent = 'Cập nhật';
-        }
+        Utils.showLoading('Đang xóa...');
+        await API.delete(`/api/flashsales/items/${itemId}`);
+        Utils.showSuccess('Xóa thành công');
+        
+        const flashSaleId = document.getElementById('currentFlashSaleId').value;
+        loadFlashSaleItems(flashSaleId);
     } catch (error) {
-        console.error('Error loading item:', error);
-        showNotification('Lỗi tải dữ liệu sản phẩm', 'error');
+        console.error(error);
+        Utils.showError('Không thể xóa sản phẩm');
     }
 }
 
-// Delete Flash Sale Item
-async function deleteFlashSaleItem(itemId, productName) {
-    const result = await Swal.fire({
-        title: 'Xác nhận xóa',
-        html: `Bạn có chắc chắn muốn xóa sản phẩm <strong>"${productName}"</strong> khỏi flash sale?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Xóa',
-        cancelButtonText: 'Hủy'
-    });
-
-    if (!result.isConfirmed) return;
-
-    try {
-        const response = await fetch(`${API_BASE}/${currentFlashSaleId}/items/${itemId}`, {
-            method: 'DELETE'
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showNotification('Xóa sản phẩm thành công', 'success');
-            loadFlashSaleItems(currentFlashSaleId);
-        } else {
-            showNotification(data.message || 'Lỗi xóa sản phẩm', 'error');
-        }
-    } catch (error) {
-        console.error('Error deleting item:', error);
-        showNotification('Lỗi kết nối server', 'error');
-    }
+// Helper functions
+function getStatusText(status) {
+    const map = {
+        'cho': 'Chờ diễn ra',
+        'dang_dien_ra': 'Đang diễn ra',
+        'da_ket_thuc': 'Đã kết thúc',
+        'huy': 'Đã hủy'
+    };
+    return map[status] || status;
 }
 
-// Helper Functions
-function formatDateTime(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function formatDateTimeLocal(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
+function formatDateTimeLocal(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -2637,108 +1633,4 @@ function formatDateTimeLocal(dateString) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
-
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND'
-    }).format(amount);
-}
-
-function getStatusText(status) {
-    const statusMap = {
-        'cho': '⏳ Chờ',
-        'dang_dien_ra': '🔥 Đang diễn ra',
-        'da_ket_thuc': '✅ Đã kết thúc',
-        'huy': '❌ Đã hủy'
-    };
-    return statusMap[status] || status;
-}
-
-function getItemStatusText(status) {
-    const statusMap = {
-        'dang_ban': '🟢 Đang bán',
-        'het_hang': '🔴 Hết hàng',
-        'tam_dung': '⏸️ Tạm dừng'
-    };
-    return statusMap[status] || status;
-}
-
-// Notification Methods
-function showSuccess(message) {
-    Swal.fire({
-        icon: 'success',
-        title: 'Thành công!',
-        text: message,
-        timer: 2000,
-        showConfirmButton: false
-    });
-}
-
-function showError(message) {
-    Swal.fire({
-        icon: 'error',
-        title: 'Lỗi!',
-        html: message,
-        confirmButtonColor: '#f59e0b'
-    });
-}
-
-function showNotification(message, type = 'info') {
-    if (type === 'success') {
-        showSuccess(message);
-    } else if (type === 'error') {
-        showError(message);
-    } else {
-        Swal.fire({
-            icon: type,
-            title: message,
-            timer: 2000,
-            showConfirmButton: false
-        });
-    }
-}
-
-// Add CSS for view sections
-const style = document.createElement('style');
-style.textContent = `
-    .view-section {
-        margin-bottom: 24px;
-        padding-bottom: 24px;
-        border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .view-section:last-child {
-        border-bottom: none;
-    }
-    
-    .view-section h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 16px;
-    }
-    
-    .view-row {
-        display: flex;
-        padding: 12px 0;
-        border-bottom: 1px solid #f3f4f6;
-    }
-    
-    .view-row:last-child {
-        border-bottom: none;
-    }
-    
-    .view-label {
-        width: 200px;
-        font-weight: 600;
-        color: #6b7280;
-    }
-    
-    .view-value {
-        flex: 1;
-        color: #1f2937;
-    }
-`;
-document.head.appendChild(style);
 </script>

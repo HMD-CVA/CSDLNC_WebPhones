@@ -1732,6 +1732,400 @@ class SQLUserModel {
   }
 }
 
+// ==================== INVENTORY MODEL ====================
+
+class SQLInventoryModel {
+  static async findAll() {
+    try {
+      const request = new sql.Request();
+      const result = await request.query(`
+        SELECT 
+          i.*,
+          p.ten_san_pham,
+          p.ma_sku,
+          w.ten_kho,
+          w.dia_chi_chi_tiet as dia_chi_kho
+        FROM inventory i
+        LEFT JOIN products p ON i.san_pham_id = p.id
+        LEFT JOIN warehouses w ON i.kho_id = w.id
+        ORDER BY i.ngay_tao DESC
+      `);
+      
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Inventory findAll Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            i.*,
+            p.ten_san_pham,
+            p.ma_sku,
+            w.ten_kho,
+            w.dia_chi_chi_tiet as dia_chi_kho
+          FROM inventory i
+          LEFT JOIN products p ON i.san_pham_id = p.id
+          LEFT JOIN warehouses w ON i.kho_id = w.id
+          WHERE i.id = @id
+        `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Inventory findById Error:', error);
+      throw error;
+    }
+  }
+
+  static async findByProduct(productId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('product_id', sql.UniqueIdentifier, productId)
+        .query(`
+          SELECT 
+            i.*,
+            w.ten_kho,
+            w.dia_chi_chi_tiet as dia_chi_kho
+          FROM inventory i
+          LEFT JOIN warehouses w ON i.kho_id = w.id
+          WHERE i.san_pham_id = @product_id
+        `);
+      
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Inventory findByProduct Error:', error);
+      throw error;
+    }
+  }
+
+  static async findByWarehouse(warehouseId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('warehouse_id', sql.UniqueIdentifier, warehouseId)
+        .query(`
+          SELECT 
+            i.*,
+            p.ten_san_pham,
+            p.ma_sku
+          FROM inventory i
+          LEFT JOIN products p ON i.san_pham_id = p.id
+          WHERE i.kho_id = @warehouse_id
+        `);
+      
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Inventory findByWarehouse Error:', error);
+      throw error;
+    }
+  }
+
+  static async countByWarehouse(warehouseId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('warehouse_id', sql.UniqueIdentifier, warehouseId)
+        .query(`
+          SELECT COUNT(*) as count
+          FROM inventory
+          WHERE kho_id = @warehouse_id
+        `);
+      
+      return result.recordset[0].count;
+    } catch (error) {
+      console.error('SQL Inventory countByWarehouse Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(inventoryData) {
+    try {
+      const request = new sql.Request();
+      const id = inventoryData.id || sql.UniqueIdentifier.newGuid();
+      
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .input('san_pham_id', sql.UniqueIdentifier, inventoryData.san_pham_id)
+        .input('kho_id', sql.UniqueIdentifier, inventoryData.kho_id)
+        .input('so_luong_kha_dung', sql.Int, inventoryData.so_luong_kha_dung || 0)
+        .input('so_luong_da_dat', sql.Int, inventoryData.so_luong_da_dat || 0)
+        .input('muc_ton_kho_toi_thieu', sql.Int, inventoryData.muc_ton_kho_toi_thieu || 0)
+        .input('so_luong_nhap_lai', sql.Int, inventoryData.so_luong_nhap_lai || 0)
+        .input('lan_nhap_hang_cuoi', sql.DateTime2, inventoryData.lan_nhap_hang_cuoi || new Date())
+        .input('ngay_tao', sql.DateTime2, new Date())
+        .input('ngay_cap_nhat', sql.DateTime2, new Date())
+        .query(`
+          INSERT INTO inventory (
+            id, san_pham_id, kho_id, so_luong_kha_dung, so_luong_da_dat,
+            muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi,
+            ngay_tao, ngay_cap_nhat
+          )
+          VALUES (
+            @id, @san_pham_id, @kho_id, @so_luong_kha_dung, @so_luong_da_dat,
+            @muc_ton_kho_toi_thieu, @so_luong_nhap_lai, @lan_nhap_hang_cuoi,
+            @ngay_tao, @ngay_cap_nhat
+          );
+          
+          SELECT 
+            i.*,
+            p.ten_san_pham,
+            w.ten_kho
+          FROM inventory i
+          LEFT JOIN products p ON i.san_pham_id = p.id
+          LEFT JOIN warehouses w ON i.kho_id = w.id
+          WHERE i.id = @id;
+        `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Inventory create Error:', error);
+      throw error;
+    }
+  }
+
+  static async update(id, inventoryData) {
+    try {
+      const request = new sql.Request();
+      
+      let updateFields = [];
+      
+      if (inventoryData.san_pham_id !== undefined) {
+        request.input('san_pham_id', sql.UniqueIdentifier, inventoryData.san_pham_id);
+        updateFields.push('san_pham_id = @san_pham_id');
+      }
+      
+      if (inventoryData.kho_id !== undefined) {
+        request.input('kho_id', sql.UniqueIdentifier, inventoryData.kho_id);
+        updateFields.push('kho_id = @kho_id');
+      }
+      
+      if (inventoryData.so_luong_kha_dung !== undefined) {
+        request.input('so_luong_kha_dung', sql.Int, inventoryData.so_luong_kha_dung);
+        updateFields.push('so_luong_kha_dung = @so_luong_kha_dung');
+      }
+      
+      if (inventoryData.so_luong_da_dat !== undefined) {
+        request.input('so_luong_da_dat', sql.Int, inventoryData.so_luong_da_dat);
+        updateFields.push('so_luong_da_dat = @so_luong_da_dat');
+      }
+      
+      if (inventoryData.muc_ton_kho_toi_thieu !== undefined) {
+        request.input('muc_ton_kho_toi_thieu', sql.Int, inventoryData.muc_ton_kho_toi_thieu);
+        updateFields.push('muc_ton_kho_toi_thieu = @muc_ton_kho_toi_thieu');
+      }
+      
+      if (inventoryData.so_luong_nhap_lai !== undefined) {
+        request.input('so_luong_nhap_lai', sql.Int, inventoryData.so_luong_nhap_lai);
+        updateFields.push('so_luong_nhap_lai = @so_luong_nhap_lai');
+      }
+      
+      if (inventoryData.lan_nhap_hang_cuoi !== undefined) {
+        request.input('lan_nhap_hang_cuoi', sql.DateTime2, inventoryData.lan_nhap_hang_cuoi);
+        updateFields.push('lan_nhap_hang_cuoi = @lan_nhap_hang_cuoi');
+      }
+      
+      updateFields.push('ngay_cap_nhat = @ngay_cap_nhat');
+      request.input('ngay_cap_nhat', sql.DateTime2, new Date());
+      request.input('id', sql.UniqueIdentifier, id);
+      
+      const result = await request.query(`
+        UPDATE inventory 
+        SET ${updateFields.join(', ')}
+        WHERE id = @id;
+        
+        SELECT 
+          i.*,
+          p.ten_san_pham,
+          w.ten_kho
+        FROM inventory i
+        LEFT JOIN products p ON i.san_pham_id = p.id
+        LEFT JOIN warehouses w ON i.kho_id = w.id
+        WHERE i.id = @id;
+      `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Inventory update Error:', error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          DELETE FROM inventory WHERE id = @id;
+          SELECT @@ROWCOUNT as affected;
+        `);
+      
+      return result.recordset[0].affected > 0;
+    } catch (error) {
+      console.error('SQL Inventory delete Error:', error);
+      throw error;
+    }
+  }
+}
+
+// ==================== WAREHOUSE MODEL ====================
+
+class SQLWarehouseModel {
+  static async findAll() {
+    try {
+      const request = new sql.Request();
+      const result = await request.query(`
+        SELECT 
+          w.*,
+          COUNT(i.id) as so_luong_san_pham
+        FROM warehouses w
+        LEFT JOIN inventory i ON w.id = i.kho_id
+        GROUP BY w.id, w.ten_kho, w.phuong_xa_id, w.dia_chi_chi_tiet, 
+                 w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat
+        ORDER BY w.ngay_tao DESC
+      `);
+      
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Warehouse findAll Error:', error);
+      throw error;
+    }
+  }
+
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            w.*,
+            COUNT(i.id) as so_luong_san_pham
+          FROM warehouses w
+          LEFT JOIN inventory i ON w.id = i.kho_id
+          WHERE w.id = @id
+          GROUP BY w.id, w.ten_kho, w.phuong_xa_id, w.dia_chi_chi_tiet, 
+                   w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat
+        `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Warehouse findById Error:', error);
+      throw error;
+    }
+  }
+
+  static async create(warehouseData) {
+    try {
+      const request = new sql.Request();
+      const id = warehouseData.id || sql.UniqueIdentifier.newGuid();
+      
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .input('ten_kho', sql.NVarChar(200), warehouseData.ten_kho)
+        .input('phuong_xa_id', sql.UniqueIdentifier, warehouseData.phuong_xa_id || null)
+        .input('dia_chi_chi_tiet', sql.NVarChar(500), warehouseData.dia_chi_chi_tiet)
+        .input('so_dien_thoai', sql.VarChar(15), warehouseData.so_dien_thoai)
+        .input('trang_thai', sql.Bit, warehouseData.trang_thai !== undefined ? warehouseData.trang_thai : 1)
+        .input('ngay_tao', sql.DateTime2, new Date())
+        .input('ngay_cap_nhat', sql.DateTime2, new Date())
+        .query(`
+          INSERT INTO warehouses (
+            id, ten_kho, phuong_xa_id, dia_chi_chi_tiet, 
+            so_dien_thoai, trang_thai, ngay_tao, ngay_cap_nhat
+          )
+          VALUES (
+            @id, @ten_kho, @phuong_xa_id, @dia_chi_chi_tiet,
+            @so_dien_thoai, @trang_thai, @ngay_tao, @ngay_cap_nhat
+          );
+          
+          SELECT * FROM warehouses WHERE id = @id;
+        `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Warehouse create Error:', error);
+      throw error;
+    }
+  }
+
+  static async update(id, warehouseData) {
+    try {
+      const request = new sql.Request();
+      
+      let updateFields = [];
+      
+      if (warehouseData.ten_kho !== undefined) {
+        request.input('ten_kho', sql.NVarChar(200), warehouseData.ten_kho);
+        updateFields.push('ten_kho = @ten_kho');
+      }
+      
+      if (warehouseData.phuong_xa_id !== undefined) {
+        request.input('phuong_xa_id', sql.UniqueIdentifier, warehouseData.phuong_xa_id);
+        updateFields.push('phuong_xa_id = @phuong_xa_id');
+      }
+      
+      if (warehouseData.dia_chi_chi_tiet !== undefined) {
+        request.input('dia_chi_chi_tiet', sql.NVarChar(500), warehouseData.dia_chi_chi_tiet);
+        updateFields.push('dia_chi_chi_tiet = @dia_chi_chi_tiet');
+      }
+      
+      if (warehouseData.so_dien_thoai !== undefined) {
+        request.input('so_dien_thoai', sql.VarChar(15), warehouseData.so_dien_thoai);
+        updateFields.push('so_dien_thoai = @so_dien_thoai');
+      }
+      
+      if (warehouseData.trang_thai !== undefined) {
+        request.input('trang_thai', sql.Bit, warehouseData.trang_thai);
+        updateFields.push('trang_thai = @trang_thai');
+      }
+      
+      updateFields.push('ngay_cap_nhat = @ngay_cap_nhat');
+      request.input('ngay_cap_nhat', sql.DateTime2, new Date());
+      request.input('id', sql.UniqueIdentifier, id);
+      
+      const result = await request.query(`
+        UPDATE warehouses 
+        SET ${updateFields.join(', ')}
+        WHERE id = @id;
+        
+        SELECT * FROM warehouses WHERE id = @id;
+      `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Warehouse update Error:', error);
+      throw error;
+    }
+  }
+
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          DELETE FROM warehouses WHERE id = @id;
+          SELECT @@ROWCOUNT as affected;
+        `);
+      
+      return result.recordset[0].affected > 0;
+    } catch (error) {
+      console.error('SQL Warehouse delete Error:', error);
+      throw error;
+    }
+  }
+}
+
 // ==================== EXPORT ALL MODELS ====================
 
 export default {
@@ -1747,6 +2141,9 @@ export default {
   SQLRegionModel,
   SQLProvinceModel,
   SQLWardModel,
+  SQLUserModel,
+  SQLInventoryModel,
+  SQLWarehouseModel,
   
   // Hoặc export theo nhóm để dễ sử dụng
   Mongo: {
@@ -1764,6 +2161,8 @@ export default {
     Region: SQLRegionModel,
     Province: SQLProvinceModel,
     Ward: SQLWardModel,
-    User: SQLUserModel
+    User: SQLUserModel,
+    Inventory: SQLInventoryModel,
+    Warehouse: SQLWarehouseModel
   }
 };

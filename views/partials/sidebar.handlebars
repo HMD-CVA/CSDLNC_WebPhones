@@ -81,6 +81,14 @@
         </a>
       </li>
       <li class="nav-item">
+        <a href="/admin/inventory" class="nav-link" data-page="inventory">
+          <div class="nav-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <span class="nav-text">Tồn kho</span>
+        </a>
+      </li>
+      <li class="nav-item">
         <a href="/admin/diachi" class="nav-link" data-page="diachi">
           <div class="nav-icon">
             <i class="fas fa-map-marked-alt"></i>
@@ -693,6 +701,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 link.classList.add('active');
             }
             else if (currentPath.includes('/khachhang') && linkPath.includes('/khachhang')) {
+                link.classList.add('active');
+            }
+            else if (currentPath.includes('/inventory') && linkPath.includes('/inventory')) {
                 link.classList.add('active');
             }
             else if (currentPath.includes('/diachi') && linkPath.includes('/diachi')) {
