@@ -311,7 +311,7 @@ GO
 CREATE TABLE flash_sale_items (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     flash_sale_id UNIQUEIDENTIFIER NOT NULL,
-    san_pham_id UNIQUEIDENTIFIER NOT NULL,
+    san_pham_id UNIQUEIDENTIFIER NOT NULL,  -- Lưu variant_id từ MongoDB (mọi sản phẩm đều có variant)
     gia_goc DECIMAL(15,2) NOT NULL,
     gia_flash_sale DECIMAL(15,2) NOT NULL,
     so_luong_ton INT NOT NULL,
@@ -322,8 +322,8 @@ CREATE TABLE flash_sale_items (
     ngay_tao DATETIME2 DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
     FOREIGN KEY (flash_sale_id) REFERENCES flash_sales(id) ON DELETE CASCADE,
-    FOREIGN KEY (san_pham_id) REFERENCES products(id),
-    CONSTRAINT UQ_flash_sale_items_flash_sale_san_pham UNIQUE (flash_sale_id, san_pham_id),
+    -- Mỗi flash sale chỉ có duy nhất 1 variant (không duplicate)
+    CONSTRAINT UQ_flash_sale_variant UNIQUE (flash_sale_id, san_pham_id),
     CHECK (gia_flash_sale < gia_goc),
     CHECK (gia_flash_sale > 0),
     CHECK (so_luong_ton >= 0),

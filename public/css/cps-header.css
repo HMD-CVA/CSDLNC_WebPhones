@@ -55,10 +55,6 @@
     font-size: 18px;
     font-weight: 700;
     color: var(--cps-red);
-    display: none;
-}
-
-.cps-logo img[style*="display: none"] + .cps-logo-text {
     display: inline-block;
 }
 

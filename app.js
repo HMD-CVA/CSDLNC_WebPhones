@@ -3,6 +3,7 @@ import { engine } from 'express-handlebars';
 import db from './server.js';
 import DataModel from './app/model/index.js';
 import sql from 'mssql';
+import crypto from 'crypto';
 
 import mongoose, { mongo } from 'mongoose';
 
@@ -25,6 +26,51 @@ dotenv.config();
 db.connectAllDB();
 const app = express();
 
+// Helper function to ensure all variants have variant_id
+// If no variants exist, create default variant using sql_product_id
+function ensureVariantIds(variants, sqlProductId = null) {
+    if (!variants || typeof variants !== 'object') {
+        variants = {
+            variant_options: [],
+            variant_combinations: []
+        };
+    }
+    
+    // Ensure variant_combinations exist
+    if (!variants.variant_combinations || !Array.isArray(variants.variant_combinations)) {
+        variants.variant_combinations = [];
+    }
+    
+    // If no real variants, create default variant using sql_product_id
+    if (variants.variant_combinations.length === 0 && sqlProductId) {
+        variants.variant_combinations = [{
+            variant_id: sqlProductId, // Use SQL product ID as variant_id
+            name: 'Mặc định',
+            is_default: true,
+            price: null, // Will be set from product price
+            original_price: null,
+            stock: null,
+            sku: null
+        }];
+        console.log('✅ Created default variant with variant_id:', sqlProductId);
+    } else if (variants.variant_combinations.length > 0) {
+        // Real variants exist - auto-generate UUID for each if missing
+        variants.variant_combinations = variants.variant_combinations.map(combo => {
+            if (!combo.variant_id) {
+                combo.variant_id = crypto.randomUUID();
+                console.log('✅ Generated variant_id:', combo.variant_id, 'for', combo.name);
+            }
+            // Remove is_default flag from real variants
+            if (combo.is_default) {
+                delete combo.is_default;
+            }
+            return combo;
+        });
+    }
+    
+    return variants;
+}
+
 
 // Middleware
 app.use(express.json());
@@ -38,6 +84,7 @@ app.engine('handlebars', engine({
     defaultLayout: 'AdminMain',
     helpers: {
         eq: (a, b) => a===b,
+        gt: (a, b) => a > b,
         json: (context) => {
             return JSON.stringify(context);
         },
@@ -70,6 +117,27 @@ app.engine('handlebars', engine({
 }));
 app.set('view engine', 'handlebars');
 app.set('views', './views');
+
+// Global middleware để load data cho header (regions, categories)
+app.use(async (req, res, next) => {
+    try {
+        // Load regions và categories cho tất cả các view
+        const regions = await DataModel.SQL.Region.findAll();
+        const categories = await DataModel.SQL.Category.findAll();
+        
+        // Thêm vào res.locals để có sẵn trong tất cả view
+        res.locals.regions = regions;
+        res.locals.categories = categories;
+        
+        next();
+    } catch (error) {
+        console.error('❌ Error loading global data:', error);
+        // Vẫn tiếp tục render page ngay cả khi lỗi
+        res.locals.regions = [];
+        res.locals.categories = [];
+        next();
+    }
+});
 
 
 
@@ -458,12 +526,146 @@ app.get('/', async (req, res) => {
     const sanphams = await DataModel.SQL.Product.findAll();
     
     // Lấy danh mục và thương hiệu
-    const categories = await DataModel.SQL.Category.findAll();
     const brands = await DataModel.SQL.Brand.findAll();
     
-    // Lấy vùng miền và tỉnh thành
-    const regions = await DataModel.SQL.Region.findAll();
+    // Lấy tỉnh thành
     const provinces = await DataModel.SQL.Province.findAll();
+    
+    // Lấy tất cả Flash Sales (active + upcoming)
+    const allFlashSales = await DataModel.SQL.FlashSale.findAll();
+    const now = new Date();
+    
+    // Lọc flash sales: đang diễn ra hoặc sắp diễn ra
+    const relevantFlashSales = allFlashSales.filter(fs => {
+      const endDate = new Date(fs.ngay_ket_thuc);
+      return endDate >= now; // Chưa kết thúc
+    }).sort((a, b) => {
+      // Sắp xếp: active trước, sau đó theo ngày bắt đầu
+      const aStart = new Date(a.ngay_bat_dau);
+      const bStart = new Date(b.ngay_bat_dau);
+      const aIsActive = aStart <= now && new Date(a.ngay_ket_thuc) >= now;
+      const bIsActive = bStart <= now && new Date(b.ngay_ket_thuc) >= now;
+      
+      if (aIsActive && !bIsActive) return -1;
+      if (!aIsActive && bIsActive) return 1;
+      return aStart - bStart;
+    });
+    
+    // Xử lý từng Flash Sale
+    const flashSaleEvents = [];
+    
+    for (const flashSale of relevantFlashSales) {
+      const flashSaleInfo = {
+        id: flashSale.id,
+        ten_flash_sale: flashSale.ten_flash_sale,
+        mo_ta: flashSale.mo_ta,
+        ngay_bat_dau: flashSale.ngay_bat_dau,
+        ngay_ket_thuc: flashSale.ngay_ket_thuc,
+        is_active: new Date(flashSale.ngay_bat_dau) <= now && new Date(flashSale.ngay_ket_thuc) >= now
+      };
+      
+      // ✅ Lấy các VARIANT flash sale từ SQL
+      const items = await DataModel.SQL.FlashSaleItem.findByFlashSaleId(flashSale.id);
+      
+      // ✅ Enrich với thông tin từ MongoDB (variant name, ảnh, etc.)
+      const enrichedItems = await Promise.all(items.map(async (item) => {
+        try {
+          const variantIdFromSQL = item.san_pham_id;
+          
+          // Tìm variant trong MongoDB
+          const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+          
+          let foundDoc = null;
+          let foundVariant = null;
+          
+          for (const doc of allProducts) {
+            const combinations = doc.variants?.variant_combinations || [];
+            const variant = combinations.find(v => 
+              v.variant_id && v.variant_id.toLowerCase() === variantIdFromSQL.toLowerCase()
+            );
+            
+            if (variant) {
+              foundDoc = doc;
+              foundVariant = variant;
+              break;
+            }
+          }
+          
+          if (!foundDoc || !foundVariant) {
+            console.warn('❌ Variant not found in MongoDB:', variantIdFromSQL);
+            return null;
+          }
+          
+          // Lấy tên sản phẩm từ SQL
+          const product = await DataModel.SQL.Product.findById(foundDoc.sql_product_id);
+          const productName = product?.ten_san_pham || 'Sản phẩm không tồn tại';
+          
+          // Lấy ảnh từ link_avatar của MongoDB ProductDetail
+          const variantImage = foundDoc.link_avatar || '/image/default-product.png';
+          
+          return {
+            item,
+            productName,
+            variantName: foundVariant.name,
+            variantImage,
+            variantSKU: foundVariant.sku,
+            stock: foundVariant.stock || 0
+          };
+        } catch (err) {
+          console.error('Error enriching flash sale item:', err);
+          return null;
+        }
+      }));
+      
+      // Filter out null items and format
+      const flashSaleItems = enrichedItems
+        .filter(enriched => enriched !== null)
+        .map(enriched => {
+          const { item, productName, variantName, variantImage, variantSKU, stock } = enriched;
+          
+          const phan_tram_giam = item.gia_goc > 0 ? Math.round((1 - item.gia_flash_sale / item.gia_goc) * 100) : 0;
+          const so_luong_ton = item.so_luong_ton || 0;
+          const da_ban = item.da_ban || 0;
+          const con_lai = so_luong_ton - da_ban;
+          const da_ban_percent = so_luong_ton > 0 ? Math.round((da_ban / so_luong_ton) * 100) : 0;
+          
+          return {
+            id: item.san_pham_id, // Variant ID
+            flash_sale_item_id: item.id,
+            ten_san_pham: productName,
+            ten_variant: `${productName} - ${variantName}`,
+            variant_name: variantName,
+            link_anh: variantImage,
+            sku: variantSKU,
+            gia_goc: item.gia_goc,
+            gia_flash_sale: item.gia_flash_sale,
+            gia_ban_formatted: new Intl.NumberFormat('vi-VN', {
+              style: 'currency',
+              currency: 'VND'
+            }).format(item.gia_flash_sale),
+            gia_goc_formatted: new Intl.NumberFormat('vi-VN', {
+              style: 'currency',
+              currency: 'VND'
+            }).format(item.gia_goc),
+            phan_tram_giam,
+            so_luong_ton,
+            da_ban,
+            con_lai,
+            da_ban_percent,
+            ton_kho_variant: stock,
+            gioi_han_mua: item.gioi_han_mua,
+            is_hot: da_ban_percent > 50,
+            is_low_stock: con_lai < 10 && con_lai > 0
+          };
+        });
+      
+      flashSaleEvents.push({
+        info: flashSaleInfo,
+        items: flashSaleItems
+      });
+    }
+    
+    console.log('🔥 Flash Sale Events Count:', flashSaleEvents.length);
     
     // Format dữ liệu sản phẩm
     const formattedProducts = sanphams.map(product => ({
@@ -488,23 +690,45 @@ app.get('/', async (req, res) => {
       mo_ta: product.mo_ta || 'Sản phẩm chất lượng cao với giá cả hợp lý'
     }));
 
-    // Lọc sản phẩm flash sale (ví dụ: giảm giá > 10%)
-    const flashSaleProducts = formattedProducts.filter(product => product.phan_tram_giam > 10);
+    // Nhóm sản phẩm theo brand động từ database
+    const brandProductGroups = {};
+    
+    // Khởi tạo các nhóm brand
+    brands.forEach(brand => {
+      brandProductGroups[brand.id] = {
+        brandInfo: brand,
+        products: []
+      };
+    });
+    
+    // Phân loại sản phẩm vào các brand
+    formattedProducts.forEach(product => {
+      if (product.thuong_hieu_id && brandProductGroups[product.thuong_hieu_id]) {
+        brandProductGroups[product.thuong_hieu_id].products.push(product);
+      }
+    });
+    
+    // Chuyển thành array và sắp xếp theo số lượng sản phẩm
+    const brandSections = Object.values(brandProductGroups)
+      .map(group => ({
+        ...group.brandInfo,
+        products: group.products,
+        productCount: group.products.length
+      }))
+      .filter(section => section.productCount > 0) // Chỉ hiển thị brand có sản phẩm
+      .sort((a, b) => b.productCount - a.productCount); // Sort theo số lượng sản phẩm
 
-    // Lọc sản phẩm iPhone
-    const iphoneProducts = formattedProducts.filter(product => 
-      product.ten_thuong_hieu.toLowerCase().includes('apple') || 
-      product.ten_san_pham.toLowerCase().includes('iphone')
-    );
+    console.log('📊 Brand Sections:', brandSections.map(b => ({
+      name: b.ten_thuong_hieu,
+      count: b.productCount
+    })));
 
     res.render('home', { 
       layout: 'HomeMain.handlebars', 
       sanphams: formattedProducts,
-      flashSaleProducts,
-      iphoneProducts,
-      categories,
+      flashSaleEvents, // Array of {info, items}
+      brandSections, // Thay thế iphoneProducts, samsungProducts, etc.
       brands,
-      regions,
       provinces
     });
   } catch (err) {
@@ -573,6 +797,39 @@ app.get('/product/:id', async (req, res) => {
         if (!product) {
             return res.status(404).send('Không tìm thấy sản phẩm');
         }
+
+        // ✅ KIỂM TRA FLASH SALE ĐANG ACTIVE
+        const flashSaleItem = await DataModel.SQL.FlashSaleItem.findActiveByProductId(productId);
+        let isFlashSale = false;
+        let flashSaleInfo = null;
+        let priceToDisplay = product.gia_ban;
+        
+        if (flashSaleItem) {
+            isFlashSale = true;
+            priceToDisplay = flashSaleItem.gia_flash_sale;
+            const conLaiFlashSale = flashSaleItem.so_luong_ton - flashSaleItem.da_ban;
+            
+            flashSaleInfo = {
+                id: flashSaleItem.id,
+                flash_sale_id: flashSaleItem.flash_sale_id,
+                ten_flash_sale: flashSaleItem.ten_flash_sale,
+                gia_goc: flashSaleItem.gia_goc,
+                gia_flash_sale: flashSaleItem.gia_flash_sale,
+                phan_tram_giam: Math.round((1 - flashSaleItem.gia_flash_sale / flashSaleItem.gia_goc) * 100),
+                so_luong_gioi_han: flashSaleItem.so_luong_ton,
+                da_ban: flashSaleItem.da_ban,
+                con_lai: conLaiFlashSale,
+                gioi_han_mua: flashSaleItem.gioi_han_mua,
+                ngay_bat_dau: flashSaleItem.ngay_bat_dau,
+                ngay_ket_thuc: flashSaleItem.ngay_ket_thuc,
+                is_low_stock: conLaiFlashSale < 10 && conLaiFlashSale > 0
+            };
+            console.log('🔥 Flash Sale Active:', flashSaleInfo);
+        }
+
+        // Lấy tất cả variants (inventory) của sản phẩm
+        const inventory = await DataModel.SQL.Inventory.findByProduct(productId);
+        console.log('📦 Inventory variants:', inventory.length);
 
         // Lấy thông tin chi tiết từ MongoDB
         let mongoDetail = null;
@@ -651,7 +908,7 @@ app.get('/product/:id', async (req, res) => {
             gia_ban_formatted: new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
-            }).format(product.gia_ban),
+            }).format(isFlashSale ? priceToDisplay : product.gia_ban),
             gia_niem_yet_formatted: product.gia_niem_yet ? new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
@@ -659,10 +916,10 @@ app.get('/product/:id', async (req, res) => {
             tiet_kiem_formatted: product.gia_niem_yet ? new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
-            }).format(product.gia_niem_yet - product.gia_ban) : null,
+            }).format(product.gia_niem_yet - (isFlashSale ? priceToDisplay : product.gia_ban)) : null,
             is_discount: product.gia_niem_yet && product.gia_niem_yet > product.gia_ban,
-            phan_tram_giam: product.gia_niem_yet ? 
-                Math.round((1 - product.gia_ban / product.gia_niem_yet) * 100) : 0,
+            phan_tram_giam: isFlashSale ? flashSaleInfo.phan_tram_giam : (product.gia_niem_yet ? 
+                Math.round((1 - product.gia_ban / product.gia_niem_yet) * 100) : 0),
             // Thêm dữ liệu từ MongoDB
             thong_so_ky_thuat: thongSoKyThuat,
             hinh_anh_phu: hinhAnhPhu,
@@ -671,7 +928,11 @@ app.get('/product/:id', async (req, res) => {
             videos: videos,
             video_links: videoLinks,
             // Thêm giá gốc từ SQL để dùng cho variants
-            sql_gia_niem_yet: product.gia_niem_yet
+            sql_gia_niem_yet: product.gia_niem_yet,
+            // ✅ Flash sale data
+            isFlashSale: isFlashSale,
+            flashSaleInfo: flashSaleInfo,
+            priceToDisplay: priceToDisplay
         };
 
         console.log('📦 Product detail loaded:', {
@@ -679,12 +940,15 @@ app.get('/product/:id', async (req, res) => {
             name: formattedProduct.ten_san_pham,
             specs: thongSoKyThuat.length,
             images: hinhAnhPhu.length,
-            hasDescription: !!moTaChiTiet
+            hasDescription: !!moTaChiTiet,
+            isFlashSale: isFlashSale,
+            inventoryVariants: inventory.length
         });
 
         res.render('productDetail', {
             layout: 'HomeMain.handlebars',
-            product: formattedProduct
+            product: formattedProduct,
+            inventory: inventory // ✅ Truyền inventory variants xuống view
         });
     } catch (err) {
         console.error('Error loading product detail:', err);
@@ -2058,6 +2322,9 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         let minPrice = null;
         let minOriginalPrice = null;
         if (variants && typeof variants === 'object') {
+            // Ensure all variants have variant_id (or create default variant with sql_product_id)
+            variants = ensureVariantIds(variants, newProduct.id);
+            
             // Variants có cấu trúc: {variant_options: [], variant_combinations: []}
             documentData.variants = variants;
             console.log('✅ Variants data saved:', JSON.stringify(variants, null, 2));
@@ -2082,10 +2349,8 @@ app.post('/api/mongo/sanpham', async (req, res) => {
                 });
             }
         } else {
-            documentData.variants = {
-                variant_options: [],
-                variant_combinations: []
-            };
+            // No variants provided - create default variant with sql_product_id
+            documentData.variants = ensureVariantIds(null, newProduct.id);
         }
         
         // Lưu giá vào documentData để update SQL sau
@@ -2339,11 +2604,13 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         let minPrice = null;
         let minOriginalPrice = null;
         if (variants !== undefined) {
-            updateData.variants = variants;
+            // Ensure all variants have variant_id (or create default variant with sql_product_id)
+            const updatedVariants = ensureVariantIds(variants, sql_product_id);
+            updateData.variants = updatedVariants;
             
             // Tính giá rẻ nhất từ variant_combinations
-            if (variants.variant_combinations && Array.isArray(variants.variant_combinations)) {
-                variants.variant_combinations.forEach(combo => {
+            if (updatedVariants.variant_combinations && Array.isArray(updatedVariants.variant_combinations)) {
+                updatedVariants.variant_combinations.forEach(combo => {
                     if (combo.price) {
                         const price = parseFloat(combo.price);
                         const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
@@ -3093,6 +3360,96 @@ app.get('/admin/flashsale', async (req, res) => {
     }
 });
 
+// GET /api/products-with-variants - Lấy products với variants từ MongoDB
+app.get('/api/products-with-variants', async (req, res) => {
+    try {
+        // Lấy tất cả products từ SQL
+        const products = await DataModel.SQL.Product.findAll();
+        
+        // Lấy variants từ MongoDB cho từng product
+        const productsWithVariants = await Promise.all(
+            products.map(async (product) => {
+                try {
+                    // Lấy MongoDB document
+                    const mongoDoc = await DataModel.Mongo.ProductDetail.findOne({ 
+                        sql_product_id: product.id 
+                    }).lean();
+                    
+                    if (mongoDoc) {
+                        // Extract variants từ MongoDB
+                        let variants = [];
+                        
+                        // Kiểm tra các cấu trúc MongoDB có thể có
+                        if (mongoDoc.variants && Array.isArray(mongoDoc.variants)) {
+                            variants = mongoDoc.variants;
+                        } else if (mongoDoc.bien_the && Array.isArray(mongoDoc.bien_the)) {
+                            variants = mongoDoc.bien_the;
+                        } else if (mongoDoc.color_options || mongoDoc.storage_options) {
+                            const colors = mongoDoc.color_options || [null];
+                            const storages = mongoDoc.storage_options || [null];
+                            
+                            variants = colors.flatMap(color => 
+                                storages.map(storage => ({
+                                    mau_sac: color?.name || color?.value || color || '',
+                                    dung_luong: storage?.name || storage?.value || storage || '',
+                                    gia: mongoDoc.gia || product.gia_ban,
+                                    ton_kho: 100
+                                }))
+                            );
+                        }
+                        
+                        return {
+                            id: product.id,
+                            ten_san_pham: product.ten_san_pham,
+                            gia_ban: product.gia_ban,
+                            link_anh: product.link_anh,
+                            variants: variants.map(v => ({
+                                mau_sac: v.mau_sac || v.color || '',
+                                dung_luong: v.dung_luong || v.capacity || v.storage || '',
+                                gia: v.gia || v.price || product.gia_ban,
+                                ton_kho: v.ton_kho || v.stock || v.so_luong || 100
+                            }))
+                        };
+                    }
+                    
+                    // Không có MongoDB doc → variant mặc định
+                    return {
+                        id: product.id,
+                        ten_san_pham: product.ten_san_pham,
+                        gia_ban: product.gia_ban,
+                        link_anh: product.link_anh,
+                        variants: [{
+                            mau_sac: '',
+                            dung_luong: '',
+                            gia: product.gia_ban,
+                            ton_kho: 100
+                        }]
+                    };
+                } catch (err) {
+                    console.error(`Error loading variants for ${product.id}:`, err);
+                    return {
+                        id: product.id,
+                        ten_san_pham: product.ten_san_pham,
+                        gia_ban: product.gia_ban,
+                        link_anh: product.link_anh,
+                        variants: [{
+                            mau_sac: '',
+                            dung_luong: '',
+                            gia: product.gia_ban,
+                            ton_kho: 100
+                        }]
+                    };
+                }
+            })
+        );
+        
+        res.json(productsWithVariants);
+    } catch (error) {
+        console.error('Error loading products with variants:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách sản phẩm' });
+    }
+});
+
 // GET /api/flashsales - Lấy danh sách flash sales
 app.get('/api/flashsales', async (req, res) => {
     try {
@@ -3240,6 +3597,38 @@ app.post('/api/flashsales', async (req, res) => {
             mongo_flash_sale_detail_id: mongoDoc._id.toString()
         });
         console.log('✅ SQL updated with mongo_flash_sale_detail_id');
+
+        // Bước 4: Thêm flash_sale_items nếu có products
+        if (req.body.products && Array.isArray(req.body.products) && req.body.products.length > 0) {
+            console.log('📦 Adding flash sale items...', req.body.products.length, 'variants');
+            
+            for (const product of req.body.products) {
+                console.log('📝 Inserting product:', product);
+                
+                // Validate variantId
+                if (!product.variantId) {
+                    console.error('❌ Missing variantId for product:', product);
+                    throw new Error(`Product "${product.productName}" thiếu variant_id`);
+                }
+                
+                const request = new sql.Request(db.SQL);
+                await request
+                    .input('flash_sale_id', sql.UniqueIdentifier, newFlashSale.id)
+                    .input('san_pham_id', sql.UniqueIdentifier, product.variantId)
+                    .input('gia_goc', sql.Decimal(15, 2), parseFloat(product.gia_goc) || 0)
+                    .input('gia_flash_sale', sql.Decimal(15, 2), parseFloat(product.gia_flash_sale) || 0)
+                    .input('so_luong_ton', sql.Int, parseInt(product.stock) || 0)
+                    .input('gioi_han_mua', sql.Int, product.gioi_han_mua ? parseInt(product.gioi_han_mua) : null)
+                    .query(`
+                        INSERT INTO flash_sale_items 
+                        (flash_sale_id, san_pham_id, gia_goc, gia_flash_sale, so_luong_ton, gioi_han_mua)
+                        VALUES 
+                        (@flash_sale_id, @san_pham_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @gioi_han_mua)
+                    `);
+            }
+            
+            console.log('✅ Flash sale items added successfully');
+        }
         
         res.json({
             success: true,
@@ -3266,6 +3655,7 @@ app.put('/api/flashsales/:id', async (req, res) => {
             trang_thai: req.body.trang_thai
         };
         
+        // Update flash sale basic info
         const updatedFlashSale = await DataModel.SQL.FlashSale.update(req.params.id, updateData);
         
         if (!updatedFlashSale) {
@@ -3273,6 +3663,45 @@ app.put('/api/flashsales/:id', async (req, res) => {
                 success: false,
                 message: 'Không tìm thấy flash sale'
             });
+        }
+
+        // Update flash sale items if provided
+        if (req.body.products && Array.isArray(req.body.products)) {
+            console.log('📦 Updating flash sale items...', req.body.products.length, 'variants');
+            
+            // Delete existing items
+            const deleteRequest = new sql.Request(db.SQL);
+            await deleteRequest
+                .input('flash_sale_id', sql.UniqueIdentifier, req.params.id)
+                .query('DELETE FROM flash_sale_items WHERE flash_sale_id = @flash_sale_id');
+
+            // Insert new items
+            for (const product of req.body.products) {
+                console.log('📝 Inserting product:', product);
+                
+                // Validate variantId
+                if (!product.variantId) {
+                    console.error('❌ Missing variantId for product:', product);
+                    throw new Error(`Product "${product.productName}" thiếu variant_id`);
+                }
+                
+                const insertRequest = new sql.Request(db.SQL);
+                await insertRequest
+                    .input('flash_sale_id', sql.UniqueIdentifier, req.params.id)
+                    .input('san_pham_id', sql.UniqueIdentifier, product.variantId)
+                    .input('gia_goc', sql.Decimal(15, 2), parseFloat(product.gia_goc) || 0)
+                    .input('gia_flash_sale', sql.Decimal(15, 2), parseFloat(product.gia_flash_sale) || 0)
+                    .input('so_luong_ton', sql.Int, parseInt(product.stock) || 0)
+                    .input('gioi_han_mua', sql.Int, product.gioi_han_mua ? parseInt(product.gioi_han_mua) : null)
+                    .query(`
+                        INSERT INTO flash_sale_items 
+                        (flash_sale_id, san_pham_id, gia_goc, gia_flash_sale, so_luong_ton, gioi_han_mua)
+                        VALUES 
+                        (@flash_sale_id, @san_pham_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @gioi_han_mua)
+                    `);
+            }
+            
+            console.log('✅ Flash sale items updated successfully');
         }
         
         res.json({
@@ -3314,24 +3743,6 @@ app.delete('/api/flashsales/:id', async (req, res) => {
 // =============================================
 // FLASH SALE ITEMS API ROUTES
 // =============================================
-
-// GET /api/flashsales/:id/items - Lấy danh sách sản phẩm trong flash sale
-app.get('/api/flashsales/:id/items', async (req, res) => {
-    try {
-        const items = await DataModel.SQL.FlashSaleItem.findByFlashSaleId(req.params.id);
-        
-        res.json({
-            success: true,
-            data: items
-        });
-    } catch (error) {
-        console.error('Flash Sale Items API Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi khi lấy danh sách sản phẩm'
-        });
-    }
-});
 
 // GET /api/flashsales/:flashSaleId/items/:itemId - Lấy thông tin 1 item
 app.get('/api/flashsales/:flashSaleId/items/:itemId', async (req, res) => {
@@ -4747,6 +5158,296 @@ app.delete('/api/inventory/:id', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             message: 'Lỗi khi xóa tồn kho' 
+        });
+    }
+});
+
+// ============================================
+// API ENDPOINTS FOR FLASH SALES
+// ============================================
+
+// GET /api/flashsales - Get all flash sales
+app.get('/api/flashsales', async (req, res) => {
+    try {
+        const filters = {};
+        if (req.query.trang_thai) filters.trang_thai = req.query.trang_thai;
+        if (req.query.search) filters.search = req.query.search;
+        
+        const flashSales = await DataModel.SQL.FlashSale.findAll(filters);
+        res.json(flashSales);
+    } catch (error) {
+        console.error('Flash Sales GET Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách flash sales' });
+    }
+});
+
+// Alias route for frontend compatibility (with hyphen)
+app.get('/api/flash-sales', async (req, res) => {
+    try {
+        const filters = {};
+        if (req.query.trang_thai) filters.trang_thai = req.query.trang_thai;
+        if (req.query.search) filters.search = req.query.search;
+        
+        const flashSales = await DataModel.SQL.FlashSale.findAll(filters);
+        res.json(flashSales);
+    } catch (error) {
+        console.error('Flash Sales GET Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách flash sales' });
+    }
+});
+
+// GET /api/flashsales/:id - Get single flash sale
+app.get('/api/flashsales/:id', async (req, res) => {
+    try {
+        console.log('🔍 Getting flash sale by ID:', req.params.id);
+        const flashSale = await DataModel.SQL.FlashSale.findById(req.params.id);
+        
+        if (!flashSale) {
+            console.log('❌ Flash sale not found:', req.params.id);
+            return res.status(404).json({ success: false, message: 'Không tìm thấy flash sale' });
+        }
+        
+        console.log('✅ Flash sale found:', flashSale);
+        res.json({ success: true, data: flashSale });
+    } catch (error) {
+        console.error('❌ Flash Sale GET Error:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack:', error.stack);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy flash sale: ' + error.message });
+    }
+});
+
+// GET /api/flashsales/:id/items - Get flash sale items with full product details
+app.get('/api/flashsales/:id/items', async (req, res) => {
+    try {
+        console.log('📦 Getting flash sale items for:', req.params.id);
+        
+        // Get flash sale items from SQL
+        const items = await DataModel.SQL.FlashSaleItem.findByFlashSaleId(req.params.id);
+        
+        console.log('📊 Found items from SQL:', items?.length || 0, items);
+        
+        if (!items || items.length === 0) {
+            return res.json([]);
+        }
+
+        // Enrich items with variant name from MongoDB
+        const enrichedItems = await Promise.all(items.map(async (item) => {
+            try {
+                // san_pham_id in flash_sale_items stores variant_id from MongoDB
+                const variantIdFromSQL = item.san_pham_id;
+                
+                console.log('🔍 Looking for variant ID:', variantIdFromSQL);
+                
+                // Find ALL products and search for variant (for debugging)
+                const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+                
+                let foundDoc = null;
+                let foundVariant = null;
+                
+                for (const doc of allProducts) {
+                    const combinations = doc.variants?.variant_combinations || [];
+                    const variant = combinations.find(v => 
+                        v.variant_id && v.variant_id.toLowerCase() === variantIdFromSQL.toLowerCase()
+                    );
+                    
+                    if (variant) {
+                        foundDoc = doc;
+                        foundVariant = variant;
+                        break;
+                    }
+                }
+                
+                if (!foundDoc || !foundVariant) {
+                    console.warn('❌ Variant not found:', variantIdFromSQL);
+                    // Log first product's variants for debugging
+                    if (allProducts.length > 0 && allProducts[0].variants?.variant_combinations) {
+                        console.log('📋 Sample variants from first product:');
+                        allProducts[0].variants.variant_combinations.slice(0, 2).forEach(v => {
+                            console.log('  - variant_id:', v.variant_id, '| name:', v.name);
+                        });
+                    }
+                    return {
+                        ...item,
+                        ten_san_pham: 'Variant không tồn tại',
+                        variant_id: variantIdFromSQL,
+                        variant_name: 'Không tìm thấy',
+                        sql_product_id: null,
+                        link_avatar: '/image/default-product.png'
+                    };
+                }
+                
+                // Get product name from SQL
+                const product = await DataModel.SQL.Product.findById(foundDoc.sql_product_id);
+                const productName = product?.ten_san_pham || 'Sản phẩm không tồn tại';
+                
+                console.log('✅ Found variant:', foundVariant.name, 'in product:', productName);
+
+                return {
+                    ...item,
+                    ten_san_pham: productName,
+                    variant_id: variantIdFromSQL,
+                    variant_name: foundVariant.name,
+                    sql_product_id: foundDoc.sql_product_id,
+                    link_avatar: foundDoc.link_avatar || '/image/default-product.png'
+                };
+            } catch (err) {
+                console.error('❌ Error enriching item:', item.id);
+                console.error('Error message:', err.message);
+                console.error('Error stack:', err.stack);
+                return {
+                    ...item,
+                    ten_san_pham: 'Lỗi: ' + err.message,
+                    variant_id: item.san_pham_id,
+                    variant_name: 'Lỗi',
+                    link_avatar: '/image/default-product.png'
+                };
+            }
+        }));
+
+        console.log('✅ Returning enriched items:', enrichedItems.length);
+        res.json(enrichedItems);
+    } catch (error) {
+        console.error('❌ Flash Sale Items GET Error:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack:', error.stack);
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy sản phẩm flash sale: ' + error.message });
+    }
+});
+
+// POST /api/flashsales - Create flash sale
+app.post('/api/flashsales', async (req, res) => {
+    try {
+        const flashSale = await DataModel.SQL.FlashSale.create(req.body);
+        res.json({ success: true, data: flashSale });
+    } catch (error) {
+        console.error('Flash Sale POST Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi tạo flash sale' });
+    }
+});
+
+// POST /api/flashsales/:id/items - Add item to flash sale
+app.post('/api/flashsales/:id/items', async (req, res) => {
+    try {
+        const itemData = {
+            ...req.body,
+            flash_sale_id: req.params.id
+        };
+        const item = await DataModel.SQL.FlashSaleItem.create(itemData);
+        res.json({ success: true, data: item });
+    } catch (error) {
+        console.error('Flash Sale Item POST Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi thêm sản phẩm flash sale' });
+    }
+});
+
+// PUT /api/flashsales/:id - Update flash sale
+app.put('/api/flashsales/:id', async (req, res) => {
+    try {
+        const flashSale = await DataModel.SQL.FlashSale.update(req.params.id, req.body);
+        res.json({ success: true, data: flashSale });
+    } catch (error) {
+        console.error('Flash Sale PUT Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi cập nhật flash sale' });
+    }
+});
+
+// DELETE /api/flashsales/:id - Delete flash sale
+app.delete('/api/flashsales/:id', async (req, res) => {
+    try {
+        await DataModel.SQL.FlashSale.destroy(req.params.id);
+        res.json({ success: true, message: 'Xóa flash sale thành công' });
+    } catch (error) {
+        console.error('Flash Sale DELETE Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi xóa flash sale' });
+    }
+});
+
+// DELETE /api/flashsales/:flashSaleId/items/:itemId - Delete flash sale item
+app.delete('/api/flashsales/:flashSaleId/items/:itemId', async (req, res) => {
+    try {
+        await DataModel.SQL.FlashSaleItem.destroy(req.params.itemId);
+        res.json({ success: true, message: 'Xóa sản phẩm thành công' });
+    } catch (error) {
+        console.error('Flash Sale Item DELETE Error:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi xóa sản phẩm' });
+    }
+});
+
+// API ENDPOINTS FOR MONGODB PRODUCT DETAILS
+
+// GET /api/mongodb-details/by-product/:productId - Get MongoDB details by SQL product ID
+app.get('/api/mongodb-details/by-product/:productId', async (req, res) => {
+    try {
+        const { productId } = req.params;
+        console.log('🔍 Fetching MongoDB details for product:', productId);
+        
+        // Find MongoDB document by sql_product_id field
+        const mongoDetail = await DataModel.Mongo.ProductDetail.findOne({ 
+            sql_product_id: productId 
+        }).lean();
+        
+        if (!mongoDetail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy thông tin MongoDB cho sản phẩm này'
+            });
+        }
+        
+        console.log('✅ Found MongoDB detail:', mongoDetail._id);
+        
+        res.json({
+            success: true,
+            data: mongoDetail,
+            // Expose commonly used fields - variant_combinations nằm trong variants
+            variant_combinations: mongoDetail.variants?.variant_combinations || [],
+            variant_options: mongoDetail.variants?.variant_options || [],
+            thong_so_ky_thuat: mongoDetail.thong_so_ky_thuat || [],
+            hinh_anh: mongoDetail.hinh_anh || []
+        });
+    } catch (error) {
+        console.error('MongoDB Details GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy thông tin MongoDB: ' + error.message 
+        });
+    }
+});
+
+// GET /api/mongodb-details/:mongoId - Get MongoDB details by MongoDB _id
+app.get('/api/mongodb-details/:mongoId', async (req, res) => {
+    try {
+        const { mongoId } = req.params;
+        console.log('🔍 Fetching MongoDB details by _id:', mongoId);
+        
+        // Use findOne with _id instead of findById
+        const mongoDetail = await DataModel.Mongo.ProductDetail.findOne({ 
+            _id: mongoId 
+        }).lean();
+        
+        if (!mongoDetail) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy thông tin MongoDB'
+            });
+        }
+        
+        console.log('✅ Found MongoDB detail by _id:', mongoDetail._id);
+        
+        res.json({
+            success: true,
+            data: mongoDetail,
+            // variant_combinations nằm trong variants
+            variant_combinations: mongoDetail.variants?.variant_combinations || [],
+            variant_options: mongoDetail.variants?.variant_options || [],
+            thong_so_ky_thuat: mongoDetail.thong_so_ky_thuat || [],
+            hinh_anh: mongoDetail.hinh_anh || []
+        });
+    } catch (error) {
+        console.error('MongoDB Details GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy thông tin MongoDB: ' + error.message 
         });
     }
 });

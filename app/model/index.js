@@ -933,6 +933,7 @@ class SQLFlashSaleModel {
 
 // Model cho Flash Sale Items
 class SQLFlashSaleItemModel {
+  // Lấy flash sale items theo flash_sale_id
   static async findByFlashSaleId(flashSaleId) {
     try {
       const request = new sql.Request();
@@ -940,17 +941,83 @@ class SQLFlashSaleItemModel {
         .input('flashSaleId', sql.UniqueIdentifier, flashSaleId)
         .query(`
           SELECT 
-            fsi.*,
-            p.ten_san_pham,
-            p.link_anh
-          FROM flash_sale_items fsi
-          INNER JOIN products p ON fsi.san_pham_id = p.id
-          WHERE fsi.flash_sale_id = @flashSaleId
-          ORDER BY fsi.thu_tu ASC, fsi.ngay_tao DESC
+            id,
+            flash_sale_id,
+            san_pham_id,
+            gia_goc,
+            gia_flash_sale,
+            so_luong_ton,
+            da_ban,
+            gioi_han_mua
+          FROM flash_sale_items
+          WHERE flash_sale_id = @flashSaleId
+          ORDER BY id
         `);
       return result.recordset;
     } catch (error) {
       console.error('SQL Flash Sale Items Error:', error);
+      throw error;
+    }
+  }
+
+  // Tìm tất cả flash sale items đang active của 1 sản phẩm (có thể nhiều variants)
+  static async findActiveByProductId(productId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('productId', sql.UniqueIdentifier, productId)
+        .query(`
+          SELECT 
+            fsi.*,
+            fs.ten_flash_sale,
+            fs.ngay_bat_dau,
+            fs.ngay_ket_thuc,
+            i.mau_sac,
+            i.dung_luong,
+            i.so_luong_kha_dung as ton_kho_variant
+          FROM flash_sale_items fsi
+          INNER JOIN flash_sales fs ON fsi.flash_sale_id = fs.id
+          INNER JOIN inventory i ON fsi.inventory_id = i.id
+          WHERE i.san_pham_id = @productId
+            AND fs.trang_thai = 'dang_dien_ra'
+            AND fs.ngay_bat_dau <= GETDATE()
+            AND fs.ngay_ket_thuc > GETDATE()
+            AND fsi.trang_thai = 'dang_ban'
+            AND (fsi.so_luong_ton - fsi.da_ban) > 0
+          ORDER BY fs.ngay_bat_dau DESC, i.mau_sac, i.dung_luong
+        `);
+      return result.recordset; // Trả về array thay vì 1 item
+    } catch (error) {
+      console.error('SQL Flash Sale Item findActiveByProductId Error:', error);
+      throw error;
+    }
+  }
+
+  // Tìm flash sale item theo inventory_id cụ thể
+  static async findActiveByInventoryId(inventoryId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('inventoryId', sql.UniqueIdentifier, inventoryId)
+        .query(`
+          SELECT TOP 1
+            fsi.*,
+            fs.ten_flash_sale,
+            fs.ngay_bat_dau,
+            fs.ngay_ket_thuc
+          FROM flash_sale_items fsi
+          INNER JOIN flash_sales fs ON fsi.flash_sale_id = fs.id
+          WHERE fsi.inventory_id = @inventoryId
+            AND fs.trang_thai = 'dang_dien_ra'
+            AND fs.ngay_bat_dau <= GETDATE()
+            AND fs.ngay_ket_thuc > GETDATE()
+            AND fsi.trang_thai = 'dang_ban'
+            AND (fsi.so_luong_ton - fsi.da_ban) > 0
+          ORDER BY fs.ngay_bat_dau DESC
+        `);
+      return result.recordset[0] || null;
+    } catch (error) {
+      console.error('SQL Flash Sale Item findActiveByInventoryId Error:', error);
       throw error;
     }
   }
@@ -971,9 +1038,23 @@ class SQLFlashSaleItemModel {
   static async create(itemData) {
     try {
       const request = new sql.Request();
-      const result = await request
+      
+      // Lấy san_pham_id từ inventory_id
+      const inventoryResult = await request
+        .input('inventory_id', sql.UniqueIdentifier, itemData.inventory_id)
+        .query('SELECT san_pham_id FROM inventory WHERE id = @inventory_id');
+      
+      if (!inventoryResult.recordset || inventoryResult.recordset.length === 0) {
+        throw new Error('Không tìm thấy inventory');
+      }
+      
+      const sanPhamId = inventoryResult.recordset[0].san_pham_id;
+      
+      const request2 = new sql.Request();
+      const result = await request2
         .input('flash_sale_id', sql.UniqueIdentifier, itemData.flash_sale_id)
-        .input('san_pham_id', sql.UniqueIdentifier, itemData.san_pham_id)
+        .input('san_pham_id', sql.UniqueIdentifier, sanPhamId)
+        .input('inventory_id', sql.UniqueIdentifier, itemData.inventory_id)
         .input('gia_goc', sql.Decimal(15, 2), itemData.gia_goc)
         .input('gia_flash_sale', sql.Decimal(15, 2), itemData.gia_flash_sale)
         .input('so_luong_ton', sql.Int, itemData.so_luong_ton)
@@ -982,9 +1063,9 @@ class SQLFlashSaleItemModel {
         .input('trang_thai', sql.NVarChar(20), itemData.trang_thai || 'dang_ban')
         .query(`
           INSERT INTO flash_sale_items 
-          (flash_sale_id, san_pham_id, gia_goc, gia_flash_sale, so_luong_ton, gioi_han_mua, thu_tu, trang_thai)
+          (flash_sale_id, san_pham_id, inventory_id, gia_goc, gia_flash_sale, so_luong_ton, gioi_han_mua, thu_tu, trang_thai)
           OUTPUT INSERTED.*
-          VALUES (@flash_sale_id, @san_pham_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @gioi_han_mua, @thu_tu, @trang_thai)
+          VALUES (@flash_sale_id, @san_pham_id, @inventory_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @gioi_han_mua, @thu_tu, @trang_thai)
         `);
       return result.recordset[0];
     } catch (error) {
@@ -1022,6 +1103,27 @@ class SQLFlashSaleItemModel {
       return result.recordset[0];
     } catch (error) {
       console.error('SQL Flash Sale Item Update Error:', error);
+      throw error;
+    }
+  }
+
+  static async increaseSold(id, quantity) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .input('quantity', sql.Int, quantity)
+        .query(`
+          UPDATE flash_sale_items
+          SET da_ban = da_ban + @quantity,
+              ngay_cap_nhat = GETDATE()
+          WHERE id = @id AND (so_luong_ton - da_ban) >= @quantity;
+          
+          SELECT * FROM flash_sale_items WHERE id = @id;
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Flash Sale Item increaseSold Error:', error);
       throw error;
     }
   }
@@ -1743,6 +1845,8 @@ class SQLInventoryModel {
           i.*,
           p.ten_san_pham,
           p.ma_sku,
+          p.gia_ban,
+          p.gia_niem_yet,
           w.ten_kho,
           w.dia_chi_chi_tiet as dia_chi_kho
         FROM inventory i
@@ -1801,6 +1905,51 @@ class SQLInventoryModel {
       return result.recordset;
     } catch (error) {
       console.error('SQL Inventory findByProduct Error:', error);
+      throw error;
+    }
+  }
+
+  static async getTotalStockByProduct(productId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('product_id', sql.UniqueIdentifier, productId)
+        .query(`
+          SELECT 
+            ISNULL(SUM(so_luong_kha_dung), 0) as tong_ton_kho
+          FROM inventory
+          WHERE san_pham_id = @product_id
+        `);
+      
+      return result.recordset[0]?.tong_ton_kho || 0;
+    } catch (error) {
+      console.error('SQL Inventory getTotalStockByProduct Error:', error);
+      throw error;
+    }
+  }
+
+  static async decreaseStock(inventoryId, quantity, options = {}) {
+    try {
+      const request = options.transaction ? new sql.Request(options.transaction) : new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, inventoryId)
+        .input('quantity', sql.Int, quantity)
+        .query(`
+          UPDATE inventory
+          SET so_luong_kha_dung = so_luong_kha_dung - @quantity,
+              ngay_cap_nhat = GETDATE()
+          WHERE id = @id AND so_luong_kha_dung >= @quantity;
+          
+          SELECT * FROM inventory WHERE id = @id;
+        `);
+      
+      if (!result.recordset[0]) {
+        throw new Error('Không đủ tồn kho');
+      }
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Inventory decreaseStock Error:', error);
       throw error;
     }
   }

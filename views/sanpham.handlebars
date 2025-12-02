@@ -8327,10 +8327,15 @@ class ProductVariantsManager {
             attributes: c.attributes
         }));
 
+        // Auto-clear variant_options if no combinations exist (when saving)
         const result = {
-            variant_options: variantOptions,
+            variant_options: variantCombinations.length > 0 ? variantOptions : [],
             variant_combinations: variantCombinations
         };
+        
+        if (variantCombinations.length === 0 && variantOptions.length > 0) {
+            console.log('🧹 Auto-clearing variant_options because no combinations exist (on save)');
+        }
 
         console.log('✅ Variants data to return:', JSON.stringify(result, null, 2));
         
@@ -8368,7 +8373,12 @@ class ProductVariantsManager {
         // Load variant combinations
         if (variantsData.variant_combinations && Array.isArray(variantsData.variant_combinations)) {
             console.log(`🔗 Loading ${variantsData.variant_combinations.length} variant combinations...`);
-            this.combinations = variantsData.variant_combinations.map((combo, index) => {
+            
+            // Filter out default variants (is_default: true)
+            const realVariants = variantsData.variant_combinations.filter(combo => !combo.is_default);
+            console.log(`🔗 After filtering default variants: ${realVariants.length} real variants`);
+            
+            this.combinations = realVariants.map((combo, index) => {
                 const mapped = {
                     id: 'comb_' + Date.now() + '_' + index,
                     sku: combo.sku || '',

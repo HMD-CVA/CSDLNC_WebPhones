@@ -1,5 +1,9 @@
 <div id="container">
   <div class="banner-container">
+    <!-- Cửa sổ trang trí -->
+    <div class="window-left"></div>
+    <div class="window-right"></div>
+    
     <div class="banner">
       <button class="banner-btn banner-prev" id="bannerPrev">
         <i class="fas fa-chevron-left"></i>
@@ -18,53 +22,1726 @@
   </div>
 
   <div id="wrapper">
-    <!-- FLASH SALE Section -->
-    <div class="sale_polular">
-      <h1>FLASH SALE</h1>
-
-      <div class="products">
-        {{#if flashSaleProducts}}
-          {{#each flashSaleProducts}}
-            {{> product}}
-          {{/each}}
-        {{else}}
-          <p class="no-data">Không có sản phẩm flash sale</p>
-        {{/if}}
+    <!-- FLASH SALE Section - Tab Switching for Multiple Events -->
+    {{#if flashSaleEvents}}
+    {{#if flashSaleEvents.length}}
+    <div class="flash-sale-wrapper">
+      <!-- Flash Sale Tabs -->
+      {{#if (gt flashSaleEvents.length 1)}}
+      <div class="flash-sale-tabs">
+        {{#each flashSaleEvents}}
+        <button class="flash-tab {{#if @first}}active{{/if}}" data-tab="flash-{{@index}}">
+          <i class="fas fa-bolt"></i>
+          <span class="tab-title">{{this.info.ten_flash_sale}}</span>
+          {{#if this.info.is_active}}
+          <span class="tab-status active-status">ĐANG DIỄN RA</span>
+          {{else}}
+          <span class="tab-status upcoming-status">SẮP DIỄN RA</span>
+          {{/if}}
+        </button>
+        {{/each}}
       </div>
-    </div> 
+      {{/if}}
+      
+      <!-- Flash Sale Content -->
+      {{#each flashSaleEvents}}
+      <div class="flash-sale-content {{#if @first}}active{{/if}}" id="flash-{{@index}}">
+        <div class="flash-sale-header">
+          <div class="flash-header-content">
+            <div class="flash-title-section">
+              <div class="flash-icon-wrapper">
+                <i class="fas fa-bolt flash-bolt-icon"></i>
+              </div>
+              <div class="flash-title-text">
+                <h1 class="flash-main-title">{{this.info.ten_flash_sale}}</h1>
+                <p class="flash-subtitle">Giảm giá sốc - Số lượng có hạn</p>
+              </div>
+            </div>
+            
+            <div class="flash-time-info">
+              <div class="flash-time-block">
+                <div class="time-label">
+                  <i class="far fa-clock"></i> Bắt đầu
+                </div>
+                <div class="time-value">
+                  <script>
+                    document.write(new Date('{{this.info.ngay_bat_dau}}').toLocaleString('vi-VN', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }));
+                  </script>
+                </div>
+              </div>
+              
+              <div class="flash-countdown-wrapper" data-end-time="{{this.info.ngay_ket_thuc}}">
+                <div class="countdown-label">KẾT THÚC SAU</div>
+                <div class="countdown-timer">
+                  <div class="timer-unit">
+                    <span class="timer-number countdown-days">00</span>
+                    <span class="timer-text">Ngày</span>
+                  </div>
+                  <span class="timer-separator">:</span>
+                  <div class="timer-unit">
+                    <span class="timer-number countdown-hours">00</span>
+                    <span class="timer-text">Giờ</span>
+                  </div>
+                  <span class="timer-separator">:</span>
+                  <div class="timer-unit">
+                    <span class="timer-number countdown-minutes">00</span>
+                    <span class="timer-text">Phút</span>
+                  </div>
+                  <span class="timer-separator">:</span>
+                  <div class="timer-unit">
+                    <span class="timer-number countdown-seconds">00</span>
+                    <span class="timer-text">Giây</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flash-time-block">
+                <div class="time-label">
+                  <i class="far fa-calendar-check"></i> Kết thúc
+                </div>
+                <div class="time-value">
+                  <script>
+                    document.write(new Date('{{this.info.ngay_ket_thuc}}').toLocaleString('vi-VN', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }));
+                  </script>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <!-- iPhone Section -->
-    <div class="ListContainer1">
-      <h1><img src="/image/apple_logo.png" style="width: 30px; height: 30px"> iPhone</h1>
+        <div class="flash-products-grid">
+          {{#each this.items}}
+          <div class="flash-product-card">
+            <!-- Flash Badge -->
+            <div class="flash-discount-badge">
+              <i class="fas fa-bolt"></i>
+              <span>-{{this.phan_tram_giam}}%</span>
+            </div>
+            
+            {{#if this.is_hot}}
+            <div class="flash-hot-badge">
+              <i class="fas fa-fire"></i> HOT
+            </div>
+            {{/if}}
 
-      <div class="products">
-        {{#if iphoneProducts}}
-          {{#each iphoneProducts}}
+            <a href="/product/{{this.id}}" class="flash-product-link">
+              <!-- Hình ảnh -->
+              <div class="flash-product-image">
+                <img src="{{this.link_anh}}" alt="{{this.ten_variant}}" loading="lazy">
+                <div class="flash-image-overlay">
+                  <i class="fas fa-bolt"></i>
+                </div>
+              </div>
+
+              <!-- Tên sản phẩm -->
+              <h3 class="flash-product-name">{{this.ten_variant}}</h3>
+
+              <!-- Giá -->
+              <div class="flash-price-wrapper">
+                <div class="flash-current-price">{{this.gia_ban_formatted}}</div>
+                <div class="flash-original-price">{{this.gia_goc_formatted}}</div>
+              </div>
+
+              <!-- Thanh tiến trình bán -->
+              <div class="flash-progress-section">
+                <div class="flash-progress-bar">
+                  <div class="flash-progress-fill" style="width: {{this.da_ban_percent}}%"></div>
+                </div>
+                <div class="flash-stock-info">
+                  {{#if this.is_low_stock}}
+                  <span class="flash-stock-text low-stock">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Chỉ còn {{this.con_lai}}
+                  </span>
+                  {{else}}
+                  <span class="flash-stock-text">
+                    <i class="fas fa-fire-alt"></i>
+                    Đã bán {{this.da_ban}}
+                  </span>
+                  {{/if}}
+                  <span class="flash-percent">{{this.da_ban_percent}}%</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- Nút hành động -->
+            <div class="flash-actions">
+              <button class="flash-btn-cart" data-product-id="{{this.id}}" title="Thêm vào giỏ">
+                <i class="fas fa-shopping-cart"></i>
+              </button>
+              <a href="/product/{{this.id}}" class="flash-btn-buy">
+                <i class="fas fa-bolt"></i>
+                MUA NGAY
+              </a>
+            </div>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+    {{/if}} 
+
+    <!-- Brand Sections - Dynamic from Database -->
+    {{#each brandSections}}
+    <div class="brand-section" data-aos="fade-up" data-aos-duration="800">
+      <!-- Brand Header -->
+      <div class="brand-header">
+        <div class="brand-header-left">
+          <!-- Brand Icon/Logo -->
+          <div class="brand-icon-wrapper" style="background: linear-gradient(135deg, {{#if this.primary_color}}{{this.primary_color}}{{else}}#667eea{{/if}} 0%, {{#if this.secondary_color}}{{this.secondary_color}}{{else}}#764ba2{{/if}} 100%);">
+            {{#if this.logo_url}}
+              <img src="{{this.logo_url}}" alt="{{this.ten_thuong_hieu}}" class="brand-logo">
+            {{else}}
+              <i class="fas fa-mobile-alt"></i>
+            {{/if}}
+          </div>
+          
+          <!-- Brand Title & Subtitle -->
+          <div class="brand-title-wrapper">
+            <h2 class="brand-title">{{this.ten_thuong_hieu}}</h2>
+            <p class="brand-subtitle">{{#if this.mo_ta}}{{this.mo_ta}}{{else}}Khám phá sản phẩm chất lượng{{/if}}</p>
+          </div>
+        </div>
+        
+        <div class="brand-header-right">
+          <a href="/brand/{{this.slug}}" class="btn-view-all">
+            Xem tất cả <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Products Grid -->
+      <div class="brand-products-grid">
+        {{#if this.products}}
+          {{#each this.products}}
             {{> product}}
           {{/each}}
         {{else}}
-          <p class="no-data">Không có sản phẩm iPhone</p>
+          <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <p>Chưa có sản phẩm {{../this.ten_thuong_hieu}}</p>
+          </div>
         {{/if}}
       </div>
     </div>
+    {{/each}}
 
     <!-- All Products Section -->
-    <div class="ListContainer1">
-      <h1>TẤT CẢ SẢN PHẨM</h1>
-
-      <div class="products" id="productGrid">
+    <div class="brand-section all-products-section" data-aos="fade-up" data-aos-duration="800">
+      <div class="brand-header">
+        <div class="brand-header-left">
+          <div class="brand-icon-wrapper all-brand">
+            <i class="fas fa-th"></i>
+          </div>
+          
+          <div class="brand-title-wrapper">
+            <h2 class="brand-title">TẤT CẢ SẢN PHẨM</h2>
+            <p class="brand-subtitle">Khám phá toàn bộ sản phẩm</p>
+          </div>
+        </div>
+        
+        <div class="brand-header-right">
+          <a href="/products" class="btn-view-all">
+            Xem tất cả <i class="fas fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="brand-products-grid">
         {{#if sanphams}}
           {{#each sanphams}}
             {{> product}}
           {{/each}}
         {{else}}
-          <p class="no-data">Không có sản phẩm nào</p>
+          <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <p>Không có sản phẩm nào</p>
+          </div>
         {{/if}}
       </div>
     </div>
 
   </div>
 </div>
+
+<!-- CSS cho Flash Sale Section -->
+<style>
+/* ========================================
+   FLASH SALE PREMIUM DESIGN
+   ======================================== */
+
+.flash-sale-wrapper {
+  background: linear-gradient(135deg, #FF3366 0%, #FF6B35 50%, #F7931E 100%);
+  padding: 0;
+  margin: 30px 0 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(255, 51, 102, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+
+.flash-sale-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path></svg>') top center no-repeat;
+  background-size: cover;
+  opacity: 0.5;
+}
+
+/* Flash Sale Tabs */
+.flash-sale-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 20px 20px 0;
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.95), rgba(255, 107, 53, 0.95));
+  position: relative;
+  z-index: 3;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #FFD700 rgba(255, 255, 255, 0.3);
+}
+
+.flash-sale-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+.flash-sale-tabs::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.flash-sale-tabs::-webkit-scrollbar-thumb {
+  background: #FFD700;
+  border-radius: 10px;
+}
+
+.flash-tab {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+}
+
+.flash-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.flash-tab:hover::before {
+  left: 100%;
+}
+
+.flash-tab i {
+  font-size: 16px;
+  animation: bolt-wiggle 2s infinite;
+}
+
+.flash-tab .tab-title {
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+
+.flash-tab .tab-status {
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-left: 5px;
+}
+
+.flash-tab .active-status {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+  animation: pulse-status 2s infinite;
+}
+
+.flash-tab .upcoming-status {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4);
+}
+
+@keyframes pulse-status {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.flash-tab:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.flash-tab.active {
+  background: linear-gradient(135deg, #fff, #FFD700);
+  color: #d70018;
+  border-color: #FFD700;
+  box-shadow: 
+    0 0 25px rgba(255, 215, 0, 0.8),
+    0 6px 20px rgba(0, 0, 0, 0.4);
+  transform: translateY(-3px);
+}
+
+.flash-tab.active i {
+  color: #FF3366;
+}
+
+.flash-tab.active .active-status {
+  color: #fff;
+}
+
+.flash-tab.active .upcoming-status {
+  color: #fff;
+}
+
+/* Flash Sale Content */
+.flash-sale-content {
+  display: none;
+}
+
+.flash-sale-content.active {
+  display: block;
+}
+
+/* Flash Sale Header */
+.flash-sale-header {
+  position: relative;
+  z-index: 2;
+  padding: 30px;
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.95), rgba(255, 107, 53, 0.95));
+  backdrop-filter: blur(15px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: none;
+  box-shadow: 
+    inset 0 0 60px rgba(255, 215, 0, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.flash-sale-header::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  height: 6px;
+  background: linear-gradient(90deg, 
+    #FFD700 0%, 
+    #FFA500 15%, 
+    #FF6B35 30%, 
+    #FF3366 45%, 
+    #FF6B35 60%, 
+    #FFA500 85%, 
+    #FFD700 100%);
+  background-size: 200% 100%;
+  animation: border-flow 3s linear infinite;
+  border-radius: 0;
+  z-index: 1;
+}
+
+@keyframes border-flow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+.flash-sale-header::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: -3px;
+  right: -3px;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.5), 
+    rgba(255, 215, 0, 0.8), 
+    rgba(255, 255, 255, 0.5));
+  z-index: 1;
+}
+
+.flash-header-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+  position: relative;
+  z-index: 2;
+  padding: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    inset 0 2px 20px rgba(255, 255, 255, 0.2),
+    0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Title Section */
+.flash-title-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+  width: 100%;
+}
+
+.flash-icon-wrapper {
+  width: 90px;
+  height: 90px;
+  background: linear-gradient(135deg, #fff, #FFD700);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 215, 0, 0.6);
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.6),
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    inset 0 2px 10px rgba(255, 255, 255, 0.5);
+  animation: pulse-icon 2s infinite;
+  position: relative;
+}
+
+.flash-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: linear-gradient(45deg, #FFD700, #FF6B35, #FFD700) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: spin-border 3s linear infinite;
+}
+
+@keyframes spin-border {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-icon {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+  50% { 
+    transform: scale(1.08);
+    box-shadow: 0 12px 35px rgba(255, 215, 0, 0.4);
+  }
+}
+
+.flash-bolt-icon {
+  font-size: 48px;
+  background: linear-gradient(135deg, #FF3366, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: bolt-glow 1.5s infinite;
+}
+
+@keyframes bolt-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+.flash-title-text {
+  color: white;
+}
+
+.flash-main-title {
+  font-size: 48px;
+  font-weight: 900;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 
+    2px 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(255, 215, 0, 0.5);
+  background: linear-gradient(to right, #fff, #FFD700, #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% auto;
+  animation: shine-text 3s linear infinite;
+}
+
+@keyframes shine-text {
+  to { background-position: 200% center; }
+}
+
+.flash-subtitle {
+  margin: 5px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0.95;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Time Information */
+.flash-time-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.flash-time-block {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  min-width: 140px;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.2),
+    inset 0 2px 10px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 1;
+}
+
+.flash-time-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  to { left: 100%; }
+}
+
+.time-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time-label i {
+  margin-right: 4px;
+  font-size: 10px;
+}
+
+.time-value {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  text-shadow: 
+    1px 1px 3px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Countdown Timer */
+.flash-countdown-wrapper {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 107, 53, 0.3));
+  backdrop-filter: blur(15px);
+  padding: 25px 30px;
+  border-radius: 20px;
+  border: 3px solid rgba(255, 215, 0, 0.7);
+  box-shadow: 
+    0 0 40px rgba(255, 215, 0, 0.6),
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    inset 0 2px 20px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.flash-countdown-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  background: linear-gradient(45deg, #FFD700, #FF6B35, #FF3366, #FF6B35, #FFD700);
+  background-size: 300% 300%;
+  border-radius: 17px;
+  z-index: -1;
+  animation: gradient-shift 3s ease infinite;
+  filter: blur(10px);
+  opacity: 0.8;
+}
+
+.flash-countdown-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shine-sweep 3s infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes shine-sweep {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.countdown-label {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 18px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 215, 0, 0.6);
+  position: relative;
+  z-index: 1;
+}
+
+.countdown-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.timer-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.timer-unit::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: 25px;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 51, 102, 0.2));
+  border-radius: 14px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.timer-unit:hover::before {
+  opacity: 1;
+}
+
+.timer-number {
+  background: linear-gradient(135deg, #fff 0%, #FFD700 100%);
+  color: #d70018;
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-size: 38px;
+  font-weight: 900;
+  min-width: 75px;
+  text-align: center;
+  border: 3px solid rgba(255, 51, 102, 0.4);
+  box-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.7),
+    0 6px 18px rgba(0, 0, 0, 0.4),
+    inset 0 3px 8px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 6px rgba(255, 51, 102, 0.2);
+  font-family: 'Arial Black', 'Arial', sans-serif;
+  text-shadow: 
+    0 2px 4px rgba(215, 0, 24, 0.3),
+    0 0 10px rgba(255, 215, 0, 0.4);
+  position: relative;
+  transition: all 0.3s ease;
+  animation: number-pulse 2s ease-in-out infinite;
+}
+
+@keyframes number-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 
+      0 0 20px rgba(255, 215, 0, 0.7),
+      0 6px 18px rgba(0, 0, 0, 0.4),
+      inset 0 3px 8px rgba(255, 255, 255, 0.9);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 
+      0 0 30px rgba(255, 215, 0, 0.9),
+      0 8px 22px rgba(0, 0, 0, 0.5),
+      inset 0 3px 8px rgba(255, 255, 255, 1);
+  }
+}
+
+.timer-unit:hover .timer-number {
+  transform: scale(1.08) rotate(-2deg);
+  box-shadow: 
+    0 0 35px rgba(255, 215, 0, 1),
+    0 10px 25px rgba(0, 0, 0, 0.5),
+    inset 0 3px 8px rgba(255, 255, 255, 1);
+}
+
+.timer-text {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-shadow: 
+    1px 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 10px rgba(255, 215, 0, 0.5);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(5px);
+}
+
+.timer-separator {
+  color: #FFD700;
+  font-size: 42px;
+  font-weight: 900;
+  text-shadow: 
+    3px 3px 6px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 107, 53, 0.5);
+  animation: blink 1.2s ease-in-out infinite;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+@keyframes blink {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+}
+
+/* Flash Products Grid */
+.flash-products-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(234px, 1fr));
+  gap: 20px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.98);
+  justify-items: center;
+}
+
+/* Flash Product Card - Dựa trên CellphoneS Design */
+.flash-product-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px solid #FF3366;
+  display: flex;
+  flex-direction: column;
+  width: 234px;
+  height: 380px;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(255, 51, 102, 0.15);
+}
+
+.flash-product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(255, 51, 102, 0.3);
+  border-color: #FF6B35;
+}
+
+.flash-product-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FF3366, #FF6B35, #F7931E);
+  z-index: 3;
+}
+
+.flash-product-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Flash Badges */
+.flash-discount-badge {
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  background: linear-gradient(135deg, #FF3366, #FF6B35);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.4);
+  animation: flash-pulse 2s infinite;
+}
+
+@keyframes flash-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(255, 51, 102, 0.4);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(255, 51, 102, 0.6);
+  }
+}
+
+.flash-discount-badge i {
+  font-size: 13px;
+  animation: bolt-wiggle 1s infinite;
+}
+
+@keyframes bolt-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.flash-hot-badge {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  background: linear-gradient(135deg, #FF6B00, #FF0033);
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(255, 0, 51, 0.4);
+  animation: hot-glow 1.5s infinite;
+}
+
+@keyframes hot-glow {
+  0%, 100% { 
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% { 
+    transform: scale(1.08);
+    filter: brightness(1.2);
+  }
+}
+
+/* Flash Image */
+.flash-product-image {
+  position: relative;
+  height: 180px;
+  background: linear-gradient(135deg, #fff5f7, #fff);
+  overflow: hidden;
+}
+
+.flash-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  transition: transform 0.3s ease;
+}
+
+.flash-product-card:hover .flash-product-image img {
+  transform: scale(1.1);
+}
+
+.flash-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 51, 102, 0.95), rgba(255, 107, 53, 0.95));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.flash-product-card:hover .flash-image-overlay {
+  opacity: 1;
+}
+
+.flash-image-overlay i {
+  color: #fff;
+  font-size: 36px;
+  animation: bolt-spin 1s ease-in-out;
+}
+
+@keyframes bolt-spin {
+  from { transform: rotate(0deg) scale(0.5); opacity: 0; }
+  to { transform: rotate(360deg) scale(1); opacity: 1; }
+}
+
+/* Flash Product Name */
+.flash-product-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin: 10px 10px 8px;
+  line-height: 1.3;
+  height: 2.6em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.flash-product-card:hover .flash-product-name {
+  color: #FF3366;
+}
+
+/* Flash Price */
+.flash-price-wrapper {
+  margin: 0 10px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flash-current-price {
+  font-size: 16px;
+  font-weight: 800;
+  color: #FF3366;
+  text-shadow: 0 1px 2px rgba(255, 51, 102, 0.2);
+}
+
+.flash-original-price {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+/* Flash Progress Section */
+.flash-progress-section {
+  margin: 0 10px 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.flash-progress-bar {
+  height: 18px;
+  background: linear-gradient(to right, #f5f5f5, #e8e8e8);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.flash-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFD700, #FF6B35, #FF3366);
+  border-radius: 20px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.flash-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: progress-shimmer 2s infinite;
+}
+
+@keyframes progress-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.flash-stock-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.flash-stock-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+  font-weight: 600;
+  padding: 3px 8px;
+  background: #f5f5f5;
+  border-radius: 12px;
+}
+
+.flash-stock-text i {
+  font-size: 10px;
+  color: #FF6B35;
+}
+
+.flash-stock-text.low-stock {
+  background: linear-gradient(135deg, #FF3366, #FF0033);
+  color: #fff;
+  font-weight: 700;
+  animation: warning-blink 1.5s infinite;
+}
+
+.flash-stock-text.low-stock i {
+  color: #fff;
+  animation: warning-shake 0.5s infinite;
+}
+
+@keyframes warning-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes warning-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.flash-percent {
+  color: #FF3366;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* Flash Actions - Giống CPS Style */
+.flash-actions {
+  margin-top: auto;
+  padding: 0 10px 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.flash-btn-cart {
+  width: 40px;
+  height: 38px;
+  border: 2px solid #FF3366;
+  background: #fff;
+  border-radius: 8px;
+  color: #FF3366;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.flash-btn-cart:hover {
+  background: #FF3366;
+  color: #fff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);
+}
+
+.flash-btn-cart:active {
+  transform: scale(0.95);
+}
+
+.flash-btn-buy {
+  flex: 1;
+  height: 38px;
+  border: none;
+  background: linear-gradient(135deg, #FF3366, #FF6B35);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.3);
+}
+
+.flash-btn-buy:hover {
+  background: linear-gradient(135deg, #e91e63, #f44336);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(255, 51, 102, 0.4);
+}
+
+.flash-btn-buy:active {
+  transform: translateY(0);
+}
+
+.flash-btn-buy i {
+  font-size: 13px;
+  animation: bolt-beat 1s infinite;
+}
+
+@keyframes bolt-beat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .flash-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    padding: 25px;
+  }
+}
+
+@media (max-width: 992px) {
+  .flash-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .flash-time-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .flash-products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .flash-sale-header {
+    padding: 20px 15px;
+  }
+  
+  .flash-main-title {
+    font-size: 24px;
+  }
+  
+  .flash-icon-wrapper {
+    width: 55px;
+    height: 55px;
+  }
+  
+  .flash-bolt-icon {
+    font-size: 28px;
+  }
+  
+  .flash-time-info {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+  
+  .flash-time-block {
+    width: 100%;
+  }
+  
+  .flash-countdown-wrapper {
+    width: 100%;
+    padding: 12px 15px;
+  }
+  
+  .timer-number {
+    padding: 6px 10px;
+    font-size: 20px;
+    min-width: 45px;
+  }
+  
+  .flash-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 15px;
+  }
+  
+  .flash-image {
+    height: 180px;
+  }
+  
+  .flash-product-name {
+    font-size: 14px;
+  }
+  
+  .flash-sale-price {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .flash-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+  
+  .flash-image {
+    height: 150px;
+  }
+  
+  .flash-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .flash-cart-btn,
+  .flash-buy-btn {
+    font-size: 12px;
+    padding: 10px 6px;
+  }
+}
+
+/* ========================================
+   BRAND SECTIONS STYLING
+   ======================================== */
+
+.brand-section {
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px 30px;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e8e8e8;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.brand-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  transition: left 0.6s ease;
+}
+
+.brand-section:hover::before {
+  left: 100%;
+}
+
+.brand-section:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+}
+
+/* Brand Header */
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 35px;
+  padding-bottom: 25px;
+  border-bottom: 2px solid #f0f0f0;
+  position: relative;
+}
+
+.brand-header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 80px;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.4s ease;
+}
+
+.brand-section:hover .brand-header::after {
+  width: 200px;
+}
+
+.brand-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.brand-icon-wrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-icon-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.brand-section:hover .brand-icon-wrapper::before {
+  width: 200%;
+  height: 200%;
+}
+
+.brand-section:hover .brand-icon-wrapper {
+  transform: rotate(360deg) scale(1.1);
+}
+
+.brand-icon-wrapper.all-brand {
+  background: linear-gradient(135deg, #11998e, #38ef7d);
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+}
+
+.brand-icon-wrapper i {
+  position: relative;
+  z-index: 2;
+}
+
+.brand-title-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.brand-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.brand-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  font-weight: 500;
+}
+
+.brand-header-right {
+  flex-shrink: 0;
+}
+
+.btn-view-all {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-view-all::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-view-all:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-view-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn-view-all i {
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-view-all:hover i {
+  transform: translateX(5px);
+}
+
+/* Brand Products Grid - SỬ DỤNG GRID GIỐNG .products */
+.brand-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 234px);
+  gap: 15px;
+  padding: 20px 0;
+  justify-content: center;
+}
+
+/* Empty State */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 20px;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  border-radius: 15px;
+}
+
+.empty-state i {
+  font-size: 80px;
+  color: #999;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 18px;
+  color: #666;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* All Products Section */
+.all-products-section {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.all-products-section .brand-header::after {
+  background: linear-gradient(90deg, #11998e, #38ef7d);
+}
+
+/* Responsive Brand Sections */
+@media (max-width: 1200px) {
+  .brand-section {
+    padding: 30px 25px;
+  }
+  
+  .brand-title {
+    font-size: 24px;
+  }
+  
+  .brand-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    font-size: 28px;
+  }
+  
+  .brand-logo {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .brand-products-grid {
+    grid-template-columns: repeat(auto-fill, 220px);
+    gap: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .brand-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .brand-header-right {
+    width: 100%;
+  }
+  
+  .btn-view-all {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .brand-products-grid {
+    grid-template-columns: repeat(auto-fill, 200px);
+    gap: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .brand-section {
+    padding: 25px 20px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .brand-header {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+  }
+  
+  .brand-header-left {
+    gap: 15px;
+  }
+  
+  .brand-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+  
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .brand-title {
+    font-size: 20px;
+  }
+  
+  .brand-subtitle {
+    font-size: 12px;
+  }
+  
+  .brand-products-grid {
+    grid-template-columns: repeat(auto-fill, 180px);
+    gap: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .brand-section {
+    padding: 20px 15px;
+  }
+  
+  .brand-header-left {
+    gap: 12px;
+  }
+  
+  .brand-icon-wrapper {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+  
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .brand-title {
+    font-size: 18px;
+  }
+  
+  .btn-view-all {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+  
+  .brand-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+  }
+}
+</style>
 
 <!-- Modal xem nhanh sản phẩm -->
 <div class="product-quickview-modal" id="quickviewModal">
@@ -99,6 +1776,90 @@
 <script>
   // JavaScript cho chức năng banner và sản phẩm
   document.addEventListener('DOMContentLoaded', function () {
+    // Flash Sale Tab Switching
+    const flashTabs = document.querySelectorAll('.flash-tab');
+    const flashContents = document.querySelectorAll('.flash-sale-content');
+    
+    flashTabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        // Remove active class from all tabs and contents
+        flashTabs.forEach(t => t.classList.remove('active'));
+        flashContents.forEach(c => c.classList.remove('active'));
+        
+        // Add active class to clicked tab
+        this.classList.add('active');
+        
+        // Show corresponding content
+        const tabId = this.getAttribute('data-tab');
+        const content = document.getElementById(tabId);
+        if (content) {
+          content.classList.add('active');
+        }
+      });
+    });
+    
+    // Flash Sale Countdown Timers - Multiple Events
+    const countdownWrappers = document.querySelectorAll('.flash-countdown-wrapper');
+    
+    countdownWrappers.forEach(wrapper => {
+      const endTime = new Date(wrapper.getAttribute('data-end-time')).getTime();
+      const daysEl = wrapper.querySelector('.countdown-days');
+      const hoursEl = wrapper.querySelector('.countdown-hours');
+      const minutesEl = wrapper.querySelector('.countdown-minutes');
+      const secondsEl = wrapper.querySelector('.countdown-seconds');
+      
+      function updateTimer() {
+        const now = new Date().getTime();
+        const distance = endTime - now;
+        
+        if (distance < 0) {
+          wrapper.innerHTML = '<div class="countdown-label" style="padding: 15px; font-size: 16px;">⏰ ĐÃ KẾT THÚC</div>';
+          return;
+        }
+        
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+        if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+        if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+      }
+      
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    });
+
+    // Flash Sale Cart Buttons
+    const flashCartBtns = document.querySelectorAll('.flash-btn-cart');
+    flashCartBtns.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const productId = this.getAttribute('data-product-id');
+        console.log('⚡ Flash Sale - Thêm vào giỏ:', productId);
+        
+        // Animation giống CPS style
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-check"></i>';
+        this.style.background = '#28a745';
+        this.style.borderColor = '#28a745';
+        this.style.color = '#fff';
+        
+        setTimeout(() => {
+          this.innerHTML = originalHTML;
+          this.style.background = '';
+          this.style.borderColor = '';
+          this.style.color = '';
+        }, 1500);
+        
+        // TODO: Gọi API thêm vào giỏ hàng
+      });
+    });
+
     // Banner Slider Logic
     const bannerTrack = document.getElementById('bannerTrack');
     const bannerPrev = document.getElementById('bannerPrev');

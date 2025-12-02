@@ -69,20 +69,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Location Selection
     const locationSelect = document.getElementById('locationSelect');
     if (locationSelect) {
-        locationSelect.addEventListener('change', async function() {
-            const selectedLocation = this.value;
-            const locationName = this.options[this.selectedIndex].text;
-            console.log('📍 Location changed to:', locationName);
-            
-            if (!selectedLocation) {
-                // Nếu chọn "Chọn vùng miền" thì load tất cả sản phẩm
-                location.reload();
-                return;
-            }
+        // Hàm lọc sản phẩm theo vùng miền
+        async function filterProductsByRegion(regionId) {
+            const locationName = locationSelect.options[locationSelect.selectedIndex]?.text || '';
             
             try {
                 // Gọi API lấy sản phẩm theo vùng miền
-                const response = await fetch(`/api/products/by-region/${selectedLocation}`);
+                const response = await fetch(`/api/products/by-region/${regionId}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -112,6 +105,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'Lỗi khi lọc sản phẩm'
                 });
             }
+        }
+        
+        // Khôi phục vùng đã chọn từ localStorage khi load trang
+        const savedRegion = localStorage.getItem('selectedRegion');
+        if (savedRegion && savedRegion !== 'null' && savedRegion !== '') {
+            locationSelect.value = savedRegion;
+            console.log('📍 Restored region from localStorage:', savedRegion);
+            
+            // Tự động lọc sản phẩm theo vùng đã lưu (chỉ trên trang home)
+            const productGrid = document.getElementById('productGrid');
+            if (productGrid) {
+                console.log('🔄 Auto-filtering products by saved region...');
+                filterProductsByRegion(savedRegion);
+            }
+        }
+        
+        locationSelect.addEventListener('change', async function() {
+            const selectedLocation = this.value;
+            const locationName = this.options[this.selectedIndex].text;
+            console.log('📍 Location changed to:', locationName);
+            
+            // Lưu vùng đã chọn vào localStorage
+            if (selectedLocation) {
+                localStorage.setItem('selectedRegion', selectedLocation);
+            } else {
+                localStorage.removeItem('selectedRegion');
+            }
+            
+            if (!selectedLocation) {
+                // Nếu chọn "Chọn vùng miền" thì load tất cả sản phẩm
+                location.reload();
+                return;
+            }
+            
+            filterProductsByRegion(selectedLocation);
         });
     }
     
@@ -148,18 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${isDiscount ? `
                         <div class="cps-discount-badge">
                             Giảm ${product.phan_tram_giam}%
-                        </div>
-                        ` : ''}
-                        
-                        ${!product.trang_thai ? `
-                        <div class="cps-status-badge out-of-stock">
-                            Hết hàng
-                        </div>
-                        ` : ''}
-                        
-                        ${product.tong_ton_kho ? `
-                        <div class="cps-status-badge" style="top: auto; bottom: 8px; left: 8px; right: auto; background: rgba(0,0,0,0.7); font-size: 10px;">
-                            📦 ${product.tong_ton_kho}
                         </div>
                         ` : ''}
                     </div>

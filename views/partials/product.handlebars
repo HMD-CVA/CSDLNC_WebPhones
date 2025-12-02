@@ -11,13 +11,6 @@
                 Giảm {{this.phan_tram_giam}}%
             </div>
             {{/if}}
-            
-            <!-- Nhãn trạng thái -->
-            {{#unless this.trang_thai}}
-            <div class="cps-status-badge out-of-stock">
-                Hết hàng
-            </div>
-            {{/unless}}
         </div>
 
         <!-- Tên sản phẩm -->
@@ -149,23 +142,6 @@
         font-weight: 700;
         z-index: 2;
         box-shadow: 0 2px 8px rgba(215, 0, 24, 0.3);
-    }
-
-    .cps-status-badge {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: #666;
-        color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        z-index: 2;
-    }
-
-    .cps-status-badge.out-of-stock {
-        background: #888;
     }
 
     /* Tên sản phẩm */
