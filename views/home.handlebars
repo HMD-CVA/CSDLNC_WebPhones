@@ -2229,33 +2229,73 @@
       }
     });
 
-    // Flash Sale Cart Buttons
-    const flashCartBtns = document.querySelectorAll('.flash-btn-cart');
-    flashCartBtns.forEach(btn => {
-      btn.addEventListener('click', function(e) {
+    // Flash Sale Cart Buttons - Sử dụng event delegation
+    // Đảm bảo chỉ đăng ký 1 lần
+    if (!window.flashCartHandlerRegistered) {
+      window.flashCartHandlerRegistered = true;
+      
+      document.addEventListener('click', async function(e) {
+        const btn = e.target.closest('.flash-btn-cart');
+        if (!btn) return;
+        
         e.preventDefault();
         e.stopPropagation();
         
-        const productId = this.getAttribute('data-product-id');
+        const productId = btn.getAttribute('data-product-id');
         console.log('⚡ Flash Sale - Thêm vào giỏ:', productId);
         
-        // Animation giống CPS style
-        const originalHTML = this.innerHTML;
-        this.innerHTML = '<i class="fas fa-check"></i>';
-        this.style.background = '#28a745';
-        this.style.borderColor = '#28a745';
-        this.style.color = '#fff';
+        // Kiểm tra đăng nhập
+        const userId = AuthHelper.getUserId();
+        if (!userId) {
+          alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+          window.location.href = '/login';
+          return;
+        }
         
-        setTimeout(() => {
-          this.innerHTML = originalHTML;
-          this.style.background = '';
-          this.style.borderColor = '';
-          this.style.color = '';
-        }, 1500);
-        
-        // TODO: Gọi API thêm vào giỏ hàng
+        try {
+          // Gọi API thêm vào giỏ
+          const response = await fetch('/api/cart', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              san_pham_id: productId,
+              so_luong: 1,
+              userId: userId
+            })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            // Animation thành công
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.style.background = '#28a745';
+            btn.style.borderColor = '#28a745';
+            btn.style.color = '#fff';
+            
+            // Cập nhật badge giỏ hàng
+            if (typeof CartManager !== 'undefined' && CartManager.updateCartBadge) {
+              CartManager.updateCartBadge();
+            }
+            
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+              btn.style.background = '';
+              btn.style.borderColor = '';
+              btn.style.color = '';
+            }, 1500);
+          } else {
+            alert(result.message || 'Không thể thêm vào giỏ hàng');
+          }
+        } catch (error) {
+          console.error('Lỗi thêm vào giỏ:', error);
+          alert('Đã xảy ra lỗi khi thêm vào giỏ hàng');
+        }
       });
-    });
+    }
 
     // Banner Slider Logic
     const bannerTrack = document.getElementById('bannerTrack');

@@ -747,17 +747,424 @@ app.get('/admin', (req, res) => {
 });
 
 // Trang giỏ hàng
-app.get('/cart', (req, res) => {
+app.get('/cart', async (req, res) => {
     try {
-        // Lấy giỏ hàng từ localStorage sẽ được xử lý ở client-side
         res.render('cart', { 
-            layout: 'HomeMain.handlebars',
-            cartItems: null, // Sẽ load từ localStorage
-            cartCount: 0
+            layout: 'HomeMain.handlebars'
         });
     } catch (err) {
         console.error('Error loading cart page:', err);
         res.status(500).send('Lỗi server!');
+    }
+});
+
+// ========== CART API ==========
+
+// GET /api/cart - Lấy giỏ hàng của user hiện tại
+app.get('/api/cart', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Vui lòng đăng nhập để xem giỏ hàng'
+            });
+        }
+        
+        // Lấy thông tin user
+        const userRequest = new sql.Request();
+        const userResult = await userRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT id, vung_id FROM users WHERE id = @userId');
+        
+        if (!userResult.recordset || userResult.recordset.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: 'Phiên đăng nhập không hợp lệ'
+            });
+        }
+        
+        const vungId = userResult.recordset[0].vung_id;
+        
+        // Tìm hoặc tạo giỏ hàng
+        let cartRequest = new sql.Request();
+        let cartResult = await cartRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId');
+        
+        let cartId;
+        if (!cartResult.recordset || cartResult.recordset.length === 0) {
+            // Tạo giỏ hàng mới
+            const createCartRequest = new sql.Request();
+            const newCart = await createCartRequest
+                .input('userId', sql.UniqueIdentifier, userId)
+                .input('vungId', sql.NVarChar, vungId)
+                .query(`
+                    INSERT INTO carts (nguoi_dung_id, vung_id)
+                    OUTPUT INSERTED.id
+                    VALUES (@userId, @vungId)
+                `);
+            cartId = newCart.recordset[0].id;
+        } else {
+            cartId = cartResult.recordset[0].id;
+        }
+        
+        // Lấy các sản phẩm trong giỏ hàng
+        const itemsRequest = new sql.Request();
+        const itemsResult = await itemsRequest
+            .input('cartId', sql.UniqueIdentifier, cartId)
+            .query(`
+                SELECT 
+                    ci.id,
+                    ci.gio_hang_id,
+                    ci.san_pham_id,
+                    ci.so_luong,
+                    ci.ngay_them,
+                    p.ten_san_pham,
+                    p.ma_sku,
+                    p.link_anh,
+                    p.gia_niem_yet,
+                    p.gia_ban,
+                    ISNULL(inv.so_luong_kha_dung, 0) as ton_kho,
+                    b.ten_thuong_hieu,
+                    c.ten_danh_muc,
+                    CAST(CASE 
+                        WHEN p.gia_ban < p.gia_niem_yet THEN 1 
+                        ELSE 0 
+                    END AS BIT) as is_discount,
+                    CAST(CASE 
+                        WHEN p.gia_ban < p.gia_niem_yet 
+                        THEN ((p.gia_niem_yet - p.gia_ban) * 100.0 / p.gia_niem_yet)
+                        ELSE 0 
+                    END AS INT) as phan_tram_giam
+                FROM cart_items ci
+                INNER JOIN products p ON ci.san_pham_id = p.id
+                LEFT JOIN brands b ON p.thuong_hieu_id = b.id
+                LEFT JOIN categories c ON p.danh_muc_id = c.id
+                LEFT JOIN (
+                    SELECT san_pham_id, SUM(so_luong_kha_dung) as so_luong_kha_dung
+                    FROM inventory
+                    GROUP BY san_pham_id
+                ) inv ON p.id = inv.san_pham_id
+                WHERE ci.gio_hang_id = @cartId
+                ORDER BY ci.ngay_them DESC
+            `);
+        
+        // Format giá tiền
+        const cartItems = itemsResult.recordset.map(item => ({
+            ...item,
+            gia_ban_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_ban),
+            gia_niem_yet_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_niem_yet),
+            thanh_tien_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_ban * item.so_luong)
+        }));
+        
+        res.json({
+            success: true,
+            data: {
+                cartId: cartId,
+                items: cartItems,
+                count: cartItems.length
+            }
+        });
+        
+    } catch (error) {
+        console.error('Get cart error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy giỏ hàng: ' + error.message
+        });
+    }
+});
+
+// POST /api/cart - Thêm sản phẩm vào giỏ hàng
+app.post('/api/cart', async (req, res) => {
+    try {
+        const { san_pham_id, so_luong, userId } = req.body;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Vui lòng đăng nhập để thêm vào giỏ hàng'
+            });
+        }
+        
+        // Lấy thông tin user
+        const userRequest = new sql.Request();
+        const userResult = await userRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT id, vung_id FROM users WHERE id = @userId');
+        
+        if (!userResult.recordset || userResult.recordset.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: 'Phiên đăng nhập không hợp lệ'
+            });
+        }
+        
+        const vungId = userResult.recordset[0].vung_id;
+        
+        // Kiểm tra sản phẩm tồn tại và còn hàng
+        const productRequest = new sql.Request();
+        const productResult = await productRequest
+            .input('productId', sql.UniqueIdentifier, san_pham_id)
+            .query(`
+                SELECT 
+                    p.id, 
+                    p.ten_san_pham,
+                    ISNULL(SUM(inv.so_luong_kha_dung), 0) as so_luong_ton
+                FROM products p
+                LEFT JOIN inventory inv ON p.id = inv.san_pham_id
+                WHERE p.id = @productId AND p.trang_thai = 1
+                GROUP BY p.id, p.ten_san_pham
+            `);
+        
+        if (!productResult.recordset || productResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Sản phẩm không tồn tại hoặc đã ngừng bán'
+            });
+        }
+        
+        const product = productResult.recordset[0];
+        if (product.so_luong_ton < so_luong) {
+            return res.status(400).json({
+                success: false,
+                message: `Chỉ còn ${product.so_luong_ton} sản phẩm trong kho`
+            });
+        }
+        
+        // Tìm hoặc tạo giỏ hàng
+        let cartRequest = new sql.Request();
+        let cartResult = await cartRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId');
+        
+        let cartId;
+        if (!cartResult.recordset || cartResult.recordset.length === 0) {
+            const createCartRequest = new sql.Request();
+            const newCart = await createCartRequest
+                .input('userId', sql.UniqueIdentifier, userId)
+                .input('vungId', sql.NVarChar, vungId)
+                .query(`
+                    INSERT INTO carts (nguoi_dung_id, vung_id)
+                    OUTPUT INSERTED.id
+                    VALUES (@userId, @vungId)
+                `);
+            cartId = newCart.recordset[0].id;
+        } else {
+            cartId = cartResult.recordset[0].id;
+        }
+        
+        // Sử dụng MERGE để tránh race condition và duplicate key
+        // Nếu sản phẩm đã tồn tại -> UPDATE số lượng
+        // Nếu chưa tồn tại -> INSERT mới
+        const mergeRequest = new sql.Request();
+        const mergeResult = await mergeRequest
+            .input('cartId', sql.UniqueIdentifier, cartId)
+            .input('productId', sql.UniqueIdentifier, san_pham_id)
+            .input('quantity', sql.Int, so_luong)
+            .input('maxStock', sql.Int, product.so_luong_ton)
+            .query(`
+                DECLARE @existed BIT = 0;
+                DECLARE @newQty INT;
+                
+                -- Kiểm tra nếu đã tồn tại
+                IF EXISTS (SELECT 1 FROM cart_items WHERE gio_hang_id = @cartId AND san_pham_id = @productId)
+                BEGIN
+                    SET @existed = 1;
+                    
+                    -- Tính số lượng mới
+                    SELECT @newQty = so_luong + @quantity 
+                    FROM cart_items 
+                    WHERE gio_hang_id = @cartId AND san_pham_id = @productId;
+                    
+                    -- Kiểm tra tồn kho
+                    IF @newQty > @maxStock
+                    BEGIN
+                        SELECT 
+                            0 as success,
+                            'Chỉ còn ' + CAST(@maxStock AS NVARCHAR) + ' sản phẩm trong kho' as message,
+                            @existed as existed
+                    END
+                    ELSE
+                    BEGIN
+                        -- Cập nhật số lượng
+                        UPDATE cart_items 
+                        SET so_luong = @newQty 
+                        WHERE gio_hang_id = @cartId AND san_pham_id = @productId;
+                        
+                        SELECT 
+                            1 as success,
+                            'Đã cập nhật số lượng trong giỏ hàng' as message,
+                            @existed as existed
+                    END
+                END
+                ELSE
+                BEGIN
+                    -- Thêm mới
+                    INSERT INTO cart_items (gio_hang_id, san_pham_id, so_luong)
+                    VALUES (@cartId, @productId, @quantity);
+                    
+                    SELECT 
+                        1 as success,
+                        'Đã thêm vào giỏ hàng' as message,
+                        @existed as existed
+                END
+            `);
+        
+        const result = mergeResult.recordset[0];
+        
+        if (!result.success) {
+            return res.status(400).json({
+                success: false,
+                message: result.message
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: `${result.message}: ${product.ten_san_pham}`,
+            existed: result.existed === 1
+        });
+        
+    } catch (error) {
+        console.error('Add to cart error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi thêm vào giỏ hàng: ' + error.message
+        });
+    }
+});
+
+// PUT /api/cart/:itemId - Cập nhật số lượng sản phẩm trong giỏ
+app.put('/api/cart/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const { so_luong } = req.body;
+        
+        if (!so_luong || so_luong < 1) {
+            return res.status(400).json({
+                success: false,
+                message: 'Số lượng phải lớn hơn 0'
+            });
+        }
+        
+        // Kiểm tra số lượng tồn kho
+        const checkRequest = new sql.Request();
+        const checkResult = await checkRequest
+            .input('itemId', sql.UniqueIdentifier, itemId)
+            .query(`
+                SELECT 
+                    ci.id, 
+                    p.ten_san_pham,
+                    ISNULL(SUM(inv.so_luong_kha_dung), 0) as so_luong_ton
+                FROM cart_items ci
+                INNER JOIN products p ON ci.san_pham_id = p.id
+                LEFT JOIN inventory inv ON p.id = inv.san_pham_id
+                WHERE ci.id = @itemId
+                GROUP BY ci.id, p.ten_san_pham
+            `);
+        
+        if (!checkResult.recordset || checkResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm trong giỏ hàng'
+            });
+        }
+        
+        const item = checkResult.recordset[0];
+        if (so_luong > item.so_luong_ton) {
+            return res.status(400).json({
+                success: false,
+                message: `Chỉ còn ${item.so_luong_ton} sản phẩm trong kho`
+            });
+        }
+        
+        // Cập nhật số lượng
+        const updateRequest = new sql.Request();
+        await updateRequest
+            .input('itemId', sql.UniqueIdentifier, itemId)
+            .input('quantity', sql.Int, so_luong)
+            .query('UPDATE cart_items SET so_luong = @quantity WHERE id = @itemId');
+        
+        res.json({
+            success: true,
+            message: 'Đã cập nhật số lượng sản phẩm'
+        });
+        
+    } catch (error) {
+        console.error('Update cart error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật giỏ hàng: ' + error.message
+        });
+    }
+});
+
+// DELETE /api/cart/:itemId - Xóa sản phẩm khỏi giỏ hàng
+app.delete('/api/cart/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        
+        const deleteRequest = new sql.Request();
+        const result = await deleteRequest
+            .input('itemId', sql.UniqueIdentifier, itemId)
+            .query('DELETE FROM cart_items WHERE id = @itemId');
+        
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy sản phẩm trong giỏ hàng'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Đã xóa sản phẩm khỏi giỏ hàng'
+        });
+        
+    } catch (error) {
+        console.error('Delete cart item error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa sản phẩm: ' + error.message
+        });
+    }
+});
+
+// DELETE /api/cart - Xóa toàn bộ giỏ hàng
+app.delete('/api/cart', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Vui lòng đăng nhập'
+            });
+        }
+        
+        // Xóa tất cả items trong giỏ hàng
+        const deleteRequest = new sql.Request();
+        await deleteRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                DELETE FROM cart_items 
+                WHERE gio_hang_id IN (SELECT id FROM carts WHERE nguoi_dung_id = @userId)
+            `);
+        
+        res.json({
+            success: true,
+            message: 'Đã xóa toàn bộ giỏ hàng'
+        });
+        
+    } catch (error) {
+        console.error('Clear cart error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa giỏ hàng: ' + error.message
+        });
     }
 });
 
@@ -1126,7 +1533,10 @@ app.get('/api/profile/:userId', async (req, res) => {
 app.put('/api/profile/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        const { ho_ten, so_dien_thoai, vung_id, dia_chi, ngay_sinh, gioi_tinh } = req.body;
+        const { ho_ten, so_dien_thoai, vung_id, dia_chi } = req.body;
+        
+        console.log('📝 Updating profile for user:', userId);
+        console.log('📦 Update data:', { ho_ten, so_dien_thoai, vung_id, dia_chi });
         
         // Validate dữ liệu cơ bản
         if (!ho_ten || ho_ten.trim() === '') {
@@ -1137,79 +1547,80 @@ app.put('/api/profile/:userId', async (req, res) => {
         }
         
         // Cập nhật SQL Server
-        const updateQuery = `
-            UPDATE users 
-            SET ho_ten = @ho_ten,
-                so_dien_thoai = @so_dien_thoai,
-                vung_id = @vung_id
-            WHERE id = @userId
-        `;
-        
-        await db.querySQL(updateQuery, [
-            { name: 'ho_ten', type: db.sql.NVarChar, value: ho_ten },
-            { name: 'so_dien_thoai', type: db.sql.VarChar, value: so_dien_thoai || null },
-            { name: 'vung_id', type: db.sql.VarChar, value: vung_id || null },
-            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
-        ]);
+        const request1 = new sql.Request();
+        await request1
+            .input('ho_ten', sql.NVarChar, ho_ten)
+            .input('so_dien_thoai', sql.VarChar, so_dien_thoai || null)
+            .input('vung_id', sql.VarChar, vung_id || null)
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                UPDATE users 
+                SET ho_ten = @ho_ten,
+                    so_dien_thoai = @so_dien_thoai,
+                    vung_id = @vung_id,
+                    ngay_cap_nhat = GETDATE()
+                WHERE id = @userId
+            `);
         
         // Lấy mongo_profile_id
-        const userQuery = `SELECT mongo_profile_id FROM users WHERE id = @userId`;
-        const userResult = await db.querySQL(userQuery, [
-            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
-        ]);
+        const request2 = new sql.Request();
+        const userResult = await request2
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT mongo_profile_id FROM users WHERE id = @userId');
         
-        let mongoProfileId = userResult[0]?.mongo_profile_id;
+        let mongoProfileId = userResult.recordset[0]?.mongo_profile_id;
         
         // Cập nhật hoặc tạo MongoDB profile
-        const mongoData = {
-            dia_chi: dia_chi || null,
-            ngay_sinh: ngay_sinh || null,
-            gioi_tinh: gioi_tinh || null,
-            updated_at: new Date()
-        };
-        
-        if (mongoProfileId) {
-            // Update existing profile
-            await db.mongoDB.collection('user_profiles').updateOne(
-                { _id: new db.ObjectId(mongoProfileId) },
-                { $set: mongoData }
-            );
-        } else {
-            // Create new profile
-            mongoData.user_id = userId;
-            mongoData.created_at = new Date();
+        if (dia_chi) {
+            const mongoData = {
+                dia_chi: dia_chi,
+                updated_at: new Date()
+            };
             
-            const mongoResult = await db.mongoDB.collection('user_profiles').insertOne(mongoData);
-            mongoProfileId = mongoResult.insertedId.toString();
-            
-            // Update SQL with mongo_profile_id
-            await db.querySQL(
-                `UPDATE users SET mongo_profile_id = @mongoProfileId WHERE id = @userId`,
-                [
-                    { name: 'mongoProfileId', type: db.sql.VarChar, value: mongoProfileId },
-                    { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
-                ]
-            );
+            if (mongoProfileId) {
+                // Update existing profile
+                await db.mongoDB.collection('user_profiles').updateOne(
+                    { _id: new db.ObjectId(mongoProfileId) },
+                    { $set: mongoData }
+                );
+            } else {
+                // Create new profile
+                mongoData.user_id = userId;
+                mongoData.created_at = new Date();
+                
+                const mongoResult = await db.mongoDB.collection('user_profiles').insertOne(mongoData);
+                mongoProfileId = mongoResult.insertedId.toString();
+                
+                // Update SQL with mongo_profile_id
+                const request3 = new sql.Request();
+                await request3
+                    .input('mongoProfileId', sql.VarChar, mongoProfileId)
+                    .input('userId', sql.UniqueIdentifier, userId)
+                    .query('UPDATE users SET mongo_profile_id = @mongoProfileId WHERE id = @userId');
+            }
         }
         
         // Lấy dữ liệu mới sau khi update
-        const updatedUser = await db.querySQL(
-            `SELECT id, email, ho_ten, so_dien_thoai, vung_id, mongo_profile_id, ngay_dang_ky, trang_thai 
-             FROM users WHERE id = @userId`,
-            [{ name: 'userId', type: db.sql.UniqueIdentifier, value: userId }]
-        );
+        const request4 = new sql.Request();
+        const updatedUser = await request4
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT id, email, ho_ten, so_dien_thoai, vung_id, 
+                       mongo_profile_id, ngay_dang_ky, trang_thai 
+                FROM users WHERE id = @userId
+            `);
         
         res.json({
             success: true,
             message: 'Cập nhật thông tin thành công',
-            data: updatedUser[0]
+            data: updatedUser.recordset[0]
         });
         
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({
             success: false,
-            message: 'Lỗi khi cập nhật profile'
+            message: 'Lỗi khi cập nhật profile: ' + error.message
         });
     }
 });
@@ -1219,6 +1630,8 @@ app.post('/api/profile/:userId/change-password', async (req, res) => {
     try {
         const { userId } = req.params;
         const { current_password, new_password } = req.body;
+        
+        console.log('🔐 Change password request for user:', userId);
         
         // Validate
         if (!current_password || !new_password) {
@@ -1236,12 +1649,12 @@ app.post('/api/profile/:userId/change-password', async (req, res) => {
         }
         
         // Lấy mật khẩu hiện tại
-        const userQuery = `SELECT mat_khau FROM users WHERE id = @userId`;
-        const userResult = await db.querySQL(userQuery, [
-            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
-        ]);
+        const request1 = new sql.Request();
+        const userResult = await request1
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT mat_khau FROM users WHERE id = @userId');
         
-        if (!userResult || userResult.length === 0) {
+        if (!userResult.recordset || userResult.recordset.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Không tìm thấy người dùng'
@@ -1251,7 +1664,7 @@ app.post('/api/profile/:userId/change-password', async (req, res) => {
         // Kiểm tra mật khẩu hiện tại
         const currentPasswordHash = crypto.createHash('sha256').update(current_password).digest('hex');
         
-        if (currentPasswordHash !== userResult[0].mat_khau) {
+        if (currentPasswordHash !== userResult.recordset[0].mat_khau) {
             return res.status(401).json({
                 success: false,
                 message: 'Mật khẩu hiện tại không đúng'
@@ -1262,16 +1675,16 @@ app.post('/api/profile/:userId/change-password', async (req, res) => {
         const newPasswordHash = crypto.createHash('sha256').update(new_password).digest('hex');
         
         // Cập nhật mật khẩu
-        const updateQuery = `
-            UPDATE users 
-            SET mat_khau = @mat_khau
-            WHERE id = @userId
-        `;
-        
-        await db.querySQL(updateQuery, [
-            { name: 'mat_khau', type: db.sql.VarChar, value: newPasswordHash },
-            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
-        ]);
+        const request2 = new sql.Request();
+        await request2
+            .input('mat_khau', sql.VarChar, newPasswordHash)
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                UPDATE users 
+                SET mat_khau = @mat_khau,
+                    ngay_cap_nhat = GETDATE()
+                WHERE id = @userId
+            `);
         
         res.json({
             success: true,
@@ -1282,7 +1695,7 @@ app.post('/api/profile/:userId/change-password', async (req, res) => {
         console.error('Change password error:', error);
         res.status(500).json({
             success: false,
-            message: 'Lỗi khi đổi mật khẩu'
+            message: 'Lỗi khi đổi mật khẩu: ' + error.message
         });
     }
 });
@@ -6644,6 +7057,164 @@ app.delete('/api/vouchers/:id', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Lỗi khi xóa voucher: ' + error.message
+        });
+    }
+});
+
+// POST /api/vouchers/validate - Validate và apply voucher
+app.post('/api/vouchers/validate', async (req, res) => {
+    try {
+        const { ma_voucher, userId, cartItems } = req.body;
+        
+        if (!ma_voucher || !userId || !cartItems || cartItems.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu thông tin cần thiết'
+            });
+        }
+        
+        // Tìm voucher
+        const voucherRequest = new sql.Request();
+        const voucherResult = await voucherRequest
+            .input('ma_voucher', sql.NVarChar, ma_voucher)
+            .query(`
+                SELECT * FROM vouchers 
+                WHERE ma_voucher = @ma_voucher 
+                AND trang_thai = 1
+            `);
+        
+        if (voucherResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Mã voucher không tồn tại hoặc đã bị vô hiệu hóa'
+            });
+        }
+        
+        const voucher = voucherResult.recordset[0];
+        const now = new Date();
+        const startDate = new Date(voucher.ngay_bat_dau);
+        const endDate = new Date(voucher.ngay_ket_thuc);
+        
+        // Kiểm tra thời gian
+        if (now < startDate) {
+            return res.status(400).json({
+                success: false,
+                message: `Voucher chưa bắt đầu. Có hiệu lực từ ${startDate.toLocaleDateString('vi-VN')}`
+            });
+        }
+        
+        if (now > endDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Voucher đã hết hạn sử dụng'
+            });
+        }
+        
+        // Kiểm tra số lượng
+        if (voucher.da_su_dung >= voucher.so_luong) {
+            return res.status(400).json({
+                success: false,
+                message: 'Voucher đã hết lượt sử dụng'
+            });
+        }
+        
+        // Kiểm tra user đã sử dụng voucher này chưa
+        const usedRequest = new sql.Request();
+        const usedResult = await usedRequest
+            .input('voucher_id', sql.UniqueIdentifier, voucher.id)
+            .input('user_id', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT * FROM used_vouchers 
+                WHERE voucher_id = @voucher_id 
+                AND nguoi_dung_id = @user_id
+            `);
+        
+        if (usedResult.recordset.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bạn đã sử dụng voucher này rồi'
+            });
+        }
+        
+        // Tính tổng giá trị đơn hàng
+        let subtotal = cartItems.reduce((sum, item) => sum + (item.gia_ban * item.so_luong), 0);
+        
+        // Kiểm tra đơn hàng tối thiểu
+        if (subtotal < voucher.don_hang_toi_thieu) {
+            return res.status(400).json({
+                success: false,
+                message: `Đơn hàng tối thiểu ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(voucher.don_hang_toi_thieu)} để sử dụng voucher này`
+            });
+        }
+        
+        // Kiểm tra phạm vi áp dụng
+        if (voucher.pham_vi === 'theo_san_pham') {
+            const productIdsRequest = new sql.Request();
+            const productIdsResult = await productIdsRequest
+                .input('voucher_id', sql.UniqueIdentifier, voucher.id)
+                .query(`
+                    SELECT san_pham_id FROM voucher_products 
+                    WHERE voucher_id = @voucher_id
+                `);
+            
+            const allowedProductIds = productIdsResult.recordset.map(p => p.san_pham_id);
+            const cartProductIds = cartItems.map(item => item.san_pham_id);
+            
+            const hasValidProduct = cartProductIds.some(id => 
+                allowedProductIds.some(allowedId => allowedId === id)
+            );
+            
+            if (!hasValidProduct) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Voucher này không áp dụng cho các sản phẩm trong giỏ hàng'
+                });
+            }
+            
+            // Tính tổng chỉ cho các sản phẩm được áp dụng
+            subtotal = cartItems
+                .filter(item => allowedProductIds.some(allowedId => allowedId === item.san_pham_id))
+                .reduce((sum, item) => sum + (item.gia_ban * item.so_luong), 0);
+        }
+        
+        // Tính giá trị giảm
+        let discountAmount = 0;
+        
+        if (voucher.loai_giam_gia === 'phantram') {
+            discountAmount = subtotal * (voucher.gia_tri_giam / 100);
+            if (voucher.gia_tri_toi_da && discountAmount > voucher.gia_tri_toi_da) {
+                discountAmount = voucher.gia_tri_toi_da;
+            }
+        } else if (voucher.loai_giam_gia === 'tiengiam') {
+            discountAmount = voucher.gia_tri_giam;
+            if (discountAmount > subtotal) {
+                discountAmount = subtotal;
+            }
+        } else if (voucher.loai_giam_gia === 'mienphi') {
+            // Miễn phí ship - xử lý ở frontend
+            discountAmount = 0;
+        }
+        
+        res.json({
+            success: true,
+            message: 'Áp dụng voucher thành công',
+            voucher: {
+                id: voucher.id,
+                ma_voucher: voucher.ma_voucher,
+                ten_voucher: voucher.ten_voucher,
+                loai_giam_gia: voucher.loai_giam_gia,
+                gia_tri_giam: voucher.gia_tri_giam,
+                pham_vi: voucher.pham_vi,
+                discountAmount: discountAmount,
+                isFreeShip: voucher.loai_giam_gia === 'mienphi'
+            }
+        });
+        
+    } catch (error) {
+        console.error('Validate Voucher Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi kiểm tra voucher: ' + error.message
         });
     }
 });

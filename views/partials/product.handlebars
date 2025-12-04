@@ -300,39 +300,78 @@
 
 <script>
   // CellphoneS Style Product Card JavaScript
-  document.addEventListener('DOMContentLoaded', function () {
-    // Xử lý thêm vào giỏ hàng - CPS style
-    const cpsCartButtons = document.querySelectorAll('.cps-btn-cart');
-    cpsCartButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+  // Sử dụng event delegation để tránh đăng ký nhiều lần
+  (function() {
+    // Đảm bảo chỉ đăng ký 1 lần
+    if (window.cpsCartHandlerRegistered) return;
+    window.cpsCartHandlerRegistered = true;
+    
+    // Event delegation trên document
+    document.addEventListener('click', async function(e) {
+      const button = e.target.closest('.cps-btn-cart');
+      if (!button) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const productId = button.getAttribute('data-product-id');
+      console.log('🛒 Thêm vào giỏ:', productId);
+      
+      // Kiểm tra đăng nhập
+      const userId = AuthHelper.getUserId();
+      if (!userId) {
+        alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+        window.location.href = '/login';
+        return;
+      }
+      
+      try {
+        // Gọi API thêm vào giỏ
+        const response = await fetch('/api/cart', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            san_pham_id: productId,
+            so_luong: 1,
+            userId: userId
+          })
+        });
         
-        const productId = this.getAttribute('data-product-id');
-        console.log('🛒 Thêm vào giỏ:', productId);
+        const result = await response.json();
         
-        // Animation hiệu ứng thêm vào giỏ
-        const originalHTML = this.innerHTML;
-        this.innerHTML = '<i class="fas fa-check"></i>';
-        this.style.background = '#28a745';
-        this.style.borderColor = '#28a745';
-        this.style.color = '#fff';
-        
-        setTimeout(() => {
-          this.innerHTML = originalHTML;
-          this.style.background = '';
-          this.style.borderColor = '';
-          this.style.color = '';
-        }, 1500);
-        
-        // TODO: Gọi API thêm vào giỏ hàng
-    // Nút "Mua ngay" giờ là thẻ <a>, không cần JavaScript cho navigation nữa 
-        // TODO: Chuyển đến trang thanh toán
-        // window.location.href = `/checkout?product=${productId}`;
-      });
+        if (result.success) {
+          // Animation hiệu ứng thêm vào giỏ
+          const originalHTML = button.innerHTML;
+          button.innerHTML = '<i class="fas fa-check"></i>';
+          button.style.background = '#28a745';
+          button.style.borderColor = '#28a745';
+          button.style.color = '#fff';
+          
+          // Cập nhật badge giỏ hàng
+          if (typeof CartManager !== 'undefined' && CartManager.updateCartBadge) {
+            CartManager.updateCartBadge();
+          }
+          
+          setTimeout(() => {
+            button.innerHTML = originalHTML;
+            button.style.background = '';
+            button.style.borderColor = '';
+            button.style.color = '';
+          }, 1500);
+        } else {
+          alert(result.message || 'Không thể thêm vào giỏ hàng');
+        }
+      } catch (error) {
+        console.error('Lỗi thêm vào giỏ:', error);
+        alert('Đã xảy ra lỗi khi thêm vào giỏ hàng');
+      }
     });
+  })();
 
-    // Xử lý click vào link sản phẩm
+  // Xử lý click vào link sản phẩm
+  document.addEventListener('DOMContentLoaded', function() {
     const cpsProductLinks = document.querySelectorAll('.cps-product-link');
     cpsProductLinks.forEach(link => {
       link.addEventListener('click', function(e) {

@@ -1,143 +1,154 @@
-<div class="container py-5">
-    <div class="row">
-        <!-- Sidebar -->
-        <div class="col-lg-3 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <div class="avatar-circle mx-auto" style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-user fa-3x text-white"></i>
-                        </div>
-                    </div>
-                    <h5 class="mb-1" id="profileName">Đang tải...</h5>
-                    <p class="text-muted small mb-3" id="profileEmail">email@example.com</p>
-                    <span class="badge bg-success" id="profileStatus">Đã xác thực</span>
-                </div>
-                <div class="list-group list-group-flush">
-                    <a href="/profile" class="list-group-item list-group-item-action active">
-                        <i class="fas fa-user me-2"></i>Thông tin tài khoản
-                    </a>
-                    <a href="/orders" class="list-group-item list-group-item-action">
-                        <i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi
-                    </a>
-                    <a href="/addresses" class="list-group-item list-group-item-action">
-                        <i class="fas fa-map-marker-alt me-2"></i>Địa chỉ giao hàng
-                    </a>
-                    <a href="/wishlist" class="list-group-item list-group-item-action">
-                        <i class="fas fa-heart me-2"></i>Sản phẩm yêu thích
-                    </a>
-                    <a href="#" class="list-group-item list-group-item-action text-danger" id="btnProfileLogout">
-                        <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
-                    </a>
+<!-- Profile Header Banner -->
+<div class="profile-banner">
+    <div class="container">
+        <div class="profile-header-content">
+            <div class="avatar-wrapper">
+                <div class="avatar-circle" id="avatarCircle">
+                    <span id="avatarInitials">U</span>
                 </div>
             </div>
+            <div class="profile-info">
+                <h2 class="profile-name mb-1" id="profileName">Đang tải...</h2>
+                <p class="profile-email mb-2" id="profileEmail">email@example.com</p>
+                <span class="badge status-badge" id="profileStatus">
+                    <i class="fas fa-check-circle me-1"></i>Đã xác thực
+                </span>
+            </div>
+            <div class="profile-actions ms-auto">
+                <button class="btn btn-outline-light btn-sm" id="btnProfileLogout">
+                    <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                </button>
+            </div>
         </div>
+    </div>
+</div>
 
-        <!-- Main Content -->
-        <div class="col-lg-9">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h4 class="mb-0">
+<!-- Main Content -->
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Profile Information Card -->
+        <div class="col-lg-8">
+            <div class="profile-card">
+                <div class="card-header-custom">
+                    <h5 class="mb-0">
                         <i class="fas fa-user-circle text-primary me-2"></i>
-                        Thông tin tài khoản
-                    </h4>
+                        Thông tin cá nhân
+                    </h5>
                 </div>
-                <div class="card-body p-4">
-                    <!-- User Info Form -->
+                <div class="card-body-custom">
                     <form id="profileForm">
-                        <div class="row mb-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Họ và tên</label>
-                                <input type="text" class="form-control" id="inputHoTen" placeholder="Nhập họ tên">
+                                <label class="form-label">
+                                    <i class="fas fa-id-card text-muted me-2"></i>Họ và tên
+                                </label>
+                                <input type="text" class="form-control form-control-modern" 
+                                       id="inputHoTen" placeholder="Nhập họ tên">
                             </div>
+                            
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Email</label>
-                                <input type="email" class="form-control" id="inputEmail" readonly disabled>
+                                <label class="form-label">
+                                    <i class="fas fa-envelope text-muted me-2"></i>Email
+                                </label>
+                                <input type="email" class="form-control form-control-modern" 
+                                       id="inputEmail" readonly>
                             </div>
-                        </div>
 
-                        <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Số điện thoại</label>
-                                <input type="tel" class="form-control" id="inputPhone" placeholder="Nhập số điện thoại">
+                                <label class="form-label">
+                                    <i class="fas fa-phone text-muted me-2"></i>Số điện thoại
+                                </label>
+                                <input type="tel" class="form-control form-control-modern" 
+                                       id="inputPhone" placeholder="Nhập số điện thoại">
                             </div>
+
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Vùng miền</label>
-                                <select class="form-select" id="inputVung">
+                                <label class="form-label">
+                                    <i class="fas fa-map-marker-alt text-muted me-2"></i>Vùng miền
+                                </label>
+                                <select class="form-select form-control-modern" id="inputVung">
                                     <option value="bac">Miền Bắc</option>
                                     <option value="trung">Miền Trung</option>
                                     <option value="nam">Miền Nam</option>
                                 </select>
                             </div>
-                        </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Giới tính</label>
-                                <select class="form-select" id="inputGioiTinh">
-                                    <option value="">Chọn giới tính</option>
-                                    <option value="Nam">Nam</option>
-                                    <option value="Nữ">Nữ</option>
-                                    <option value="Khác">Khác</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Ngày sinh</label>
-                                <input type="date" class="form-control" id="inputNgaySinh">
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
                             <div class="col-12">
-                                <label class="form-label fw-bold">Địa chỉ</label>
-                                <textarea class="form-control" id="inputDiaChi" rows="2" placeholder="Nhập địa chỉ chi tiết"></textarea>
+                                <label class="form-label">
+                                    <i class="fas fa-home text-muted me-2"></i>Địa chỉ
+                                </label>
+                                <textarea class="form-control form-control-modern" 
+                                          id="inputDiaChi" rows="2" 
+                                          placeholder="Nhập địa chỉ chi tiết"></textarea>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Ngày đăng ký</label>
-                                <input type="text" class="form-control" id="inputNgayDangKy" readonly disabled>
-                            </div>
-                        </div>
-
-                        <hr class="my-4">
-
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary px-4">
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-modern px-4">
                                 <i class="fas fa-save me-2"></i>Lưu thay đổi
                             </button>
-                            <button type="button" class="btn btn-outline-secondary px-4" onclick="loadUserProfile()">
+                            <button type="button" class="btn btn-outline-secondary btn-modern px-4" 
+                                    onclick="loadUserProfile()">
                                 <i class="fas fa-undo me-2"></i>Hủy
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+        </div>
 
-            <!-- Change Password Section -->
-            <div class="card border-0 shadow-sm mt-4">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0">
-                        <i class="fas fa-lock text-warning me-2"></i>
-                        Đổi mật khẩu
-                    </h5>
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Account Info -->
+            <div class="profile-card mb-4">
+                <div class="card-header-custom">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>Thông tin tài khoản
+                    </h6>
                 </div>
-                <div class="card-body p-4">
+                <div class="card-body-custom">
+                    <div class="info-item">
+                        <i class="fas fa-calendar-alt text-muted"></i>
+                        <div>
+                            <small class="text-muted d-block">Ngày đăng ký</small>
+                            <span id="inputNgayDangKy" class="fw-semibold">--/--/----</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-shield-alt text-success"></i>
+                        <div>
+                            <small class="text-muted d-block">Trạng thái</small>
+                            <span class="fw-semibold text-success">Đã xác thực</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="profile-card">
+                <div class="card-header-custom">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lock text-warning me-2"></i>Đổi mật khẩu
+                    </h6>
+                </div>
+                <div class="card-body-custom">
                     <form id="changePasswordForm">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Mật khẩu hiện tại</label>
-                            <input type="password" class="form-control" id="currentPassword" required>
+                            <label class="form-label small">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control form-control-modern form-control-sm" 
+                                   id="currentPassword" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Mật khẩu mới</label>
-                            <input type="password" class="form-control" id="newPassword" required minlength="6">
+                            <label class="form-label small">Mật khẩu mới</label>
+                            <input type="password" class="form-control form-control-modern form-control-sm" 
+                                   id="newPassword" required minlength="6">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Xác nhận mật khẩu mới</label>
-                            <input type="password" class="form-control" id="confirmPassword" required>
+                            <label class="form-label small">Xác nhận mật khẩu</label>
+                            <input type="password" class="form-control form-control-modern form-control-sm" 
+                                   id="confirmPassword" required>
                         </div>
-                        <button type="submit" class="btn btn-warning px-4">
+                        <button type="submit" class="btn btn-warning btn-modern w-100">
                             <i class="fas fa-key me-2"></i>Đổi mật khẩu
                         </button>
                     </form>
@@ -195,10 +206,10 @@ async function loadUserProfile() {
             console.log('✅ Profile data loaded from DB:', userData);
             
             // Update sidebar
+            const initials = (userData.ho_ten || userData.email).substring(0, 2).toUpperCase();
+            document.getElementById('avatarInitials').textContent = initials;
             document.getElementById('profileName').textContent = userData.ho_ten || 'Chưa cập nhật';
             document.getElementById('profileEmail').textContent = userData.email;
-            document.getElementById('profileStatus').textContent = userData.trang_thai ? 'Hoạt động' : 'Bị khóa';
-            document.getElementById('profileStatus').className = userData.trang_thai ? 'badge bg-success' : 'badge bg-danger';
             
             // Update form - SQL data
             document.getElementById('inputHoTen').value = userData.ho_ten || '';
@@ -209,24 +220,17 @@ async function loadUserProfile() {
             // Update form - Extended MongoDB data
             if (extendedData) {
                 document.getElementById('inputDiaChi').value = extendedData.dia_chi || '';
-                document.getElementById('inputNgaySinh').value = extendedData.ngay_sinh ? 
-                    new Date(extendedData.ngay_sinh).toISOString().split('T')[0] : '';
-                document.getElementById('inputGioiTinh').value = extendedData.gioi_tinh || '';
             } else {
                 document.getElementById('inputDiaChi').value = '';
-                document.getElementById('inputNgaySinh').value = '';
-                document.getElementById('inputGioiTinh').value = '';
             }
             
             // Format registration date
             if (userData.ngay_dang_ky) {
                 const date = new Date(userData.ngay_dang_ky);
-                document.getElementById('inputNgayDangKy').value = date.toLocaleDateString('vi-VN', {
+                document.getElementById('inputNgayDangKy').textContent = date.toLocaleDateString('vi-VN', {
                     year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    month: '2-digit',
+                    day: '2-digit'
                 });
             }
             
@@ -263,9 +267,7 @@ document.getElementById('profileForm').addEventListener('submit', async function
         ho_ten: document.getElementById('inputHoTen').value.trim(),
         so_dien_thoai: document.getElementById('inputPhone').value.trim(),
         vung_id: document.getElementById('inputVung').value,
-        dia_chi: document.getElementById('inputDiaChi').value.trim(),
-        ngay_sinh: document.getElementById('inputNgaySinh').value,
-        gioi_tinh: document.getElementById('inputGioiTinh').value
+        dia_chi: document.getElementById('inputDiaChi').value.trim()
     };
     
     // Validate
@@ -441,24 +443,279 @@ loadUserProfile();
 </script>
 
 <style>
+/* Profile Banner */
+.profile-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 0 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.profile-header-content {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.avatar-wrapper {
+    position: relative;
+}
+
 .avatar-circle {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
     transition: all 0.3s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .avatar-circle:hover {
     transform: scale(1.05);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
-.card {
+.profile-info {
+    flex: 1;
+}
+
+.profile-name {
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.profile-email {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.status-badge {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-actions .btn-outline-light {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    border-radius: 50px;
     transition: all 0.3s ease;
 }
 
-.list-group-item-action:hover {
-    background-color: #f8f9fa;
+.profile-actions .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.list-group-item-action.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+/* Profile Cards */
+.profile-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.profile-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1.25rem 1.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.card-header-custom h5,
+.card-header-custom h6 {
+    margin: 0;
+    color: #2d3748;
+    font-weight: 700;
+}
+
+.card-body-custom {
+    padding: 1.5rem;
+}
+
+/* Modern Form Controls */
+.form-control-modern,
+.form-select {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.form-control-modern:focus,
+.form-select:focus {
+    background: white;
     border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-control-modern:read-only {
+    background: #e9ecef;
+    cursor: not-allowed;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.form-label i {
+    font-size: 0.85rem;
+}
+
+/* Modern Buttons */
+.btn-modern {
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-primary.btn-modern {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline-secondary.btn-modern {
+    border: 2px solid #cbd5e0;
+    color: #4a5568;
+    background: white;
+}
+
+.btn-outline-secondary.btn-modern:hover {
+    background: #f7fafc;
+    border-color: #a0aec0;
+    transform: translateY(-2px);
+}
+
+.btn-warning.btn-modern {
+    background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+}
+
+.btn-warning.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(237, 137, 54, 0.4);
+}
+
+/* Info Items */
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.info-item:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+}
+
+.info-item i {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .profile-actions {
+        margin: 0 !important;
+        width: 100%;
+    }
+    
+    .profile-actions .btn {
+        width: 100%;
+    }
+    
+    .avatar-circle {
+        width: 80px;
+        height: 80px;
+        font-size: 2rem;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.profile-card {
+    animation: fadeInUp 0.5s ease;
+}
+
+.profile-card:nth-child(2) {
+    animation-delay: 0.1s;
 }
 </style>
