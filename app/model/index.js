@@ -92,6 +92,92 @@ const userDetailSchema = new mongoose.Schema({
 });
 const Data_UserDetail_Model = mongoose.model('UserDetail', userDetailSchema);
 
+// Voucher Detail Schema
+const voucherDetailSchema = new mongoose.Schema({
+  _id: { type: String, required: true }, // UUID từ SQL vouchers.id
+  usage_history: [{
+    user_id: String,
+    order_id: String,
+    used_at: Date,
+    discount_amount: Number,
+    order_amount: Number
+  }],
+  user_restrictions: {
+    eligible_user_groups: { type: [String], default: ['all'] },
+    excluded_users: [String],
+    max_uses_per_user: { type: Number, default: 1 },
+    first_order_only: { type: Boolean, default: false }
+  },
+  combination_rules: {
+    can_combine_with_other_vouchers: { type: Boolean, default: false },
+    can_combine_with_flash_sale: { type: Boolean, default: true },
+    can_combine_with_promotions: { type: Boolean, default: false },
+    priority: { type: Number, default: 0 }
+  },
+  analytics: {
+    total_views: { type: Number, default: 0 },
+    total_uses: { type: Number, default: 0 },
+    total_revenue_impact: { type: Number, default: 0 },
+    total_discount_given: { type: Number, default: 0 },
+    conversion_rate: { type: Number, default: 0 },
+    average_order_value: { type: Number, default: 0 }
+  },
+  notification_settings: {
+    notify_when_near_expiry: { type: Boolean, default: true },
+    days_before_expiry: { type: Number, default: 3 },
+    notify_when_limited_stock: { type: Boolean, default: true },
+    stock_threshold: { type: Number, default: 10 },
+    send_email_on_use: { type: Boolean, default: false }
+  },
+  marketing: {
+    campaign_name: String,
+    campaign_id: String,
+    affiliate_code: String,
+    source: String
+  },
+  custom_data: mongoose.Schema.Types.Mixed,
+  notes: String,
+  tags: [String]
+}, { 
+  _id: false, // Tắt auto-generate _id vì đã tự định nghĩa
+  strict: false, // Cho phép lưu các trường không được định nghĩa
+  timestamps: true 
+});
+
+// Thêm static methods cho VoucherDetail
+voucherDetailSchema.statics.findByVoucherId = async function(voucherId) {
+  return await this.findById(voucherId);
+};
+
+voucherDetailSchema.statics.createOrUpdate = async function(voucherId, detailData) {
+  return await this.findByIdAndUpdate(
+    voucherId,
+    { $set: { ...detailData, _id: voucherId } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+};
+
+voucherDetailSchema.statics.deleteById = async function(voucherId) {
+  return await this.findByIdAndDelete(voucherId);
+};
+
+voucherDetailSchema.statics.trackUsage = async function(voucherId, usageData) {
+  return await this.findByIdAndUpdate(
+    voucherId,
+    { 
+      $push: { usage_history: usageData },
+      $inc: { 
+        'analytics.total_uses': 1,
+        'analytics.total_discount_given': usageData.discount_amount || 0,
+        'analytics.total_revenue_impact': usageData.order_amount || 0
+      }
+    },
+    { new: true }
+  );
+};
+
+const Data_VoucherDetail_Model = mongoose.model('VoucherDetail', voucherDetailSchema);
+
 // ==================== SQL SERVER MODELS ====================
 
 // Model cho Brand trong SQL Server
@@ -2298,7 +2384,8 @@ export default {
   Mongo: {
     ProductDetail: Data_ProductDetail_Model, 
     FlashSaleDetail: Data_FlashSaleDetail_Model,
-    UserDetail: Data_UserDetail_Model
+    UserDetail: Data_UserDetail_Model,
+    VoucherDetail: Data_VoucherDetail_Model
   },
   
   SQL: {

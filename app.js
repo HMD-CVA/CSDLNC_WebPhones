@@ -5610,5 +5610,541 @@ app.delete('/api/warehouses/:id', async (req, res) => {
     }
 });
 
+// =============================================
+// VOUCHER API ROUTES
+// =============================================
+
+// GET /admin/voucher - Render voucher management page
+app.get('/admin/voucher', async (req, res) => {
+    try {
+        res.render('voucher', {
+            layout: 'AdminMain',
+            title: 'Quản lý Voucher'
+        });
+    } catch (error) {
+        console.error('Error rendering voucher page:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// GET /api/vouchers - Lấy danh sách vouchers
+app.get('/api/vouchers', async (req, res) => {
+    try {
+        const { page = 1, limit = 10, trang_thai, loai_giam_gia, pham_vi, search } = req.query;
+        
+        let queryString = `
+            SELECT 
+                v.*,
+                u.ho_ten as ten_nguoi_tao
+            FROM vouchers v
+            LEFT JOIN users u ON v.nguoi_tao = u.id
+            WHERE 1=1
+        `;
+        
+        const request = new sql.Request();
+        
+        // Filter by status
+        if (trang_thai === 'active') {
+            queryString += ` AND v.trang_thai = 1 AND v.ngay_bat_dau <= GETDATE() AND v.ngay_ket_thuc >= GETDATE()`;
+        } else if (trang_thai === 'inactive') {
+            queryString += ` AND (v.trang_thai = 0 OR v.ngay_bat_dau > GETDATE())`;
+        } else if (trang_thai === 'expired') {
+            queryString += ` AND v.ngay_ket_thuc < GETDATE()`;
+        }
+        
+        // Filter by discount type
+        if (loai_giam_gia) {
+            queryString += ` AND v.loai_giam_gia = @loai_giam_gia`;
+            request.input('loai_giam_gia', sql.NVarChar(20), loai_giam_gia);
+        }
+        
+        // Filter by scope
+        if (pham_vi) {
+            queryString += ` AND v.pham_vi = @pham_vi`;
+            request.input('pham_vi', sql.NVarChar(20), pham_vi);
+        }
+        
+        // Search by code or name
+        if (search) {
+            queryString += ` AND (v.ma_voucher LIKE @search OR v.ten_voucher LIKE @search)`;
+            request.input('search', sql.NVarChar(255), `%${search}%`);
+        }
+        
+        queryString += ` ORDER BY v.ngay_tao DESC`;
+        
+        const result = await request.query(queryString);
+        const vouchers = result.recordset;
+        
+        // Pagination
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const paginatedData = vouchers.slice(startIndex, endIndex);
+        
+        res.json({
+            success: true,
+            vouchers: paginatedData,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(vouchers.length / limit),
+            total: vouchers.length
+        });
+    } catch (error) {
+        console.error('Vouchers API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách voucher: ' + error.message
+        });
+    }
+});
+
+// GET /api/vouchers/:id - Lấy thông tin voucher
+app.get('/api/vouchers/:id', async (req, res) => {
+    try {
+        const request = new sql.Request();
+        const result = await request
+            .input('id', sql.UniqueIdentifier, req.params.id)
+            .query(`
+                SELECT 
+                    v.*,
+                    u.ho_ten as ten_nguoi_tao
+                FROM vouchers v
+                LEFT JOIN users u ON v.nguoi_tao = u.id
+                WHERE v.id = @id
+            `);
+        
+        const voucher = result.recordset[0];
+        
+        if (!voucher) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy voucher'
+            });
+        }
+        
+        res.json({
+            success: true,
+            voucher: voucher
+        });
+    } catch (error) {
+        console.error('Voucher API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin voucher: ' + error.message
+        });
+    }
+});
+
+// GET /api/vouchers/:id/products - Lấy danh sách sản phẩm của voucher
+app.get('/api/vouchers/:id/products', async (req, res) => {
+    try {
+        const request = new sql.Request();
+        const result = await request
+            .input('voucher_id', sql.UniqueIdentifier, req.params.id)
+            .query(`
+                SELECT 
+                    vp.*,
+                    p.ten_san_pham,
+                    p.gia_ban,
+                    p.link_anh
+                FROM voucher_products vp
+                INNER JOIN products p ON vp.san_pham_id = p.id
+                WHERE vp.voucher_id = @voucher_id
+            `);
+        
+        // Get MongoDB details for each product to get variant info
+        const productsWithVariants = [];
+        
+        for (const item of result.recordset) {
+            try {
+                const mongoRequest = new sql.Request();
+                const productResult = await mongoRequest
+                    .input('product_id', sql.UniqueIdentifier, item.san_pham_id)
+                    .query('SELECT mongo_detail_id FROM products WHERE id = @product_id');
+                
+                if (productResult.recordset.length > 0 && productResult.recordset[0].mongo_detail_id) {
+                    const mongoDetail = await DataModel.Mongo.ProductDetail.findById(productResult.recordset[0].mongo_detail_id);
+                    
+                    if (mongoDetail && mongoDetail.variants) {
+                        // Find the specific variant
+                        const variant = mongoDetail.variants.variant_combinations?.find(v => v.variant_id === item.san_pham_id);
+                        
+                        productsWithVariants.push({
+                            ...item,
+                            variant_info: variant ? {
+                                variant_id: variant.variant_id,
+                                attributes: variant.attributes,
+                                gia_ban: variant.gia_ban,
+                                so_luong: variant.so_luong
+                            } : null
+                        });
+                    } else {
+                        productsWithVariants.push(item);
+                    }
+                } else {
+                    productsWithVariants.push(item);
+                }
+            } catch (err) {
+                console.error('Error getting variant info:', err);
+                productsWithVariants.push(item);
+            }
+        }
+        
+        res.json({
+            success: true,
+            products: productsWithVariants
+        });
+    } catch (error) {
+        console.error('Voucher Products API Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy sản phẩm voucher: ' + error.message
+        });
+    }
+});
+
+// POST /api/vouchers - Tạo voucher mới
+app.post('/api/vouchers', async (req, res) => {
+    try {
+        console.log('📝 Creating new voucher...', req.body);
+        
+        const voucherData = {
+            ma_voucher: req.body.ma_voucher,
+            ten_voucher: req.body.ten_voucher,
+            mo_ta: req.body.mo_ta || null,
+            loai_giam_gia: req.body.loai_giam_gia,
+            gia_tri_giam: parseFloat(req.body.gia_tri_giam),
+            gia_tri_toi_da: req.body.gia_tri_toi_da ? parseFloat(req.body.gia_tri_toi_da) : null,
+            don_hang_toi_thieu: parseFloat(req.body.don_hang_toi_thieu) || 0,
+            so_luong: parseInt(req.body.so_luong),
+            ngay_bat_dau: req.body.ngay_bat_dau,
+            ngay_ket_thuc: req.body.ngay_ket_thuc,
+            pham_vi: req.body.pham_vi || 'toan_cuc',
+            loai_voucher: req.body.loai_voucher || null,
+            trang_thai: req.body.trang_thai ? 1 : 0,
+            nguoi_tao: req.session?.user?.id || null
+        };
+        
+        // Validate
+        if (voucherData.loai_giam_gia === 'phantram' && voucherData.gia_tri_giam > 100) {
+            return res.status(400).json({
+                success: false,
+                message: 'Giá trị giảm theo phần trăm không được vượt quá 100%'
+            });
+        }
+        
+        if (new Date(voucherData.ngay_bat_dau) >= new Date(voucherData.ngay_ket_thuc)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ngày bắt đầu phải nhỏ hơn ngày kết thúc'
+            });
+        }
+        
+        // Bước 1: Tạo voucher trong SQL
+        const request = new sql.Request();
+        const result = await request
+            .input('ma_voucher', sql.NVarChar(50), voucherData.ma_voucher)
+            .input('ten_voucher', sql.NVarChar(255), voucherData.ten_voucher)
+            .input('mo_ta', sql.NVarChar(500), voucherData.mo_ta)
+            .input('loai_giam_gia', sql.NVarChar(20), voucherData.loai_giam_gia)
+            .input('gia_tri_giam', sql.Decimal(15, 2), voucherData.gia_tri_giam)
+            .input('gia_tri_toi_da', sql.Decimal(15, 2), voucherData.gia_tri_toi_da)
+            .input('don_hang_toi_thieu', sql.Decimal(15, 2), voucherData.don_hang_toi_thieu)
+            .input('so_luong', sql.Int, voucherData.so_luong)
+            .input('ngay_bat_dau', sql.DateTime2, voucherData.ngay_bat_dau)
+            .input('ngay_ket_thuc', sql.DateTime2, voucherData.ngay_ket_thuc)
+            .input('pham_vi', sql.NVarChar(20), voucherData.pham_vi)
+            .input('loai_voucher', sql.NVarChar(50), voucherData.loai_voucher)
+            .input('trang_thai', sql.Bit, voucherData.trang_thai)
+            .input('nguoi_tao', sql.UniqueIdentifier, voucherData.nguoi_tao)
+            .query(`
+                INSERT INTO vouchers 
+                (ma_voucher, ten_voucher, mo_ta, loai_giam_gia, gia_tri_giam, gia_tri_toi_da, 
+                 don_hang_toi_thieu, so_luong, ngay_bat_dau, ngay_ket_thuc, pham_vi, loai_voucher, 
+                 trang_thai, nguoi_tao)
+                OUTPUT INSERTED.*
+                VALUES 
+                (@ma_voucher, @ten_voucher, @mo_ta, @loai_giam_gia, @gia_tri_giam, @gia_tri_toi_da, 
+                 @don_hang_toi_thieu, @so_luong, @ngay_bat_dau, @ngay_ket_thuc, @pham_vi, @loai_voucher, 
+                 @trang_thai, @nguoi_tao)
+            `);
+        
+        const newVoucher = result.recordset[0];
+        console.log('✅ SQL created with ID:', newVoucher.id);
+        
+        // Bước 2: Tạo MongoDB document với _id = SQL voucher id (nếu cần mở rộng)
+        const mongoData = {
+            usage_history: [],
+            user_restrictions: {
+                eligible_user_groups: ['all'],
+                excluded_users: [],
+                max_uses_per_user: 1
+            },
+            combination_rules: {
+                can_combine_with_other_vouchers: false,
+                can_combine_with_flash_sale: true,
+                priority: 0
+            },
+            analytics: {
+                total_views: 0,
+                total_uses: 0,
+                total_revenue_impact: 0,
+                conversion_rate: 0
+            },
+            notification_settings: {
+                notify_when_near_expiry: true,
+                days_before_expiry: 3,
+                notify_when_limited_stock: true,
+                stock_threshold: 10
+            },
+            tags: [],
+            notes: ''
+        };
+        
+        const mongoDoc = await DataModel.Mongo.VoucherDetail.createOrUpdate(newVoucher.id, mongoData);
+        console.log('✅ MongoDB created with _id:', mongoDoc._id);
+        
+        // Bước 3: Update SQL để lưu mongo_voucher_detail_id
+        const updateRequest = new sql.Request();
+        await updateRequest
+            .input('id', sql.UniqueIdentifier, newVoucher.id)
+            .input('mongo_voucher_detail_id', sql.NVarChar(50), mongoDoc._id.toString())
+            .query('UPDATE vouchers SET mongo_voucher_detail_id = @mongo_voucher_detail_id WHERE id = @id');
+        console.log('✅ SQL updated with mongo_voucher_detail_id');
+
+        // Bước 4: Thêm voucher_products nếu có products và pham_vi = 'theo_san_pham'
+        if (voucherData.pham_vi === 'theo_san_pham' && req.body.products && Array.isArray(req.body.products) && req.body.products.length > 0) {
+            console.log('📦 Adding voucher products...', req.body.products.length, 'variants');
+            
+            for (const product of req.body.products) {
+                console.log('📝 Inserting product:', product);
+                
+                // Validate variantId
+                if (!product.variantId) {
+                    console.error('❌ Missing variantId for product:', product);
+                    throw new Error(`Product "${product.productName}" thiếu variant_id`);
+                }
+                
+                const insertRequest = new sql.Request();
+                await insertRequest
+                    .input('voucher_id', sql.UniqueIdentifier, newVoucher.id)
+                    .input('san_pham_id', sql.UniqueIdentifier, product.variantId)
+                    .query(`
+                        INSERT INTO voucher_products 
+                        (voucher_id, san_pham_id)
+                        VALUES 
+                        (@voucher_id, @san_pham_id)
+                    `);
+            }
+            
+            console.log('✅ Voucher products added successfully');
+        }
+        
+        res.json({
+            success: true,
+            message: 'Tạo voucher thành công',
+            voucher: newVoucher
+        });
+    } catch (error) {
+        console.error('❌ Create Voucher Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tạo voucher: ' + error.message
+        });
+    }
+});
+
+// PUT /api/vouchers/:id - Cập nhật voucher
+app.put('/api/vouchers/:id', async (req, res) => {
+    try {
+        console.log('📝 Updating voucher...', req.params.id, req.body);
+        
+        const voucherData = {
+            ma_voucher: req.body.ma_voucher,
+            ten_voucher: req.body.ten_voucher,
+            mo_ta: req.body.mo_ta || null,
+            loai_giam_gia: req.body.loai_giam_gia,
+            gia_tri_giam: parseFloat(req.body.gia_tri_giam),
+            gia_tri_toi_da: req.body.gia_tri_toi_da ? parseFloat(req.body.gia_tri_toi_da) : null,
+            don_hang_toi_thieu: parseFloat(req.body.don_hang_toi_thieu) || 0,
+            so_luong: parseInt(req.body.so_luong),
+            ngay_bat_dau: req.body.ngay_bat_dau,
+            ngay_ket_thuc: req.body.ngay_ket_thuc,
+            pham_vi: req.body.pham_vi || 'toan_cuc',
+            loai_voucher: req.body.loai_voucher || null,
+            trang_thai: req.body.trang_thai ? 1 : 0
+        };
+        
+        // Validate
+        if (voucherData.loai_giam_gia === 'phantram' && voucherData.gia_tri_giam > 100) {
+            return res.status(400).json({
+                success: false,
+                message: 'Giá trị giảm theo phần trăm không được vượt quá 100%'
+            });
+        }
+        
+        if (new Date(voucherData.ngay_bat_dau) >= new Date(voucherData.ngay_ket_thuc)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ngày bắt đầu phải nhỏ hơn ngày kết thúc'
+            });
+        }
+        
+        // Update voucher basic info
+        const request = new sql.Request();
+        const result = await request
+            .input('id', sql.UniqueIdentifier, req.params.id)
+            .input('ma_voucher', sql.NVarChar(50), voucherData.ma_voucher)
+            .input('ten_voucher', sql.NVarChar(255), voucherData.ten_voucher)
+            .input('mo_ta', sql.NVarChar(500), voucherData.mo_ta)
+            .input('loai_giam_gia', sql.NVarChar(20), voucherData.loai_giam_gia)
+            .input('gia_tri_giam', sql.Decimal(15, 2), voucherData.gia_tri_giam)
+            .input('gia_tri_toi_da', sql.Decimal(15, 2), voucherData.gia_tri_toi_da)
+            .input('don_hang_toi_thieu', sql.Decimal(15, 2), voucherData.don_hang_toi_thieu)
+            .input('so_luong', sql.Int, voucherData.so_luong)
+            .input('ngay_bat_dau', sql.DateTime2, voucherData.ngay_bat_dau)
+            .input('ngay_ket_thuc', sql.DateTime2, voucherData.ngay_ket_thuc)
+            .input('pham_vi', sql.NVarChar(20), voucherData.pham_vi)
+            .input('loai_voucher', sql.NVarChar(50), voucherData.loai_voucher)
+            .input('trang_thai', sql.Bit, voucherData.trang_thai)
+            .query(`
+                UPDATE vouchers 
+                SET ma_voucher = @ma_voucher,
+                    ten_voucher = @ten_voucher,
+                    mo_ta = @mo_ta,
+                    loai_giam_gia = @loai_giam_gia,
+                    gia_tri_giam = @gia_tri_giam,
+                    gia_tri_toi_da = @gia_tri_toi_da,
+                    don_hang_toi_thieu = @don_hang_toi_thieu,
+                    so_luong = @so_luong,
+                    ngay_bat_dau = @ngay_bat_dau,
+                    ngay_ket_thuc = @ngay_ket_thuc,
+                    pham_vi = @pham_vi,
+                    loai_voucher = @loai_voucher,
+                    trang_thai = @trang_thai,
+                    ngay_cap_nhat = GETDATE()
+                OUTPUT INSERTED.*
+                WHERE id = @id
+            `);
+        
+        const updatedVoucher = result.recordset[0];
+        
+        if (!updatedVoucher) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy voucher'
+            });
+        }
+
+        // Update voucher products if pham_vi = 'theo_san_pham' and products provided
+        if (voucherData.pham_vi === 'theo_san_pham' && req.body.products && Array.isArray(req.body.products)) {
+            console.log('📦 Updating voucher products...', req.body.products.length, 'variants');
+            
+            // Delete existing products
+            const deleteRequest = new sql.Request();
+            await deleteRequest
+                .input('voucher_id', sql.UniqueIdentifier, req.params.id)
+                .query('DELETE FROM voucher_products WHERE voucher_id = @voucher_id');
+
+            // Insert new products
+            for (const product of req.body.products) {
+                console.log('📝 Inserting product:', product);
+                
+                // Validate variantId
+                if (!product.variantId) {
+                    console.error('❌ Missing variantId for product:', product);
+                    throw new Error(`Product "${product.productName}" thiếu variant_id`);
+                }
+                
+                const insertRequest = new sql.Request();
+                await insertRequest
+                    .input('voucher_id', sql.UniqueIdentifier, req.params.id)
+                    .input('san_pham_id', sql.UniqueIdentifier, product.variantId)
+                    .query(`
+                        INSERT INTO voucher_products 
+                        (voucher_id, san_pham_id)
+                        VALUES 
+                        (@voucher_id, @san_pham_id)
+                    `);
+            }
+            
+            console.log('✅ Voucher products updated successfully');
+        } else if (voucherData.pham_vi !== 'theo_san_pham') {
+            // If pham_vi changed from 'theo_san_pham' to something else, clear products
+            const deleteRequest = new sql.Request();
+            await deleteRequest
+                .input('voucher_id', sql.UniqueIdentifier, req.params.id)
+                .query('DELETE FROM voucher_products WHERE voucher_id = @voucher_id');
+        }
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật voucher thành công',
+            voucher: updatedVoucher
+        });
+    } catch (error) {
+        console.error('❌ Update Voucher Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật voucher: ' + error.message
+        });
+    }
+});
+
+// DELETE /api/vouchers/:id - Xóa voucher
+app.delete('/api/vouchers/:id', async (req, res) => {
+    try {
+        console.log('🗑️ Deleting voucher:', req.params.id);
+        
+        // Get voucher info first
+        const getRequest = new sql.Request();
+        const getResult = await getRequest
+            .input('id', sql.UniqueIdentifier, req.params.id)
+            .query('SELECT mongo_voucher_detail_id FROM vouchers WHERE id = @id');
+        
+        if (getResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy voucher'
+            });
+        }
+        
+        const mongoDetailId = getResult.recordset[0].mongo_voucher_detail_id;
+        
+        // Delete voucher_products first (due to foreign key)
+        const deleteProductsRequest = new sql.Request();
+        await deleteProductsRequest
+            .input('voucher_id', sql.UniqueIdentifier, req.params.id)
+            .query('DELETE FROM voucher_products WHERE voucher_id = @voucher_id');
+        
+        // Delete from SQL
+        const deleteRequest = new sql.Request();
+        await deleteRequest
+            .input('id', sql.UniqueIdentifier, req.params.id)
+            .query('DELETE FROM vouchers WHERE id = @id');
+        
+        // Delete from MongoDB if exists
+        if (mongoDetailId) {
+            try {
+                await DataModel.Mongo.VoucherDetail.deleteById(mongoDetailId);
+                console.log('✅ MongoDB detail deleted');
+            } catch (mongoErr) {
+                console.error('⚠️ MongoDB delete error (non-critical):', mongoErr);
+            }
+        }
+        
+        console.log('✅ Voucher deleted successfully');
+        
+        res.json({
+            success: true,
+            message: 'Xóa voucher thành công'
+        });
+    } catch (error) {
+        console.error('❌ Delete Voucher Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa voucher: ' + error.message
+        });
+    }
+});
+
 // Start server
 app.listen(3000, () => console.log('Server running on port 3000'));
