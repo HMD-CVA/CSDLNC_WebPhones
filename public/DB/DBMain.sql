@@ -1471,3 +1471,17 @@ GO
     "link_anh": null
   }
 ]
+
+
+-- ========== DỮ LIỆU USERS MẪU ==========
+-- Mật khẩu: 123456 (đã hash SHA256)
+-- Hash: 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
+
+INSERT INTO users (email, mat_khau, ho_ten, so_dien_thoai, vung_id, trang_thai) VALUES
+(N'admin@webphones.vn', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Quản Trị Viên', '0901234567', N'bac', 1),
+(N'user@test.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Nguyễn Văn A', '0912345678', N'nam', 1),
+(N'khachhang@gmail.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Trần Thị B', '0923456789', N'trung', 1);
+GO
+
+PRINT N'✅ Đã thêm 3 users mẫu (mật khẩu: 123456)';
+GO

@@ -1,0 +1,464 @@
+<div class="container py-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <div class="avatar-circle mx-auto" style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-user fa-3x text-white"></i>
+                        </div>
+                    </div>
+                    <h5 class="mb-1" id="profileName">Đang tải...</h5>
+                    <p class="text-muted small mb-3" id="profileEmail">email@example.com</p>
+                    <span class="badge bg-success" id="profileStatus">Đã xác thực</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="/profile" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user me-2"></i>Thông tin tài khoản
+                    </a>
+                    <a href="/orders" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi
+                    </a>
+                    <a href="/addresses" class="list-group-item list-group-item-action">
+                        <i class="fas fa-map-marker-alt me-2"></i>Địa chỉ giao hàng
+                    </a>
+                    <a href="/wishlist" class="list-group-item list-group-item-action">
+                        <i class="fas fa-heart me-2"></i>Sản phẩm yêu thích
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action text-danger" id="btnProfileLogout">
+                        <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-circle text-primary me-2"></i>
+                        Thông tin tài khoản
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- User Info Form -->
+                    <form id="profileForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Họ và tên</label>
+                                <input type="text" class="form-control" id="inputHoTen" placeholder="Nhập họ tên">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Email</label>
+                                <input type="email" class="form-control" id="inputEmail" readonly disabled>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Số điện thoại</label>
+                                <input type="tel" class="form-control" id="inputPhone" placeholder="Nhập số điện thoại">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Vùng miền</label>
+                                <select class="form-select" id="inputVung">
+                                    <option value="bac">Miền Bắc</option>
+                                    <option value="trung">Miền Trung</option>
+                                    <option value="nam">Miền Nam</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Giới tính</label>
+                                <select class="form-select" id="inputGioiTinh">
+                                    <option value="">Chọn giới tính</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Ngày sinh</label>
+                                <input type="date" class="form-control" id="inputNgaySinh">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Địa chỉ</label>
+                                <textarea class="form-control" id="inputDiaChi" rows="2" placeholder="Nhập địa chỉ chi tiết"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Ngày đăng ký</label>
+                                <input type="text" class="form-control" id="inputNgayDangKy" readonly disabled>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary px-4" onclick="loadUserProfile()">
+                                <i class="fas fa-undo me-2"></i>Hủy
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Change Password Section -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lock text-warning me-2"></i>
+                        Đổi mật khẩu
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control" id="currentPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="newPassword" required minlength="6">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Xác nhận mật khẩu mới</label>
+                            <input type="password" class="form-control" id="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning px-4">
+                            <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// Require login for this page
+if (!AuthHelper.requireLogin()) {
+    // Will redirect to login if not authenticated
+}
+
+// Load user profile from database using session info
+async function loadUserProfile() {
+    // Get user session (only id and email)
+    const userSession = AuthHelper.getCurrentUser();
+    
+    if (!userSession || !userSession.id) {
+        console.error('❌ No user session found');
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.'
+        }).then(() => {
+            window.location.href = '/login';
+        });
+        return;
+    }
+    
+    console.log('🔄 Loading profile from database using email:', userSession.email);
+    
+    try {
+        // Query database by EMAIL to get full user info
+        const encodedEmail = encodeURIComponent(userSession.email);
+        const response = await fetch('/api/profile/by-email/' + encodedEmail, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + AuthHelper.getAuthToken()
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            const userData = result.data.user;
+            const extendedData = result.data.extendedProfile;
+            
+            console.log('✅ Profile data loaded from DB:', userData);
+            
+            // Update sidebar
+            document.getElementById('profileName').textContent = userData.ho_ten || 'Chưa cập nhật';
+            document.getElementById('profileEmail').textContent = userData.email;
+            document.getElementById('profileStatus').textContent = userData.trang_thai ? 'Hoạt động' : 'Bị khóa';
+            document.getElementById('profileStatus').className = userData.trang_thai ? 'badge bg-success' : 'badge bg-danger';
+            
+            // Update form - SQL data
+            document.getElementById('inputHoTen').value = userData.ho_ten || '';
+            document.getElementById('inputEmail').value = userData.email || '';
+            document.getElementById('inputPhone').value = userData.so_dien_thoai || '';
+            document.getElementById('inputVung').value = userData.vung_id || 'bac';
+            
+            // Update form - Extended MongoDB data
+            if (extendedData) {
+                document.getElementById('inputDiaChi').value = extendedData.dia_chi || '';
+                document.getElementById('inputNgaySinh').value = extendedData.ngay_sinh ? 
+                    new Date(extendedData.ngay_sinh).toISOString().split('T')[0] : '';
+                document.getElementById('inputGioiTinh').value = extendedData.gioi_tinh || '';
+            } else {
+                document.getElementById('inputDiaChi').value = '';
+                document.getElementById('inputNgaySinh').value = '';
+                document.getElementById('inputGioiTinh').value = '';
+            }
+            
+            // Format registration date
+            if (userData.ngay_dang_ky) {
+                const date = new Date(userData.ngay_dang_ky);
+                document.getElementById('inputNgayDangKy').value = date.toLocaleDateString('vi-VN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+        } else {
+            throw new Error(result.message || 'Không thể tải thông tin profile');
+        }
+        
+    } catch (error) {
+        console.error('❌ Load profile error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Không thể tải thông tin profile: ' + error.message
+        });
+    }
+}
+
+// Update profile
+document.getElementById('profileForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const userSession = AuthHelper.getCurrentUser();
+    
+    if (!userSession || !userSession.id) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Không tìm thấy thông tin người dùng'
+        });
+        return;
+    }
+    
+    const updateData = {
+        ho_ten: document.getElementById('inputHoTen').value.trim(),
+        so_dien_thoai: document.getElementById('inputPhone').value.trim(),
+        vung_id: document.getElementById('inputVung').value,
+        dia_chi: document.getElementById('inputDiaChi').value.trim(),
+        ngay_sinh: document.getElementById('inputNgaySinh').value,
+        gioi_tinh: document.getElementById('inputGioiTinh').value
+    };
+    
+    // Validate
+    if (!updateData.ho_ten) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Cảnh báo',
+            text: 'Vui lòng nhập họ tên'
+        });
+        return;
+    }
+    
+    console.log('📤 Updating profile:', updateData);
+    
+    try {
+        const response = await fetch('/api/profile/' + userSession.id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + AuthHelper.getAuthToken()
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Profile updated:', result.data);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Cập nhật thành công',
+                text: 'Thông tin của bạn đã được cập nhật',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            
+            // Reload profile sau khi update
+            setTimeout(() => loadUserProfile(), 500);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: result.message || 'Không thể cập nhật thông tin'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Update error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Không thể kết nối đến server'
+        });
+    }
+});
+
+// Change password
+document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const userSession = AuthHelper.getCurrentUser();
+    
+    if (!userSession || !userSession.id) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Không tìm thấy thông tin người dùng'
+        });
+        return;
+    }
+    
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Cảnh báo',
+            text: 'Vui lòng nhập đầy đủ thông tin'
+        });
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Mật khẩu xác nhận không khớp'
+        });
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Cảnh báo',
+            text: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+        });
+        return;
+    }
+    
+    console.log('🔐 Changing password for user:', userSession.id);
+    
+    try {
+        const response = await fetch('/api/profile/' + userSession.id + '/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + AuthHelper.getAuthToken()
+            },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Password changed successfully');
+            
+            // Clear form
+            document.getElementById('changePasswordForm').reset();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công',
+                text: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.',
+                confirmButtonText: 'Đăng nhập lại'
+            }).then(() => {
+                // Logout và redirect về login
+                AuthHelper.logout();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: result.message || 'Không thể đổi mật khẩu'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Change password error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: 'Không thể kết nối đến server'
+        });
+    }
+});
+
+// Logout button
+document.getElementById('btnProfileLogout').addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    Swal.fire({
+        title: 'Đăng xuất',
+        text: 'Bạn có chắc muốn đăng xuất?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Đăng xuất',
+        cancelButtonText: 'Hủy',
+        confirmButtonColor: '#dc3545'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            AuthHelper.logout();
+        }
+    });
+});
+
+// Initialize - Load profile when page loads
+loadUserProfile();
+</script>
+
+<style>
+.avatar-circle {
+    transition: all 0.3s ease;
+}
+
+.avatar-circle:hover {
+    transform: scale(1.05);
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+
+.list-group-item-action.active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: #667eea;
+}
+</style>

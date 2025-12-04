@@ -97,7 +97,7 @@
             <!-- User Account -->
             <div class="col-auto">
                 <div class="dropdown cps-user-dropdown">
-                    <button class="btn btn-link text-decoration-none p-0" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-link text-decoration-none p-0" type="button" id="userDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
                         <div class="d-flex align-items-center">
                             <i class="fas fa-user text-danger me-2"></i>
                             <div class="text-start d-none d-md-block">
@@ -106,26 +106,44 @@
                             </div>
                         </div>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdownBtn">
+                        <!-- Not logged in menu -->
                         <li class="cps-user-not-logged">
-                            <a class="dropdown-item" href="/login" id="btnLogin">
+                            <a class="dropdown-item" href="/login">
                                 <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập
                             </a>
-                            <a class="dropdown-item" href="/register" id="btnRegister">
+                        </li>
+                        <li class="cps-user-not-logged">
+                            <a class="dropdown-item" href="/register">
                                 <i class="fas fa-user-plus me-2"></i>Đăng ký
                             </a>
                         </li>
+                        
+                        <!-- Logged in menu -->
                         <li class="cps-user-logged d-none">
-                            <a class="dropdown-item" href="/profile">
-                                <i class="fas fa-user-circle me-2"></i>Thông tin tài khoản
+                            <h6 class="dropdown-header">
+                                <i class="fas fa-user-circle me-2"></i>Tài khoản
+                            </h6>
+                        </li>
+                        <li class="cps-user-logged d-none">
+                            <a class="dropdown-item fw-bold" href="/profile" style="color: #d70018 !important;">
+                                <i class="fas fa-id-card me-2"></i>Thông tin cá nhân
                             </a>
+                        </li>
+                        <li class="cps-user-logged d-none">
                             <a class="dropdown-item" href="/orders">
                                 <i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi
                             </a>
+                        </li>
+                        <li class="cps-user-logged d-none">
                             <a class="dropdown-item" href="/wishlist">
                                 <i class="fas fa-heart me-2"></i>Yêu thích
                             </a>
+                        </li>
+                        <li class="cps-user-logged d-none">
                             <hr class="dropdown-divider">
+                        </li>
+                        <li class="cps-user-logged d-none">
                             <a class="dropdown-item text-danger" href="#" id="btnLogout">
                                 <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
                             </a>
@@ -326,6 +344,187 @@
                 }, 1500);
             }
         }
+    });
+})();
+
+// User Authentication Management
+(function() {
+    const AuthManager = {
+        // Get current user session (only id and email)
+        getCurrentUser: function() {
+            try {
+                const userSession = localStorage.getItem('user_session') || sessionStorage.getItem('user_session');
+                return userSession ? JSON.parse(userSession) : null;
+            } catch (error) {
+                console.error('Error loading user session:', error);
+                return null;
+            }
+        },
+
+        // Get auth token
+        getAuthToken: function() {
+            return localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        },
+
+        // Check if user is logged in
+        isLoggedIn: function() {
+            return this.getCurrentUser() !== null && this.getAuthToken() !== null;
+        },
+
+        // Logout
+        logout: async function() {
+            try {
+                // Call logout API
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + this.getAuthToken()
+                    }
+                });
+            } catch (error) {
+                console.error('Logout API error:', error);
+            }
+            
+            // Clear local data
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_session');
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('user_session');
+            
+            // Reload page
+            window.location.href = '/';
+        },
+
+        // Update UI based on auth state
+        updateUI: function() {
+            console.log('🔄 AuthManager: Updating UI...');
+            
+            const userSession = this.getCurrentUser();
+            const token = this.getAuthToken();
+            
+            console.log('👤 Current user session:', userSession);
+            console.log('🔑 Has token:', !!token);
+            
+            const userDisplayName = document.getElementById('userDisplayName');
+            const userNotLoggedElements = document.querySelectorAll('.cps-user-not-logged');
+            const userLoggedElements = document.querySelectorAll('.cps-user-logged');
+            
+            console.log('🎯 DOM elements:', {
+                userDisplayName: !!userDisplayName,
+                userNotLoggedCount: userNotLoggedElements.length,
+                userLoggedCount: userLoggedElements.length
+            });
+            
+            if (userSession && token) {
+                // User is logged in
+                console.log('✅ User is logged in:', userSession.email);
+                
+                if (userDisplayName) {
+                    // Only have email, show username part
+                    const displayName = userSession.email.split('@')[0];
+                    const shortName = displayName.length > 15 
+                        ? displayName.substring(0, 15) + '...' 
+                        : displayName;
+                    userDisplayName.textContent = shortName;
+                    console.log('📝 Updated display name to:', shortName);
+                }
+                
+                // Hide all not-logged elements
+                userNotLoggedElements.forEach(el => {
+                    el.classList.add('d-none');
+                });
+                console.log('👁️ Hidden', userNotLoggedElements.length, 'login buttons');
+                
+                // Show all logged elements
+                userLoggedElements.forEach(el => {
+                    el.classList.remove('d-none');
+                });
+                console.log('👁️ Shown', userLoggedElements.length, 'user menu items');
+            } else {
+                // User is not logged in
+                console.log('❌ User not logged in');
+                
+                if (userDisplayName) {
+                    userDisplayName.textContent = 'Đăng nhập';
+                }
+                
+                // Show all not-logged elements
+                userNotLoggedElements.forEach(el => {
+                    el.classList.remove('d-none');
+                });
+                
+                // Hide all logged elements
+                userLoggedElements.forEach(el => {
+                    el.classList.add('d-none');
+                });
+            }
+            
+            console.log('✅ UI update complete');
+        },
+
+        // Initialize
+        init: function() {
+            console.log('🚀 AuthManager: Initializing...');
+            console.log('📍 Document ready state:', document.readyState);
+            
+            // Wait a bit for DOM to be fully ready
+            setTimeout(() => {
+                console.log('⏰ Running delayed UI update...');
+                this.updateUI();
+            }, 100);
+            
+            // Also update immediately
+            this.updateUI();
+            
+            // Handle logout button
+            const btnLogout = document.getElementById('btnLogout');
+            if (btnLogout) {
+                console.log('🔘 Logout button found, attaching listener');
+                btnLogout.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    if (confirm('Bạn có chắc muốn đăng xuất?')) {
+                        this.logout();
+                    }
+                });
+            } else {
+                console.warn('⚠️ Logout button not found');
+            }
+            
+            // Listen for auth changes from other tabs
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'user_session' || e.key === 'auth_token') {
+                    console.log('🔄 Storage changed, updating UI');
+                    this.updateUI();
+                }
+            });
+            
+            console.log('✅ AuthManager initialized');
+        }
+    };
+
+    // Make AuthManager globally available
+    window.AuthManager = AuthManager;
+
+    // Initialize when DOM is ready - with multiple fallbacks
+    console.log('📦 AuthManager script loaded, readyState:', document.readyState);
+    
+    if (document.readyState === 'loading') {
+        console.log('⏳ Waiting for DOMContentLoaded...');
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('✅ DOMContentLoaded fired');
+            AuthManager.init();
+        });
+    } else {
+        console.log('⚡ DOM already ready, initializing now');
+        AuthManager.init();
+    }
+    
+    // Also try on window load as final fallback
+    window.addEventListener('load', () => {
+        console.log('🔄 Window load event, re-checking auth state');
+        AuthManager.updateUI();
     });
 })();
 </script>

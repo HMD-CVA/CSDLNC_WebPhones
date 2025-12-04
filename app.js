@@ -785,6 +785,508 @@ app.get('/register', (req, res) => {
     }
 });
 
+// Trang profile
+app.get('/profile', (req, res) => {
+    try {
+        res.render('profile', {
+            layout: 'HomeMain'
+        });
+    } catch (err) {
+        console.error('Error loading profile page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// ========== API AUTHENTICATION ==========
+
+// POST /api/auth/login - Đăng nhập
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        console.log('🔐 Login attempt:', req.body.identifier);
+        
+        const { identifier, password, rememberMe } = req.body;
+        
+        if (!identifier || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập đầy đủ thông tin đăng nhập'
+            });
+        }
+        
+        // Tìm user theo email hoặc số điện thoại
+        const request = new sql.Request();
+        const result = await request
+            .input('identifier', sql.NVarChar(255), identifier.trim())
+            .query(`
+                SELECT 
+                    id,
+                    email,
+                    mat_khau,
+                    ho_ten,
+                    so_dien_thoai,
+                    vung_id,
+                    mongo_profile_id,
+                    trang_thai,
+                    ngay_dang_ky
+                FROM users 
+                WHERE (email = @identifier OR so_dien_thoai = @identifier)
+            `);
+        
+        if (result.recordset.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: 'Email/Số điện thoại hoặc mật khẩu không đúng'
+            });
+        }
+        
+        const user = result.recordset[0];
+        
+        // Kiểm tra trạng thái tài khoản
+        if (!user.trang_thai) {
+            return res.status(403).json({
+                success: false,
+                message: 'Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ.'
+            });
+        }
+        
+        // So sánh mật khẩu (hash với SHA256)
+        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+        
+        if (user.mat_khau !== hashedPassword) {
+            return res.status(401).json({
+                success: false,
+                message: 'Email/Số điện thoại hoặc mật khẩu không đúng'
+            });
+        }
+        
+        // Tạo session token (UUID)
+        const sessionToken = crypto.randomUUID();
+        
+        // Lưu thông tin session (có thể lưu vào DB hoặc cache như Redis)
+        // Hiện tại chỉ trả token về client
+        
+        console.log('✅ Login successful:', user.email);
+        
+        // Trả về thông tin user (không bao gồm mật khẩu)
+        return res.json({
+            success: true,
+            message: 'Đăng nhập thành công',
+            token: sessionToken,
+            user: {
+                id: user.id,
+                email: user.email,
+                ho_ten: user.ho_ten,
+                so_dien_thoai: user.so_dien_thoai,
+                vung_id: user.vung_id,
+                mongo_profile_id: user.mongo_profile_id,
+                ngay_dang_ky: user.ngay_dang_ky
+            },
+            redirectUrl: '/'
+        });
+        
+    } catch (error) {
+        console.error('❌ Login error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi hệ thống. Vui lòng thử lại sau.'
+        });
+    }
+});
+
+// POST /api/auth/register - Đăng ký tài khoản mới
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        console.log('📝 Registration attempt:', req.body.email);
+        
+        const { email, password, ho_ten, so_dien_thoai, vung_id } = req.body;
+        
+        // Validate input
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email và mật khẩu là bắt buộc'
+            });
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email không hợp lệ'
+            });
+        }
+        
+        // Validate password length
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mật khẩu phải có ít nhất 6 ký tự'
+            });
+        }
+        
+        // Kiểm tra email đã tồn tại chưa
+        const checkRequest = new sql.Request();
+        const checkResult = await checkRequest
+            .input('email', sql.NVarChar(255), email.trim())
+            .input('so_dien_thoai', sql.NVarChar(20), so_dien_thoai || null)
+            .query(`
+                SELECT id FROM users 
+                WHERE email = @email 
+                ${so_dien_thoai ? 'OR so_dien_thoai = @so_dien_thoai' : ''}
+            `);
+        
+        if (checkResult.recordset.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: 'Email hoặc số điện thoại đã được sử dụng'
+            });
+        }
+        
+        // Hash mật khẩu
+        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+        
+        // Tạo user mới
+        const insertRequest = new sql.Request();
+        const result = await insertRequest
+            .input('email', sql.NVarChar(255), email.trim())
+            .input('mat_khau', sql.NVarChar(255), hashedPassword)
+            .input('ho_ten', sql.NVarChar(100), ho_ten || null)
+            .input('so_dien_thoai', sql.NVarChar(20), so_dien_thoai || null)
+            .input('vung_id', sql.NVarChar(10), vung_id || 'bac')
+            .query(`
+                INSERT INTO users (email, mat_khau, ho_ten, so_dien_thoai, vung_id, trang_thai)
+                OUTPUT INSERTED.*
+                VALUES (@email, @mat_khau, @ho_ten, @so_dien_thoai, @vung_id, 1)
+            `);
+        
+        const newUser = result.recordset[0];
+        
+        console.log('✅ Registration successful:', newUser.email);
+        
+        // Tự động đăng nhập sau khi đăng ký
+        const sessionToken = crypto.randomUUID();
+        
+        return res.json({
+            success: true,
+            message: 'Đăng ký thành công',
+            token: sessionToken,
+            user: {
+                id: newUser.id,
+                email: newUser.email,
+                ho_ten: newUser.ho_ten,
+                so_dien_thoai: newUser.so_dien_thoai,
+                vung_id: newUser.vung_id,
+                ngay_dang_ky: newUser.ngay_dang_ky
+            },
+            redirectUrl: '/'
+        });
+        
+    } catch (error) {
+        console.error('❌ Registration error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi hệ thống. Vui lòng thử lại sau.'
+        });
+    }
+});
+
+// POST /api/auth/logout - Đăng xuất
+app.post('/api/auth/logout', async (req, res) => {
+    try {
+        // Xóa session token (nếu lưu trong DB/cache)
+        
+        return res.json({
+            success: true,
+            message: 'Đăng xuất thành công'
+        });
+    } catch (error) {
+        console.error('❌ Logout error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Lỗi hệ thống'
+        });
+    }
+});
+
+// ========== API PROFILE MANAGEMENT ==========
+
+// GET /api/profile/by-email/:email - Lấy thông tin profile user bằng EMAIL
+app.get('/api/profile/by-email/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        
+        console.log('📧 Getting profile by email:', email);
+        
+        // Lấy thông tin user từ SQL Server bằng EMAIL
+        const request = new sql.Request();
+        const userResult = await request
+            .input('email', sql.NVarChar, email)
+            .query(`
+                SELECT id, email, ho_ten, so_dien_thoai, vung_id, 
+                       mongo_profile_id, ngay_dang_ky, trang_thai
+                FROM users 
+                WHERE email = @email
+            `);
+        
+        if (!userResult.recordset || userResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng với email: ' + email
+            });
+        }
+        
+        const user = userResult.recordset[0];
+        
+        // Lấy thông tin mở rộng từ MongoDB nếu có
+        let extendedProfile = null;
+        if (user.mongo_profile_id) {
+            try {
+                extendedProfile = await db.mongoDB
+                    .collection('user_profiles')
+                    .findOne({ _id: new db.ObjectId(user.mongo_profile_id) });
+            } catch (mongoError) {
+                console.warn('MongoDB profile not found:', mongoError);
+            }
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                user: user,
+                extendedProfile: extendedProfile
+            }
+        });
+        
+    } catch (error) {
+        console.error('Get profile by email error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin profile: ' + error.message
+        });
+    }
+});
+
+// GET /api/profile/:userId - Lấy thông tin profile user (giữ lại cho tương thích)
+app.get('/api/profile/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        // Lấy thông tin user từ SQL Server
+        const userQuery = `
+            SELECT id, email, ho_ten, so_dien_thoai, vung_id, 
+                   mongo_profile_id, ngay_dang_ky, trang_thai
+            FROM users 
+            WHERE id = @userId
+        `;
+        
+        const userResult = await db.querySQL(userQuery, [
+            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
+        ]);
+        
+        if (!userResult || userResult.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng'
+            });
+        }
+        
+        const user = userResult[0];
+        
+        // Lấy thông tin mở rộng từ MongoDB nếu có
+        let extendedProfile = null;
+        if (user.mongo_profile_id) {
+            try {
+                extendedProfile = await db.mongoDB
+                    .collection('user_profiles')
+                    .findOne({ _id: new db.ObjectId(user.mongo_profile_id) });
+            } catch (mongoError) {
+                console.warn('MongoDB profile not found:', mongoError);
+            }
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                user: user,
+                extendedProfile: extendedProfile
+            }
+        });
+        
+    } catch (error) {
+        console.error('Get profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin profile'
+        });
+    }
+});
+
+// PUT /api/profile/:userId - Cập nhật thông tin profile
+app.put('/api/profile/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { ho_ten, so_dien_thoai, vung_id, dia_chi, ngay_sinh, gioi_tinh } = req.body;
+        
+        // Validate dữ liệu cơ bản
+        if (!ho_ten || ho_ten.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Họ tên không được để trống'
+            });
+        }
+        
+        // Cập nhật SQL Server
+        const updateQuery = `
+            UPDATE users 
+            SET ho_ten = @ho_ten,
+                so_dien_thoai = @so_dien_thoai,
+                vung_id = @vung_id
+            WHERE id = @userId
+        `;
+        
+        await db.querySQL(updateQuery, [
+            { name: 'ho_ten', type: db.sql.NVarChar, value: ho_ten },
+            { name: 'so_dien_thoai', type: db.sql.VarChar, value: so_dien_thoai || null },
+            { name: 'vung_id', type: db.sql.VarChar, value: vung_id || null },
+            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
+        ]);
+        
+        // Lấy mongo_profile_id
+        const userQuery = `SELECT mongo_profile_id FROM users WHERE id = @userId`;
+        const userResult = await db.querySQL(userQuery, [
+            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
+        ]);
+        
+        let mongoProfileId = userResult[0]?.mongo_profile_id;
+        
+        // Cập nhật hoặc tạo MongoDB profile
+        const mongoData = {
+            dia_chi: dia_chi || null,
+            ngay_sinh: ngay_sinh || null,
+            gioi_tinh: gioi_tinh || null,
+            updated_at: new Date()
+        };
+        
+        if (mongoProfileId) {
+            // Update existing profile
+            await db.mongoDB.collection('user_profiles').updateOne(
+                { _id: new db.ObjectId(mongoProfileId) },
+                { $set: mongoData }
+            );
+        } else {
+            // Create new profile
+            mongoData.user_id = userId;
+            mongoData.created_at = new Date();
+            
+            const mongoResult = await db.mongoDB.collection('user_profiles').insertOne(mongoData);
+            mongoProfileId = mongoResult.insertedId.toString();
+            
+            // Update SQL with mongo_profile_id
+            await db.querySQL(
+                `UPDATE users SET mongo_profile_id = @mongoProfileId WHERE id = @userId`,
+                [
+                    { name: 'mongoProfileId', type: db.sql.VarChar, value: mongoProfileId },
+                    { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
+                ]
+            );
+        }
+        
+        // Lấy dữ liệu mới sau khi update
+        const updatedUser = await db.querySQL(
+            `SELECT id, email, ho_ten, so_dien_thoai, vung_id, mongo_profile_id, ngay_dang_ky, trang_thai 
+             FROM users WHERE id = @userId`,
+            [{ name: 'userId', type: db.sql.UniqueIdentifier, value: userId }]
+        );
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật thông tin thành công',
+            data: updatedUser[0]
+        });
+        
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật profile'
+        });
+    }
+});
+
+// POST /api/profile/:userId/change-password - Đổi mật khẩu
+app.post('/api/profile/:userId/change-password', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { current_password, new_password } = req.body;
+        
+        // Validate
+        if (!current_password || !new_password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng nhập đầy đủ thông tin'
+            });
+        }
+        
+        if (new_password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
+            });
+        }
+        
+        // Lấy mật khẩu hiện tại
+        const userQuery = `SELECT mat_khau FROM users WHERE id = @userId`;
+        const userResult = await db.querySQL(userQuery, [
+            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
+        ]);
+        
+        if (!userResult || userResult.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy người dùng'
+            });
+        }
+        
+        // Kiểm tra mật khẩu hiện tại
+        const currentPasswordHash = crypto.createHash('sha256').update(current_password).digest('hex');
+        
+        if (currentPasswordHash !== userResult[0].mat_khau) {
+            return res.status(401).json({
+                success: false,
+                message: 'Mật khẩu hiện tại không đúng'
+            });
+        }
+        
+        // Hash mật khẩu mới
+        const newPasswordHash = crypto.createHash('sha256').update(new_password).digest('hex');
+        
+        // Cập nhật mật khẩu
+        const updateQuery = `
+            UPDATE users 
+            SET mat_khau = @mat_khau
+            WHERE id = @userId
+        `;
+        
+        await db.querySQL(updateQuery, [
+            { name: 'mat_khau', type: db.sql.VarChar, value: newPasswordHash },
+            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
+        ]);
+        
+        res.json({
+            success: true,
+            message: 'Đổi mật khẩu thành công'
+        });
+        
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi đổi mật khẩu'
+        });
+    }
+});
+
 // Trang chi tiết sản phẩm
 app.get('/product/:id', async (req, res) => {
     try {
