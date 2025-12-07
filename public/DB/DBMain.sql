@@ -1,15 +1,3 @@
--- XÓA DATABASE CŨ VÀ TẠO MỚI
-USE master;
-GO
-
--- Ngắt kết nối tất cả các session đang sử dụng DB
-ALTER DATABASE DB_WEBPHONES SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-GO
-
--- Xóa database
-DROP DATABASE IF EXISTS DB_WEBPHONES;
-GO
-
 -- Tạo database mới
 CREATE DATABASE DB_WEBPHONES;
 GO
@@ -42,22 +30,11 @@ CREATE TABLE provinces (
 );
 GO
 
-CREATE TABLE wards (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    ma_phuong_xa NVARCHAR(20) UNIQUE NOT NULL,
-    ten_phuong_xa NVARCHAR(150) NOT NULL,
-    tinh_thanh_id UNIQUEIDENTIFIER NOT NULL,
-    loai NVARCHAR(20) DEFAULT N'xa' CHECK (loai IN (N'phuong', N'xa', N'thi_tran')),
-    is_inner_area BIT DEFAULT 0, -- Khu vực trung tâm (để tính phí ship)
-    trang_thai BIT DEFAULT 1,
-    ngay_tao DATETIME2 DEFAULT GETDATE(),
-    FOREIGN KEY (tinh_thanh_id) REFERENCES provinces(id) ON DELETE CASCADE
-);
-GO
 
 -- 2. BẢNG THƯƠNG HIỆU
+-- NOTE: NEWSEQUENTIALID() để hỗ trợ replication (tránh xung đột GUID)
 CREATE TABLE brands (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
     ten_thuong_hieu NVARCHAR(100) NOT NULL,
     mo_ta NVARCHAR(500),
     logo_url NVARCHAR(500),
@@ -68,8 +45,9 @@ CREATE TABLE brands (
 GO
 
 -- 3. BẢNG DANH MỤC
+-- NOTE: NEWSEQUENTIALID() để hỗ trợ replication (tránh xung đột GUID)
 CREATE TABLE categories (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
     ten_danh_muc NVARCHAR(100) NOT NULL,
     danh_muc_cha_id UNIQUEIDENTIFIER NULL,
     mo_ta NVARCHAR(500),
@@ -154,44 +132,32 @@ CREATE TABLE user_addresses (
 );
 GO
 
--- Index để tăng tốc truy vấn
-CREATE INDEX idx_user_addresses_user_id ON user_addresses(user_id);
-CREATE INDEX idx_user_addresses_default ON user_addresses(user_id, is_default) WHERE is_default = 1;
-CREATE INDEX idx_user_addresses_phuong_xa ON user_addresses(phuong_xa_id);
-GO
-
--- Trigger để đảm bảo chỉ 1 địa chỉ mặc định
-CREATE TRIGGER trg_user_addresses_default
-ON user_addresses
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    
-    -- Nếu có địa chỉ mới được set làm mặc định
-    IF EXISTS (SELECT 1 FROM inserted WHERE is_default = 1)
-    BEGIN
-        -- Bỏ mặc định của tất cả địa chỉ khác của user đó
-        UPDATE user_addresses
-        SET is_default = 0
-        WHERE user_id IN (SELECT user_id FROM inserted WHERE is_default = 1)
-          AND id NOT IN (SELECT id FROM inserted WHERE is_default = 1)
-          AND is_default = 1;
-    END
-END;
+CREATE TABLE wards (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    ma_phuong_xa NVARCHAR(20) UNIQUE NOT NULL,
+    ten_phuong_xa NVARCHAR(150) NOT NULL,
+    tinh_thanh_id UNIQUEIDENTIFIER NOT NULL,
+    loai NVARCHAR(20) DEFAULT N'xa' CHECK (loai IN (N'phuong', N'xa', N'thi_tran')),
+    is_inner_area BIT DEFAULT 0, -- Khu vực trung tâm (để tính phí ship)
+    trang_thai BIT DEFAULT 1,
+    ngay_tao DATETIME2 DEFAULT GETDATE(),
+    FOREIGN KEY (tinh_thanh_id) REFERENCES provinces(id) ON DELETE CASCADE
+);
 GO
 
 -- 6. BẢNG KHO HÀNG
 CREATE TABLE warehouses (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     ten_kho NVARCHAR(100) NOT NULL,
+    vung_id UNIQUEIDENTIFIER NOT NULL,
     phuong_xa_id UNIQUEIDENTIFIER NOT NULL,
     dia_chi_chi_tiet NVARCHAR(255) NOT NULL,
     so_dien_thoai NVARCHAR(20),
     trang_thai BIT DEFAULT 1,
     ngay_tao DATETIME2 DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
-    FOREIGN KEY (phuong_xa_id) REFERENCES wards(id)
+    FOREIGN KEY (phuong_xa_id) REFERENCES wards(id),
+    FOREIGN KEY (vung_id) REFERENCES regions(ma_vung)
 );
 GO
 
@@ -504,104 +470,6 @@ CREATE TABLE order_status_history (
 );
 GO
 
--- TẠO INDEX SAU KHI TẠO XONG TẤT CẢ BẢNG
-
--- Index cho bảng regions
-CREATE INDEX IX_regions_ma_vung ON regions(ma_vung);
-CREATE INDEX IX_regions_trang_thai ON regions(trang_thai);
-
--- Index cho bảng provinces
-CREATE INDEX IX_provinces_vung_id ON provinces(vung_id);
-CREATE INDEX IX_provinces_trang_thai ON provinces(trang_thai);
-CREATE INDEX IX_provinces_is_major_city ON provinces(is_major_city);
-
--- Index cho bảng wards
-CREATE INDEX IX_wards_tinh_thanh_id ON wards(tinh_thanh_id);
-CREATE INDEX IX_wards_loai ON wards(loai);
-CREATE INDEX IX_wards_is_inner_area ON wards(is_inner_area);
-CREATE INDEX IX_wards_trang_thai ON wards(trang_thai);
-
--- Index cho bảng warehouses
-CREATE INDEX IX_warehouses_phuong_xa_id ON warehouses(phuong_xa_id);
-CREATE INDEX IX_warehouses_trang_thai ON warehouses(trang_thai);
-
--- Index cho bảng categories
-CREATE INDEX IX_categories_danh_muc_cha_id ON categories(danh_muc_cha_id);
-CREATE INDEX IX_categories_trang_thai ON categories(trang_thai);
-CREATE INDEX IX_categories_slug ON categories(slug);
-
--- Index cho bảng brands
-CREATE INDEX IX_brands_slug ON brands(slug);
-CREATE INDEX IX_brands_trang_thai ON brands(trang_thai);
-
--- Index cho bảng products
-CREATE INDEX IX_products_danh_muc_id ON products(danh_muc_id);
-CREATE INDEX IX_products_thuong_hieu_id ON products(thuong_hieu_id);
-CREATE INDEX IX_products_gia_ban ON products(gia_ban);
-CREATE INDEX IX_products_ten_san_pham ON products(ten_san_pham);
-CREATE INDEX IX_products_trang_thai ON products(trang_thai);
-CREATE INDEX IX_products_ngay_tao ON products(ngay_tao);
-
--- Index cho bảng users
-CREATE INDEX IX_users_email ON users(email);
-CREATE INDEX IX_users_vung_id ON users(vung_id);
-CREATE INDEX IX_users_trang_thai ON users(trang_thai);
-CREATE INDEX IX_users_vai_tro ON users(vai_tro);
-CREATE INDEX IX_users_ma_nhan_vien ON users(ma_nhan_vien) WHERE ma_nhan_vien IS NOT NULL;
-
--- Index cho bảng inventory
-CREATE INDEX IX_inventory_san_pham_id ON inventory(san_pham_id);
-CREATE INDEX IX_inventory_kho_id ON inventory(kho_id);
-CREATE INDEX IX_inventory_so_luong_kha_dung ON inventory(so_luong_kha_dung);
-
--- Index cho bảng orders
-CREATE INDEX IX_orders_nguoi_dung_id ON orders(nguoi_dung_id);
-CREATE INDEX IX_orders_trang_thai ON orders(trang_thai);
-CREATE INDEX IX_orders_ngay_tao ON orders(ngay_tao);
-CREATE INDEX IX_orders_ma_don_hang ON orders(ma_don_hang);
-CREATE INDEX IX_orders_vung_don_hang ON orders(vung_don_hang);
-
--- Index cho bảng order_details
-CREATE INDEX IX_order_details_don_hang_id ON order_details(don_hang_id);
-CREATE INDEX IX_order_details_san_pham_id ON order_details(san_pham_id);
-
--- Index cho bảng vouchers
-CREATE INDEX IX_vouchers_ma_voucher ON vouchers(ma_voucher);
-CREATE INDEX IX_vouchers_ngay_ket_thuc ON vouchers(ngay_ket_thuc);
-CREATE INDEX IX_vouchers_trang_thai ON vouchers(trang_thai);
-CREATE INDEX IX_vouchers_loai_voucher ON vouchers(loai_voucher);
-
--- Index cho bảng flash_sales
-CREATE INDEX IX_flash_sales_ngay_bat_dau ON flash_sales(ngay_bat_dau);
-CREATE INDEX IX_flash_sales_ngay_ket_thuc ON flash_sales(ngay_ket_thuc);
-CREATE INDEX IX_flash_sales_trang_thai ON flash_sales(trang_thai);
-
--- Index cho bảng flash_sale_items
-CREATE INDEX IX_flash_sale_items_san_pham_id ON flash_sale_items(san_pham_id);
-CREATE INDEX IX_flash_sale_items_trang_thai ON flash_sale_items(trang_thai);
-
--- Index cho bảng payments
-CREATE INDEX IX_payments_don_hang_id ON payments(don_hang_id);
-CREATE INDEX IX_payments_trang_thai ON payments(trang_thai);
-CREATE INDEX IX_payments_ma_giao_dich ON payments(ma_giao_dich);
-
--- Index cho bảng cart_items
-CREATE INDEX IX_cart_items_san_pham_id ON cart_items(san_pham_id);
-
--- Index cho bảng reviews
-CREATE INDEX IX_reviews_san_pham_id ON reviews(san_pham_id);
-CREATE INDEX IX_reviews_nguoi_dung_id ON reviews(nguoi_dung_id);
-CREATE INDEX IX_reviews_diem_danh_gia ON reviews(diem_danh_gia);
-
--- Index cho bảng order_status_history
-CREATE INDEX IX_order_status_history_don_hang_id ON order_status_history(don_hang_id);
-CREATE INDEX IX_order_status_history_ngay_tao ON order_status_history(ngay_tao);
-
--- Index cho bảng otp_codes
-CREATE INDEX IX_otp_codes_email ON otp_codes(email);
-CREATE INDEX IX_otp_codes_ngay_het_han ON otp_codes(ngay_het_han);
-CREATE INDEX IX_otp_codes_da_su_dung ON otp_codes(da_su_dung);
-GO
 
 -- Chèn dữ liệu vào bảng brands
 INSERT INTO brands (ten_thuong_hieu, mo_ta, logo_url, slug) VALUES
@@ -1033,9 +901,10 @@ GO
 -- ========== CHÈN DỮ LIỆU KHO HÀNG (3 KHO THEO 3 VÙNG) ==========
 
 -- Kho Miền Bắc - Hà Nội
-INSERT INTO warehouses (ten_kho, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
+INSERT INTO warehouses (ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
 VALUES (
     N'Kho Miền Bắc - Hà Nội',
+    'bac',
     (SELECT id FROM wards WHERE ma_phuong_xa = 'HN-CG-02'), -- Phường Dịch Vọng, Cầu Giấy
     N'Số 123, Đường Xuân Thủy, KCN Dịch Vọng',
     '0243 456 7890',
@@ -1043,9 +912,10 @@ VALUES (
 );
 
 -- Kho Miền Trung - Đà Nẵng
-INSERT INTO warehouses (ten_kho, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
+INSERT INTO warehouses (ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
 VALUES (
     N'Kho Miền Trung - Đà Nẵng',
+    'trung',
     (SELECT id FROM wards WHERE ma_phuong_xa = 'DN-HC-01'), -- Phường Thạch Thang, Hải Châu
     N'Số 456, Đường Điện Biên Phủ, KCN Hòa Khánh',
     '0236 789 1234',
@@ -1053,9 +923,10 @@ VALUES (
 );
 
 -- Kho Miền Nam - TP.HCM
-INSERT INTO warehouses (ten_kho, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
+INSERT INTO warehouses (ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai)
 VALUES (
     N'Kho Miền Nam - TP.HCM',
+    'nam',
     (SELECT id FROM wards WHERE ma_phuong_xa = 'HCM-Q7-01'), -- Phường Tân Thuận Đông, Quận 7
     N'Số 789, Đường Nguyễn Văn Linh, KCN Tân Thuận',
     '028 9012 3456',
@@ -1261,218 +1132,6 @@ FROM products p;
 GO
 
 
-[
-  {
-    "id": "2c4fea31-0570-4812-8554-433c4595006d",
-    "ma_sku": "SP1764446294151",
-    "ten_san_pham": "Xiaomi Poco X5 Pro",
-    "danh_muc_id": "f5b79d05-21a1-4015-9c32-f8e767e27429",
-    "thuong_hieu_id": "0534a2ad-0ea5-4b25-b9d8-5477cf1f670b",
-    "gia_niem_yet": 749000000.0,
-    "gia_ban": 649000000.0,
-    "mongo_detail_id": "692b4c81f573133c3d9bbb55",
-    "trang_thai": "1",
-    "luot_xem": 380,
-    "so_luong_ban": 34,
-    "ngay_tao": "2025-11-29T19:00:30.1933333",
-    "ngay_cap_nhat": "2025-11-29T19:58:14.29",
-    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764445312/webPhone/products/xiaomi-poco-x5-pro1764445310359/images/elqusxxlegyn7kujtjkk.png"
-  },
-  {
-    "id": "f9b69fd2-f9cd-40d5-a392-4548957f186f",
-    "ma_sku": "SP1764445511101",
-    "ten_san_pham": "Nokia G22",
-    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
-    "thuong_hieu_id": "f51a2333-f561-4311-8d61-5b6020bad19e",
-    "gia_niem_yet": 499000000.0,
-    "gia_ban": 429000000.0,
-    "mongo_detail_id": "692b4d47cd08a1004c142bf5",
-    "trang_thai": "0",
-    "luot_xem": 180,
-    "so_luong_ban": 23,
-    "ngay_tao": "2025-11-29T19:00:30.1933333",
-    "ngay_cap_nhat": "2025-11-29T19:45:11.33",
-    "link_anh": null
-  },
-  {
-    "id": "b9c35097-5853-4f18-b336-58f4066cacef",
-    "ma_sku": "SSA54",
-    "ten_san_pham": "Samsung Galaxy A54",
-    "danh_muc_id": "01d4eab0-efe3-43ec-b4e6-1ae5d3b8cd4b",
-    "thuong_hieu_id": "a474c22c-fdcb-409b-aaef-e22981860a07",
-    "gia_niem_yet": 899000000.0,
-    "gia_ban": 799000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 420,
-    "so_luong_ban": 56,
-    "ngay_tao": "2025-11-29T19:00:30.1933333",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.1933333",
-    "link_anh": null
-  },
-  {
-    "id": "e3dee669-ac24-46e4-bc20-59ed123cc55d",
-    "ma_sku": "IP15PM256",
-    "ten_san_pham": "iPhone 15 Pro Max 256GB",
-    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
-    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
-    "gia_niem_yet": 3299000000.0,
-    "gia_ban": 2999000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 1200,
-    "so_luong_ban": 150,
-    "ngay_tao": "2025-11-29T19:00:30.19",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
-    "link_anh": null
-  },
-  {
-    "id": "ac5a9d4b-c52e-4159-8e4d-62211a385404",
-    "ma_sku": "SP1764454004987",
-    "ten_san_pham": "iPhone 16 Pro Max",
-    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
-    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
-    "gia_niem_yet": 3300000000.0,
-    "gia_ban": 2900000000.0,
-    "mongo_detail_id": "692b4e4dcd08a1004c142bfb",
-    "trang_thai": "1",
-    "luot_xem": 0,
-    "so_luong_ban": 0,
-    "ngay_tao": "2025-11-29T19:49:23.3866667",
-    "ngay_cap_nhat": "2025-11-29T22:06:45.2",
-    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764448695/webPhone/products/iphone-16-pro-max-ac5a9d4b-c52e-4159-8e4d-62211a385404/images/wfsgfvdxzaqbdh5ofm1d.png"
-  },
-  {
-    "id": "31a89447-428b-4ad8-9a16-76faeb5d3ce8",
-    "ma_sku": "XM13T256",
-    "ten_san_pham": "Xiaomi 13T 256GB",
-    "danh_muc_id": "f5b79d05-21a1-4015-9c32-f8e767e27429",
-    "thuong_hieu_id": "0534a2ad-0ea5-4b25-b9d8-5477cf1f670b",
-    "gia_niem_yet": 1299000000.0,
-    "gia_ban": 1099000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 600,
-    "so_luong_ban": 45,
-    "ngay_tao": "2025-11-29T19:00:30.19",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
-    "link_anh": null
-  },
-  {
-    "id": "28126e76-8a23-4786-8b1c-8d4777caa5f0",
-    "ma_sku": "SSZFLIP4",
-    "ten_san_pham": "Samsung Galaxy Z Flip4",
-    "danh_muc_id": "01d4eab0-efe3-43ec-b4e6-1ae5d3b8cd4b",
-    "thuong_hieu_id": "a474c22c-fdcb-409b-aaef-e22981860a07",
-    "gia_niem_yet": 1999000000.0,
-    "gia_ban": 1799000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 650,
-    "so_luong_ban": 15,
-    "ngay_tao": "2025-11-29T19:00:30.1933333",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.1933333",
-    "link_anh": null
-  },
-  {
-    "id": "f134b986-0cc2-402c-846d-9db1ae4d7b2e",
-    "ma_sku": "OPA78",
-    "ten_san_pham": "OPPO A78 5G",
-    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
-    "thuong_hieu_id": "3f6fe59c-2e9d-4a87-9808-f6b6a19bce54",
-    "gia_niem_yet": 629000000.0,
-    "gia_ban": 549000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 290,
-    "so_luong_ban": 41,
-    "ngay_tao": "2025-11-29T19:00:30.1933333",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.1933333",
-    "link_anh": null
-  },
-  {
-    "id": "2c9ca700-524e-4c27-b388-beb7ef1a087c",
-    "ma_sku": "SSS23U512",
-    "ten_san_pham": "Samsung Galaxy S23 Ultra 512GB",
-    "danh_muc_id": "01d4eab0-efe3-43ec-b4e6-1ae5d3b8cd4b",
-    "thuong_hieu_id": "a474c22c-fdcb-409b-aaef-e22981860a07",
-    "gia_niem_yet": 2499000000.0,
-    "gia_ban": 2199000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 800,
-    "so_luong_ban": 89,
-    "ngay_tao": "2025-11-29T19:00:30.19",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
-    "link_anh": null
-  },
-  {
-    "id": "9087f3d2-7b95-432c-9517-c163f3f1b45f",
-    "ma_sku": "SP1764449265455",
-    "ten_san_pham": "OKOK",
-    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
-    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
-    "gia_niem_yet": 33333300.0,
-    "gia_ban": 1222200.0,
-    "mongo_detail_id": "692b5bfa77b304edccf558e5",
-    "trang_thai": "1",
-    "luot_xem": 0,
-    "so_luong_ban": 0,
-    "ngay_tao": "2025-11-29T20:47:45.5966667",
-    "ngay_cap_nhat": "2025-11-29T20:47:54.59",
-    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764449268/webPhone/products/okok-sp1764449265455/images/sfwsdrz4jgnxaoo9a0is.png"
-  },
-  {
-    "id": "bd7747b3-3cb2-4403-bdac-e3953efc352a",
-    "ma_sku": "OPRENO10",
-    "ten_san_pham": "OPPO Reno10 5G",
-    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
-    "thuong_hieu_id": "3f6fe59c-2e9d-4a87-9808-f6b6a19bce54",
-    "gia_niem_yet": 899000000.0,
-    "gia_ban": 799000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 450,
-    "so_luong_ban": 67,
-    "ngay_tao": "2025-11-29T19:00:30.19",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
-    "link_anh": null
-  },
-  {
-    "id": "cb77ea2e-2b35-4fbb-bfc8-f7b82fd8dd2c",
-    "ma_sku": "SP1764448917608",
-    "ten_san_pham": "Test Oke thì ngủ",
-    "danh_muc_id": "05fbd879-373b-4162-a21f-ad3616714f38",
-    "thuong_hieu_id": "0534a2ad-0ea5-4b25-b9d8-5477cf1f670b",
-    "gia_niem_yet": 2222100.0,
-    "gia_ban": 1200.0,
-    "mongo_detail_id": "692b5a9d1514aa3f363db4bc",
-    "trang_thai": "1",
-    "luot_xem": 0,
-    "so_luong_ban": 0,
-    "ngay_tao": "2025-11-29T20:41:57.7366667",
-    "ngay_cap_nhat": "2025-11-29T20:42:05.2033333",
-    "link_anh": "https://res.cloudinary.com/dpxuqgeix/image/upload/v1764448920/webPhone/products/test-oke-thi-ngu-sp1764448917608/images/ilikfxyu4vvdthauzr6c.jpg"
-  },
-  {
-    "id": "b65768cd-2919-41ff-b1c7-fe0c274d39bb",
-    "ma_sku": "IP14128",
-    "ten_san_pham": "iPhone 14 128GB",
-    "danh_muc_id": "f7e102de-320c-4a43-83f3-c227a6391144",
-    "thuong_hieu_id": "293986fa-3ab9-4757-b82d-53e33abb5ab3",
-    "gia_niem_yet": 1999000000.0,
-    "gia_ban": 1799000000.0,
-    "mongo_detail_id": null,
-    "trang_thai": "1",
-    "luot_xem": 1500,
-    "so_luong_ban": 120,
-    "ngay_tao": "2025-11-29T19:00:30.19",
-    "ngay_cap_nhat": "2025-11-29T19:00:30.19",
-    "link_anh": null
-  }
-]
-
-
 -- ========== DỮ LIỆU USERS MẪU ==========
 -- Mật khẩu: 123456 (đã hash SHA256)
 -- Hash: 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
@@ -1485,3 +1144,40 @@ GO
 
 PRINT N'✅ Đã thêm 3 users mẫu (mật khẩu: 123456)';
 GO
+
+-- ========== DỮ LIỆU PHƯƠNG THỨC VẬN CHUYỂN ==========
+
+-- Thêm phương thức vận chuyển
+INSERT INTO shipping_methods (ten_phuong_thuc, mo_ta, chi_phi_co_ban, thoi_gian_giao_du_kien, trang_thai) VALUES
+(N'Giao hàng tiêu chuẩn', N'Giao hàng trong 3-5 ngày làm việc', 30000, 4, 1),
+(N'Giao hàng nhanh', N'Giao hàng trong 1-2 ngày làm việc', 50000, 1, 1),
+(N'Giao hàng hỏa tốc', N'Giao hàng trong vòng 24h', 80000, 0, 1);
+GO
+
+-- Thêm phương thức vận chuyển theo vùng
+DECLARE @StandardId UNIQUEIDENTIFIER = (SELECT id FROM shipping_methods WHERE ten_phuong_thuc = N'Giao hàng tiêu chuẩn');
+DECLARE @FastId UNIQUEIDENTIFIER = (SELECT id FROM shipping_methods WHERE ten_phuong_thuc = N'Giao hàng nhanh');
+DECLARE @ExpressId UNIQUEIDENTIFIER = (SELECT id FROM shipping_methods WHERE ten_phuong_thuc = N'Giao hàng hỏa tốc');
+
+-- Miền Bắc
+INSERT INTO shipping_method_regions (phuong_thuc_id, vung_id, chi_phi_bo_sung, thoi_gian_giao_du_kien, trang_thai) VALUES
+(@StandardId, 'bac', 0, 3, 1),
+(@FastId, 'bac', 0, 1, 1),
+(@ExpressId, 'bac', 0, 0, 1);
+
+-- Miền Trung
+INSERT INTO shipping_method_regions (phuong_thuc_id, vung_id, chi_phi_bo_sung, thoi_gian_giao_du_kien, trang_thai) VALUES
+(@StandardId, 'trung', 10000, 4, 1),
+(@FastId, 'trung', 20000, 2, 1),
+(@ExpressId, 'trung', 30000, 1, 1);
+
+-- Miền Nam
+INSERT INTO shipping_method_regions (phuong_thuc_id, vung_id, chi_phi_bo_sung, thoi_gian_giao_du_kien, trang_thai) VALUES
+(@StandardId, 'nam', 5000, 3, 1),
+(@FastId, 'nam', 10000, 1, 1),
+(@ExpressId, 'nam', 20000, 0, 1);
+GO
+
+PRINT N'✅ Đã thêm dữ liệu phương thức vận chuyển';
+GO
+

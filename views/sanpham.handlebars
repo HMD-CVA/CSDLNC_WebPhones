@@ -1309,6 +1309,12 @@
 
                 const result = await response.json();
                 console.log('✅ MongoDB create result:', result);
+                
+                // Kiểm tra nếu không có dữ liệu MongoDB và bị skip
+                if (result.skipped) {
+                    console.log('⚠️ MongoDB document creation skipped - no data to save');
+                }
+                
                 return result;
 
             } catch (error) {
@@ -2244,12 +2250,18 @@
                             document.getElementById('productFeatured').checked,
                             additionalInfoData
                         );
-                        mongoDetailId = mongoResult.data._id;
-                        console.log('✅ New MongoDB document created');
+                        
+                        // Kiểm tra nếu MongoDB document bị skip (không có dữ liệu)
+                        if (mongoResult.skipped) {
+                            console.log('⚠️ MongoDB document creation skipped - no MongoDB data to save');
+                        } else {
+                            mongoDetailId = mongoResult.data._id;
+                            console.log('✅ New MongoDB document created');
 
-                        await ProductAPIService.updateProduct(productId, {
-                            mongo_detail_id: mongoDetailId
-                        });
+                            await ProductAPIService.updateProduct(productId, {
+                                mongo_detail_id: mongoDetailId
+                            });
+                        }
                     }
 
                 } else {
@@ -2353,21 +2365,27 @@
                         additionalInfoData
                     );
                     
-                    if (!mongoResult.success || !mongoResult.data || !mongoResult.data._id) {
-                        throw new Error('Không thể tạo MongoDB document');
+                    // Kiểm tra nếu MongoDB document bị skip (không có dữ liệu)
+                    if (mongoResult.skipped) {
+                        console.log('⚠️ MongoDB document creation skipped - no MongoDB data to save');
+                        mongoDetailId = null;
+                    } else {
+                        if (!mongoResult.success || !mongoResult.data || !mongoResult.data._id) {
+                            throw new Error('Không thể tạo MongoDB document');
+                        }
+                        mongoDetailId = mongoResult.data._id;
+                        console.log('✅ Step 3 complete: MongoDB document created with _id:', mongoDetailId);
                     }
                     
-                    mongoDetailId = mongoResult.data._id;
-                    console.log('✅ Step 3 complete: MongoDB document created with _id:', mongoDetailId);
-                    
                     // ============================================
-                    // BƯỚC 4: Cập nhật SQL với mongo_detail_id và link_anh
+                    // BƯỚC 4: Cập nhật SQL với mongo_detail_id và link_anh (nếu có)
                     // ============================================
                     console.log('📝 Step 4: Updating SQL with mongo_detail_id and link_anh...');
-                    await ProductAPIService.updateProduct(productId, { 
-                        mongo_detail_id: mongoDetailId,
-                        link_anh: link_avatar
-                    });
+                    const sqlUpdateData = { link_anh: link_avatar };
+                    if (mongoDetailId) {
+                        sqlUpdateData.mongo_detail_id = mongoDetailId;
+                    }
+                    await ProductAPIService.updateProduct(productId, sqlUpdateData);
                     console.log('✅ Step 4 complete: SQL updated with MongoDB reference and main image link');
                 }
 

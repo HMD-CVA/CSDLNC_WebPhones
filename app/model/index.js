@@ -1379,7 +1379,7 @@ class SQLProvinceModel {
       let whereClause = 'WHERE p.trang_thai = 1';
 
       if (filters.vung_id) {
-        request.input('vung_id', sql.UniqueIdentifier, filters.vung_id);
+        request.input('vung_id', sql.NVarChar(10), filters.vung_id);
         whereClause += ' AND p.vung_id = @vung_id';
       }
 
@@ -2223,7 +2223,7 @@ class SQLWarehouseModel {
           COUNT(i.id) as so_luong_san_pham
         FROM warehouses w
         LEFT JOIN inventory i ON w.id = i.kho_id
-        GROUP BY w.id, w.ten_kho, w.phuong_xa_id, w.dia_chi_chi_tiet, 
+        GROUP BY w.id, w.ten_kho, w.vung_id, w.phuong_xa_id, w.dia_chi_chi_tiet, 
                  w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat
         ORDER BY w.ngay_tao DESC
       `);
@@ -2247,7 +2247,7 @@ class SQLWarehouseModel {
           FROM warehouses w
           LEFT JOIN inventory i ON w.id = i.kho_id
           WHERE w.id = @id
-          GROUP BY w.id, w.ten_kho, w.phuong_xa_id, w.dia_chi_chi_tiet, 
+          GROUP BY w.id, w.ten_kho, w.vung_id, w.phuong_xa_id, w.dia_chi_chi_tiet, 
                    w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat
         `);
       
@@ -2266,7 +2266,8 @@ class SQLWarehouseModel {
       const result = await request
         .input('id', sql.UniqueIdentifier, id)
         .input('ten_kho', sql.NVarChar(200), warehouseData.ten_kho)
-        .input('phuong_xa_id', sql.UniqueIdentifier, warehouseData.phuong_xa_id || null)
+        .input('vung_id', sql.NVarChar(10), warehouseData.vung_id)
+        .input('phuong_xa_id', sql.UniqueIdentifier, warehouseData.phuong_xa_id)
         .input('dia_chi_chi_tiet', sql.NVarChar(500), warehouseData.dia_chi_chi_tiet)
         .input('so_dien_thoai', sql.VarChar(15), warehouseData.so_dien_thoai)
         .input('trang_thai', sql.Bit, warehouseData.trang_thai !== undefined ? warehouseData.trang_thai : 1)
@@ -2274,11 +2275,11 @@ class SQLWarehouseModel {
         .input('ngay_cap_nhat', sql.DateTime2, new Date())
         .query(`
           INSERT INTO warehouses (
-            id, ten_kho, phuong_xa_id, dia_chi_chi_tiet, 
+            id, ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet, 
             so_dien_thoai, trang_thai, ngay_tao, ngay_cap_nhat
           )
           VALUES (
-            @id, @ten_kho, @phuong_xa_id, @dia_chi_chi_tiet,
+            @id, @ten_kho, @vung_id, @phuong_xa_id, @dia_chi_chi_tiet,
             @so_dien_thoai, @trang_thai, @ngay_tao, @ngay_cap_nhat
           );
           
@@ -2301,6 +2302,11 @@ class SQLWarehouseModel {
       if (warehouseData.ten_kho !== undefined) {
         request.input('ten_kho', sql.NVarChar(200), warehouseData.ten_kho);
         updateFields.push('ten_kho = @ten_kho');
+      }
+      
+      if (warehouseData.vung_id !== undefined) {
+        request.input('vung_id', sql.NVarChar(10), warehouseData.vung_id);
+        updateFields.push('vung_id = @vung_id');
       }
       
       if (warehouseData.phuong_xa_id !== undefined) {

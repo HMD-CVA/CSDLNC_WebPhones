@@ -328,6 +328,27 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Vùng miền *</label>
+                        <select class="form-select" id="warehouseRegion" required>
+                            <option value="">-- Chọn vùng miền --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tỉnh/Thành phố *</label>
+                        <select class="form-select" id="warehouseProvince" required>
+                            <option value="">-- Chọn tỉnh/thành phố --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phường/Xã *</label>
+                        <select class="form-select" id="warehouseWard" required>
+                            <option value="">-- Chọn phường/xã --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label">Số điện thoại *</label>
                         <input type="text" class="form-control" id="warehousePhone" required>
                     </div>
@@ -409,6 +430,9 @@
 let inventoryData = [];
 let warehousesData = [];
 let currentWarehouseId = null;
+let regionsData = [];
+let provincesData = [];
+let wardsData = [];
 
 // Utility functions
 const Utils = {
@@ -515,6 +539,36 @@ async function loadData() {
             warehousesData = [];
         }
         
+        // Load regions
+        const regRes = await API.get('/api/regions');
+        if (Array.isArray(regRes)) {
+            regionsData = regRes;
+        } else if (regRes && regRes.data) {
+            regionsData = Array.isArray(regRes.data) ? regRes.data : [];
+        } else {
+            regionsData = [];
+        }
+        
+        // Load provinces
+        const provRes = await API.get('/api/provinces');
+        if (Array.isArray(provRes)) {
+            provincesData = provRes;
+        } else if (provRes && provRes.data) {
+            provincesData = Array.isArray(provRes.data) ? provRes.data : [];
+        } else {
+            provincesData = [];
+        }
+        
+        // Load wards
+        const wardRes = await API.get('/api/wards');
+        if (Array.isArray(wardRes)) {
+            wardsData = wardRes;
+        } else if (wardRes && wardRes.data) {
+            wardsData = Array.isArray(wardRes.data) ? wardRes.data : [];
+        } else {
+            wardsData = [];
+        }
+        
         // Load products for dropdown
         const prodRes = await API.get('/api/sanpham');
         console.log('Raw prodRes:', prodRes);
@@ -552,6 +606,13 @@ async function loadData() {
         } else {
             productSelect.innerHTML = '<option value="">Không có sản phẩm</option>';
             console.warn('Products data is empty or invalid:', prodRes);
+        }
+        
+        // Populate region dropdown
+        const regionSelect = document.getElementById('warehouseRegion');
+        if (regionsData.length > 0) {
+            regionSelect.innerHTML = '<option value="">-- Chọn vùng miền --</option>' +
+                regionsData.map(r => `<option value="${r.ma_vung}">${r.ten_vung}</option>`).join('');
         }
         
         updateStats();
@@ -843,11 +904,57 @@ async function saveAdjustment() {
 function openWarehouseModal() {
     document.getElementById('warehouseId').value = '';
     document.getElementById('warehouseName').value = '';
+    document.getElementById('warehouseRegion').value = '';
+    document.getElementById('warehouseProvince').value = '';
+    document.getElementById('warehouseWard').value = '';
     document.getElementById('warehousePhone').value = '';
     document.getElementById('warehouseAddress').value = '';
     document.getElementById('warehouseStatus').value = '1';
     document.getElementById('whModalTitle').textContent = 'Thêm kho mới';
+    
+    // Reset province and ward dropdowns
+    document.getElementById('warehouseProvince').innerHTML = '<option value="">-- Chọn tỉnh/thành phố --</option>';
+    document.getElementById('warehouseWard').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+    
     new bootstrap.Modal(document.getElementById('warehouseModal')).show();
+}
+
+// Handle region change
+function handleRegionChange(regionId) {
+    const provinceSelect = document.getElementById('warehouseProvince');
+    const wardSelect = document.getElementById('warehouseWard');
+    
+    // Reset province and ward
+    provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành phố --</option>';
+    wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+    
+    if (!regionId) return;
+    
+    // Filter provinces by region
+    const filteredProvinces = provincesData.filter(p => p.ma_vung === regionId);
+    
+    if (filteredProvinces.length > 0) {
+        provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành phố --</option>' +
+            filteredProvinces.map(p => `<option value="${p.id}">${p.ten_tinh_thanh}</option>`).join('');
+    }
+}
+
+// Handle province change
+function handleProvinceChange(provinceId) {
+    const wardSelect = document.getElementById('warehouseWard');
+    
+    // Reset ward
+    wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+    
+    if (!provinceId) return;
+    
+    // Filter wards by province
+    const filteredWards = wardsData.filter(w => w.tinh_thanh_id === provinceId);
+    
+    if (filteredWards.length > 0) {
+        wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>' +
+            filteredWards.map(w => `<option value="${w.id}">${w.ten_phuong_xa}</option>`).join('');
+    }
 }
 
 async function editWarehouse(id) {
@@ -856,9 +963,29 @@ async function editWarehouse(id) {
         const wh = await API.get('/api/warehouses/' + id);
         document.getElementById('warehouseId').value = wh.id;
         document.getElementById('warehouseName').value = wh.ten_kho;
+        document.getElementById('warehouseRegion').value = wh.vung_id || '';
         document.getElementById('warehousePhone').value = wh.so_dien_thoai;
         document.getElementById('warehouseAddress').value = wh.dia_chi_chi_tiet;
         document.getElementById('warehouseStatus').value = wh.trang_thai;
+        
+        // Load provinces for selected region
+        if (wh.vung_id) {
+            handleRegionChange(wh.vung_id);
+            // Wait for provinces to load, then set province value
+            setTimeout(() => {
+                document.getElementById('warehouseProvince').value = wh.tinh_thanh_id || '';
+                
+                // Load wards for selected province
+                if (wh.tinh_thanh_id) {
+                    handleProvinceChange(wh.tinh_thanh_id);
+                    // Wait for wards to load, then set ward value
+                    setTimeout(() => {
+                        document.getElementById('warehouseWard').value = wh.phuong_xa_id || '';
+                    }, 100);
+                }
+            }, 100);
+        }
+        
         document.getElementById('whModalTitle').textContent = 'Cập nhật kho';
         Swal.close();
         new bootstrap.Modal(document.getElementById('warehouseModal')).show();
@@ -871,12 +998,14 @@ async function saveWarehouse() {
     const id = document.getElementById('warehouseId').value;
     const data = {
         ten_kho: document.getElementById('warehouseName').value,
+        vung_id: document.getElementById('warehouseRegion').value,
+        phuong_xa_id: document.getElementById('warehouseWard').value,
         so_dien_thoai: document.getElementById('warehousePhone').value,
         dia_chi_chi_tiet: document.getElementById('warehouseAddress').value,
         trang_thai: document.getElementById('warehouseStatus').value
     };
     
-    if (!data.ten_kho || !data.so_dien_thoai || !data.dia_chi_chi_tiet) {
+    if (!data.ten_kho || !data.vung_id || !data.phuong_xa_id || !data.so_dien_thoai || !data.dia_chi_chi_tiet) {
         Utils.showError('Vui lòng nhập đầy đủ thông tin');
         return;
     }
@@ -964,6 +1093,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Refresh button
     document.getElementById('refreshBtn').addEventListener('click', loadData);
+    
+    // Region, Province, Ward cascade
+    const regionSelect = document.getElementById('warehouseRegion');
+    const provinceSelect = document.getElementById('warehouseProvince');
+    
+    if (regionSelect) {
+        regionSelect.addEventListener('change', (e) => handleRegionChange(e.target.value));
+    }
+    
+    if (provinceSelect) {
+        provinceSelect.addEventListener('change', (e) => handleProvinceChange(e.target.value));
+    }
     
     // Initial load
     loadData();
@@ -1167,7 +1308,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--gray-5
 
 .warehouse-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
 }
 
@@ -1177,6 +1318,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--gray-5
     border-radius: 12px;
     padding: 20px;
     transition: all 0.2s;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
 .warehouse-summary-card:hover {

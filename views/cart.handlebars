@@ -27,14 +27,25 @@
                 </div>
                 
                 <div class="cart-item-image">
-                  <img src="{{this.link_anh}}" alt="{{this.ten_san_pham}}">
+                  <img src="{{this.link_anh}}" alt="{{this.ten_san_pham_day_du}}">
                 </div>
 
                 <div class="cart-item-info">
-                  <h3 class="cart-item-name">{{this.ten_san_pham}}</h3>
+                  <h3 class="cart-item-name">{{this.ten_san_pham_day_du}}</h3>
                   <p class="cart-item-sku">SKU: {{this.ma_sku}}</p>
+                  {{#if this.variant_name}}
+                    <span class="cart-item-variant-badge">{{this.variant_name}}</span>
+                  {{/if}}
                   {{#if this.is_discount}}
                     <span class="cart-item-discount-badge">Giảm {{this.phan_tram_giam}}%</span>
+                  {{/if}}
+                  {{#unless this.is_active}}
+                    <span class="cart-item-inactive-badge">⚠️ Ngừng bán</span>
+                  {{/unless}}
+                  {{#if this.ton_kho}}
+                    {{#if (eq this.ton_kho 0)}}
+                      <span class="cart-item-out-of-stock-badge">⚠️ Hết hàng</span>
+                    {{/if}}
                   {{/if}}
                 </div>
 
@@ -315,6 +326,17 @@
   margin: 0 0 6px 0;
 }
 
+.cart-item-variant-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
 .cart-item-discount-badge {
   display: inline-block;
   background: linear-gradient(135deg, #d70018 0%, #ff0033 100%);
@@ -323,6 +345,28 @@
   border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
+}
+
+.cart-item-inactive-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.cart-item-out-of-stock-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
 }
 
 .cart-item-price {
@@ -874,6 +918,34 @@ document.addEventListener('DOMContentLoaded', async function() {
       
       const { items, count } = result.data;
       
+      // Debug: Log để xem dữ liệu variant
+      console.log('📦 Cart items from API:', items);
+      if (items.length > 0) {
+        console.log('🔍 First item details:');
+        console.log('  - san_pham_id (variant_id):', items[0].san_pham_id);
+        console.log('  - variant_info:', items[0].variant_info);
+        console.log('  - variant_name:', items[0].variant_name);
+        console.log('  - ten_san_pham_day_du:', items[0].ten_san_pham_day_du);
+        console.log('  - gia_ban (from variant):', items[0].gia_ban);
+        console.log('  - ton_kho (from variant):', items[0].ton_kho);
+        console.log('  - is_active:', items[0].is_active);
+        console.log('  - link_anh:', items[0].link_anh);
+        console.log('  - ma_sku:', items[0].ma_sku);
+        
+        // Cảnh báo nếu có vấn đề
+        items.forEach((item, index) => {
+          if (!item.is_active) {
+            console.warn(`⚠️ Item ${index + 1} (${item.ten_san_pham_day_du}) đã ngừng bán!`);
+          }
+          if (item.ton_kho === 0) {
+            console.warn(`⚠️ Item ${index + 1} (${item.ten_san_pham_day_du}) đã hết hàng!`);
+          }
+          if (!item.variant_info) {
+            console.error(`❌ Item ${index + 1} không tìm thấy variant_info - có thể là dữ liệu cũ!`);
+          }
+        });
+      }
+      
       // Update cart count in header
       const selectAllLabel = document.querySelector('.select-all label');
       if (selectAllLabel) {
@@ -919,12 +991,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         </div>
         
         <div class="cart-item-image">
-          <img src="${item.link_anh || '/image/default-product.png'}" alt="${item.ten_san_pham}">
+          <img src="${item.link_anh || '/image/default-product.png'}" alt="${item.ten_san_pham_day_du || item.ten_san_pham}">
         </div>
 
         <div class="cart-item-info">
-          <h3 class="cart-item-name">${item.ten_san_pham}</h3>
+          <h3 class="cart-item-name">${item.ten_san_pham_day_du || item.ten_san_pham}</h3>
           <p class="cart-item-sku">SKU: ${item.ma_sku || 'N/A'}</p>
+          ${item.variant_name ? `<span class="cart-item-variant-badge">${item.variant_name}</span>` : ''}
           ${item.is_discount ? `<span class="cart-item-discount-badge">Giảm ${item.phan_tram_giam}%</span>` : ''}
         </div>
 
@@ -937,8 +1010,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           <button class="qty-btn qty-minus" data-cart-id="${item.id}">
             <i class="fas fa-minus"></i>
           </button>
-          <input type="number" class="qty-input" value="${item.so_luong}" min="1" max="${item.ton_kho}" data-cart-id="${item.id}" readonly>
-          <button class="qty-btn qty-plus" data-cart-id="${item.id}" data-stock="${item.ton_kho}">
+          <input type="number" class="qty-input" value="${item.so_luong}" min="1" max="${item.ton_kho || 999}" data-cart-id="${item.id}" readonly>
+          <button class="qty-btn qty-plus" data-cart-id="${item.id}" data-stock="${item.ton_kho || 999}">
             <i class="fas fa-plus"></i>
           </button>
         </div>
@@ -1177,9 +1250,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Get selected cart IDs
         const cartIds = Array.from(checkedItems).map(cb => cb.getAttribute('data-cart-id'));
         
-        // TODO: Navigate to checkout page
-        console.log('Checkout with cart IDs:', cartIds);
-        window.location.href = '/checkout?items=' + cartIds.join(',');
+        // Navigate to payment page
+        window.location.href = '/payment?items=' + cartIds.join(',');
       });
     }
   }

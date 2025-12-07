@@ -2122,8 +2122,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const mongoResponse = await fetch(`/api/mongodb-details/${product.mongo_detail_id}`);
             if (!mongoResponse.ok) throw new Error('Failed to fetch MongoDB details');
             
-            const mongoDetails = await mongoResponse.json();
-            const variantCombinations = mongoDetails.variant_combinations || [];
+            const mongoData = await mongoResponse.json();
+            
+            // Debug: Log toàn bộ response structure
+            console.log('📦 Full MongoDB Response:', mongoData);
+            
+            const mongoDetails = mongoData.data || mongoData;
+            const variantCombinations = mongoData.variant_combinations || mongoDetails.variants?.variant_combinations || [];
+            
+            console.log('📦 Extracted Details:', {
+                hasData: !!mongoData.data,
+                link_avatar: mongoDetails.link_avatar,
+                hinh_anh: mongoDetails.hinh_anh,
+                hinhAnhArray: Array.isArray(mongoData.hinh_anh) ? mongoData.hinh_anh : 'not an array',
+                variants: mongoDetails.variants,
+                variantCount: variantCombinations.length,
+                firstVariant: variantCombinations[0],
+                firstVariantKeys: variantCombinations[0] ? Object.keys(variantCombinations[0]) : []
+            });
             
             if (variantCombinations.length === 0) {
                 Swal.fire({
@@ -2135,14 +2151,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            currentProductVariants = variantCombinations.map((v, index) => ({
-                index: index,
-                productId: product.id,
-                productName: product.ten_san_pham,
-                variantName: v.name || `Variant ${index + 1}`,
-                price: v.price || v.gia || 0,
-                stock: v.stock || v.ton_kho || 0
-            }));
+            // Get product-level link_avatar as fallback
+            const productAvatar = mongoDetails.link_avatar || mongoDetails.hinh_anh?.[0] || '/image/default-product.png';
+
+            currentProductVariants = variantCombinations.map((v, index) => {
+                // Try multiple fields for variant image
+                const variantAvatar = v.image || v.link_avatar || v.hinh_anh || productAvatar;
+                
+                console.log(`🖼️ Variant ${index} (${v.name}): image=${v.image}, link_avatar=${v.link_avatar}, hinh_anh=${v.hinh_anh}, productAvatar=${productAvatar}, final=${variantAvatar}`);
+                
+                return {
+                    index: index,
+                    variantId: v.variant_id || `${product.id}-${index}`,
+                    productId: product.id,
+                    productName: product.ten_san_pham,
+                    variantName: v.name || `Variant ${index + 1}`,
+                    price: v.price || v.gia || 0,
+                    stock: v.stock || v.ton_kho || 0,
+                    link_avatar: variantAvatar
+                };
+            });
 
             renderVariantsTable();
             variantsSection.style.display = 'block';
@@ -2458,6 +2486,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Use variant_id from MongoDB (should already exist after backend processing)
                 const variantId = v.variant_id || product.id; // Fallback to product ID if missing
                 const isDefault = v.is_default === true;
+                const avatarUrl = v.image || v.link_avatar || mongoDetails.link_avatar || '/image/default-product.png';
+                
+                console.log(`🖼️ Variant ${index}: image=${v.image}, link_avatar=${v.link_avatar}, product_avatar=${mongoDetails.link_avatar}, final=${avatarUrl}`);
                 
                 return {
                     index: index,
@@ -2468,7 +2499,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     price: v.price || product.gia_ban || 0,
                     stock: v.stock || product.ton_kho || 0,
                     isDefault: isDefault,
-                    link_avatar: mongoDetails.link_avatar || '/image/default-product.png'
+                    link_avatar: avatarUrl
                 };
             }).filter(v => !v.isDefault); // Filter out default variants from display
             
@@ -2570,6 +2601,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // Get link_avatar from variant (already loaded from MongoDB in currentProductVariants)
+            const avatarUrl = variant.link_avatar || '/image/default-product.png';
+            
+            console.log(`📸 Adding variant ${variant.variantName}: link_avatar = ${avatarUrl}`);
+
             // Check if already exists in tempProductList
             const existingIndex = tempProductList.findIndex(p => p.variantId === variant.variantId);
 
@@ -2585,7 +2621,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     gia_flash_sale: flashPrice,
                     gioi_han_mua: limitQty,
                     stock: variant.stock,
-                    link_avatar: variant.link_avatar || '/image/default-product.png'
+                    link_avatar: avatarUrl
                 };
                 updatedCount++;
             } else {
@@ -2600,7 +2636,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     gia_flash_sale: flashPrice,
                     gioi_han_mua: limitQty,
                     stock: variant.stock,
-                    link_avatar: variant.link_avatar || '/image/default-product.png'
+                    link_avatar: avatarUrl
                 });
                 addedCount++;
             }

@@ -108,6 +108,32 @@
                 <i class="fas fa-check-circle"></i>
                 <span id="variantStockText"></span>
               </div>
+              
+              <!-- Chọn số lượng (chỉ hiện khi đã chọn variant) -->
+              <div class="cps-quantity-section" id="variantQuantitySection" style="display: none;">
+                <label class="cps-quantity-label">Số lượng:</label>
+                <div class="cps-quantity-control">
+                  <button class="cps-qty-btn" id="decreaseQty">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input type="number" class="cps-qty-input" id="quantityInput" value="1" min="1" max="99">
+                  <button class="cps-qty-btn" id="increaseQty">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Nút hành động (chỉ hiện khi đã chọn variant) -->
+              <div class="cps-action-buttons" id="variantActionButtons" style="display: none;">
+                <button class="cps-btn-add-cart" id="addToCartBtn">
+                  <i class="fas fa-shopping-cart"></i>
+                  THÊM VÀO GIỎ HÀNG
+                </button>
+                <button class="cps-btn-buy-now" id="buyNowBtn">
+                  <i class="fas fa-bolt"></i>
+                  MUA NGAY
+                </button>
+              </div>
             </div>
           </div>
           {{else}}
@@ -159,32 +185,6 @@
               <li><i class="fas fa-check-circle"></i> Bảo hành chính hãng 12 tháng</li>
               <li><i class="fas fa-check-circle"></i> Miễn phí vận chuyển toàn quốc</li>
             </ul>
-          </div>
-
-          <!-- Chọn số lượng -->
-          <div class="cps-quantity-section">
-            <label class="cps-quantity-label">Số lượng:</label>
-            <div class="cps-quantity-control">
-              <button class="cps-qty-btn" id="decreaseQty">
-                <i class="fas fa-minus"></i>
-              </button>
-              <input type="number" class="cps-qty-input" id="quantityInput" value="1" min="1" max="99">
-              <button class="cps-qty-btn" id="increaseQty">
-                <i class="fas fa-plus"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Nút hành động -->
-          <div class="cps-action-buttons">
-            <button class="cps-btn-add-cart" id="addToCartBtn">
-              <i class="fas fa-shopping-cart"></i>
-              THÊM VÀO GIỎ HÀNG
-            </button>
-            <button class="cps-btn-buy-now" id="buyNowBtn">
-              <i class="fas fa-bolt"></i>
-              MUA NGAY
-            </button>
           </div>
 
           <!-- Dịch vụ bổ sung -->
@@ -344,62 +344,23 @@
               <div class="cps-reviews">
                 <div class="cps-review-summary">
                   <div class="cps-avg-rating">
-                    <div class="cps-rating-number">4.5</div>
-                    <div class="cps-stars-large">
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star-half-alt"></i>
+                    <div class="cps-rating-number" id="avgRating">0</div>
+                    <div class="cps-stars-large" id="avgStars">
+                      <i class="far fa-star"></i>
+                      <i class="far fa-star"></i>
+                      <i class="far fa-star"></i>
+                      <i class="far fa-star"></i>
+                      <i class="far fa-star"></i>
                     </div>
-                    <div class="cps-review-count">125 đánh giá</div>
+                    <div class="cps-review-count" id="reviewCount">0 đánh giá</div>
                   </div>
                 </div>
 
                 <!-- Danh sách đánh giá -->
-                <div class="cps-review-list">
-                  <div class="cps-review-item">
-                    <div class="cps-reviewer-info">
-                      <div class="cps-reviewer-avatar">
-                        <i class="fas fa-user-circle"></i>
-                      </div>
-                      <div class="cps-reviewer-details">
-                        <div class="cps-reviewer-name">Nguyễn Văn A</div>
-                        <div class="cps-review-stars">
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="cps-review-content">
-                      Sản phẩm rất tốt, giao hàng nhanh, đóng gói cẩn thận. Máy đẹp, chạy mượt, camera chụp đẹp!
-                    </div>
-                    <div class="cps-review-date">2 ngày trước</div>
-                  </div>
-
-                  <div class="cps-review-item">
-                    <div class="cps-reviewer-info">
-                      <div class="cps-reviewer-avatar">
-                        <i class="fas fa-user-circle"></i>
-                      </div>
-                      <div class="cps-reviewer-details">
-                        <div class="cps-reviewer-name">Trần Thị B</div>
-                        <div class="cps-review-stars">
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="fas fa-star"></i>
-                          <i class="far fa-star"></i>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="cps-review-content">
-                      Máy đẹp, pin trâu. Tuy nhiên giá hơi cao so với mặt bằng chung.
-                    </div>
-                    <div class="cps-review-date">5 ngày trước</div>
+                <div class="cps-review-list" id="reviewList">
+                  <div style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+                    <p style="margin-top: 15px;">Đang tải đánh giá...</p>
                   </div>
                 </div>
               </div>
@@ -942,6 +903,17 @@ body {
   font-size: 16px;
 }
 
+/* Quantity & Actions trong Variant Section */
+.cps-selected-variant-info .cps-quantity-section {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
+.cps-selected-variant-info .cps-action-buttons {
+  margin-top: 20px;
+  margin-bottom: 0;
+}
+
 /* Services */
 .cps-services {
   display: grid;
@@ -1239,28 +1211,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Add to Cart
   const addToCartBtn = document.getElementById('addToCartBtn');
-  addToCartBtn?.addEventListener('click', function() {
-    const quantity = quantityInput.value;
-    const productId = '{{product.id}}';
-    
-    console.log('🛒 Thêm vào giỏ:', productId, 'Số lượng:', quantity);
-    
-    // Animation
-    const originalHTML = this.innerHTML;
-    this.innerHTML = '<i class="fas fa-check"></i> ĐÃ THÊM VÀO GIỎ';
-    this.style.background = '#28a745';
-    this.style.borderColor = '#28a745';
-    this.style.color = 'white';
-    
-    setTimeout(() => {
-      this.innerHTML = originalHTML;
-      this.style.background = '';
-      this.style.borderColor = '';
-      this.style.color = '';
-    }, 2000);
-    
-    // TODO: Gọi API thêm vào giỏ
-    // fetch('/api/cart/add', { method: 'POST', body: JSON.stringify({ productId, quantity }) })
+  addToCartBtn?.addEventListener('click', async function() {
+    const quantity = parseInt(quantityInput.value);
+    const selectedVariant = window.selectedVariant;
+    if (!selectedVariant || !selectedVariant.variant_id) {
+      alert('Vui lòng chọn phiên bản sản phẩm');
+      return;
+    }
+    // Lấy userId từ AuthHelper
+    const userId = AuthHelper.getUserId();
+    if (!userId) {
+      alert('Vui lòng đăng nhập để thêm vào giỏ hàng');
+      window.location.href = '/login';
+      return;
+    }
+    // Gọi API thêm vào giỏ hàng
+    try {
+      const response = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          variant_id: selectedVariant.variant_id,
+          so_luong: quantity,
+          userId: userId
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        // Animation thành công
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-check"></i> ĐÃ THÊM VÀO GIỎ';
+        this.style.background = '#28a745';
+        this.style.borderColor = '#28a745';
+        this.style.color = 'white';
+        if (typeof CartManager !== 'undefined' && CartManager.updateCartBadge) {
+          CartManager.updateCartBadge();
+        }
+        setTimeout(() => {
+          this.innerHTML = originalHTML;
+          this.style.background = '';
+          this.style.borderColor = '';
+          this.style.color = '';
+        }, 2000);
+      } else {
+        alert(result.message || 'Không thể thêm vào giỏ hàng');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Có lỗi xảy ra, vui lòng thử lại');
+    }
   });
 
   // Buy Now
@@ -1586,6 +1587,16 @@ document.addEventListener('DOMContentLoaded', function() {
       // Store selected variant for add to cart
       window.selectedVariant = matchingCombo;
       
+      // Show quantity and action buttons when variant is selected
+      const quantitySection = document.getElementById('variantQuantitySection');
+      const actionButtons = document.getElementById('variantActionButtons');
+      if (quantitySection) {
+        quantitySection.style.display = 'flex';
+      }
+      if (actionButtons) {
+        actionButtons.style.display = 'flex';
+      }
+      
       // Update specs table with selected variant
       updateSpecsTable();
     } else {
@@ -1598,6 +1609,17 @@ document.addEventListener('DOMContentLoaded', function() {
       if (availabilityElem) {
         availabilityElem.style.display = 'none';
       }
+      
+      // Hide quantity and action buttons when no variant selected
+      const quantitySection = document.getElementById('variantQuantitySection');
+      const actionButtons = document.getElementById('variantActionButtons');
+      if (quantitySection) {
+        quantitySection.style.display = 'none';
+      }
+      if (actionButtons) {
+        actionButtons.style.display = 'none';
+      }
+      
       window.selectedVariant = null;
     }
   }
@@ -1708,6 +1730,144 @@ document.addEventListener('DOMContentLoaded', function() {
           firstBtn.click();
         }
       }
+    });
+  }
+
+  // =============================================
+  // LOAD REVIEWS FROM SQL SERVER
+  // =============================================
+  
+  async function loadReviews() {
+    try {
+      const productId = '{{product.id}}';
+      console.log('🌟 Loading reviews for product:', productId);
+      
+      const response = await fetch(`/api/reviews/${productId}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const { reviews, avg_rating, total_reviews } = result.data;
+        
+        // Update average rating
+        document.getElementById('avgRating').textContent = avg_rating || '0';
+        document.getElementById('reviewCount').textContent = `${total_reviews} đánh giá`;
+        
+        // Update stars
+        updateStars('avgStars', avg_rating);
+        
+        // Render reviews list
+        const reviewList = document.getElementById('reviewList');
+        
+        if (reviews.length === 0) {
+          reviewList.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #999;">
+              <i class="fas fa-comment-slash" style="font-size: 48px; margin-bottom: 15px; color: #ddd;"></i>
+              <p style="font-size: 16px;">Chưa có đánh giá nào cho sản phẩm này</p>
+              <p style="font-size: 14px; margin-top: 5px;">Hãy là người đầu tiên đánh giá sản phẩm!</p>
+            </div>
+          `;
+        } else {
+          reviewList.innerHTML = reviews.map(review => `
+            <div class="cps-review-item">
+              <div class="cps-reviewer-info">
+                <div class="cps-reviewer-avatar">
+                  <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="cps-reviewer-details">
+                  <div class="cps-reviewer-name">${escapeHtml(review.reviewer_name)}</div>
+                  <div class="cps-review-stars">
+                    ${renderStars(review.rating)}
+                  </div>
+                </div>
+              </div>
+              ${review.title ? `<div class="cps-review-title" style="font-weight: 600; color: #333; margin-bottom: 8px;">${escapeHtml(review.title)}</div>` : ''}
+              <div class="cps-review-content">
+                ${escapeHtml(review.content)}
+              </div>
+              <div class="cps-review-date">${review.formatted_date}</div>
+            </div>
+          `).join('');
+        }
+        
+        console.log('✅ Reviews loaded:', total_reviews);
+      } else {
+        console.error('Failed to load reviews:', result.message);
+        document.getElementById('reviewList').innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #999;">
+            <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 15px; color: #ff9800;"></i>
+            <p style="font-size: 16px;">Không thể tải đánh giá</p>
+            <p style="font-size: 14px; margin-top: 5px;">Vui lòng thử lại sau</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+      document.getElementById('reviewList').innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #999;">
+          <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 15px; color: #f44336;"></i>
+          <p style="font-size: 16px;">Đã xảy ra lỗi khi tải đánh giá</p>
+        </div>
+      `;
+    }
+  }
+  
+  // Helper: Update stars display
+  function updateStars(elementId, rating) {
+    const starsContainer = document.getElementById(elementId);
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let starsHtml = '';
+    
+    // Full stars
+    for (let i = 0; i < fullStars; i++) {
+      starsHtml += '<i class="fas fa-star"></i>';
+    }
+    
+    // Half star
+    if (hasHalfStar) {
+      starsHtml += '<i class="fas fa-star-half-alt"></i>';
+    }
+    
+    // Empty stars
+    for (let i = 0; i < emptyStars; i++) {
+      starsHtml += '<i class="far fa-star"></i>';
+    }
+    
+    starsContainer.innerHTML = starsHtml;
+  }
+  
+  // Helper: Render stars for individual review
+  function renderStars(rating) {
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rating) {
+        starsHtml += '<i class="fas fa-star"></i>';
+      } else {
+        starsHtml += '<i class="far fa-star"></i>';
+      }
+    }
+    return starsHtml;
+  }
+  
+  // Helper: Escape HTML to prevent XSS
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Load reviews when page loads
+  loadReviews();
+  
+  // Optionally reload reviews when reviews tab is clicked
+  const reviewsTab = document.querySelector('[href="#reviews"]');
+  if (reviewsTab) {
+    reviewsTab.addEventListener('shown.bs.tab', function() {
+      // Reviews are already loaded, but you could refresh here if needed
+      console.log('📋 Reviews tab activated');
     });
   }
 });

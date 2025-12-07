@@ -49,6 +49,14 @@
         </a>
       </li>
       <li class="nav-item">
+        <a href="/admin/donhang" class="nav-link" data-page="donhang">
+          <div class="nav-icon">
+            <i class="fas fa-shopping-cart"></i>
+          </div>
+          <span class="nav-text">Đơn hàng</span>
+        </a>
+      </li>
+      <li class="nav-item">
         <a href="/admin/flashsale" class="nav-link" data-page="flashsale">
           <div class="nav-icon">
             <i class="fas fa-bolt"></i>
@@ -707,6 +715,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 link.classList.add('active');
             }
             else if (currentPath.includes('/diachi') && linkPath.includes('/diachi')) {
+                link.classList.add('active');
+            }
+            else if (currentPath.includes('/donhang') && linkPath.includes('/donhang')) {
                 link.classList.add('active');
             }
         });

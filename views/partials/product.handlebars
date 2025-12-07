@@ -37,16 +37,6 @@
             </div>
         </div>
     </a>
-
-    <!-- Nút hành động -->
-    <div class="cps-actions">
-        <button class="cps-btn-cart" data-product-id="{{this.id}}" title="Thêm vào giỏ">
-            <i class="fas fa-shopping-cart"></i>
-        </button>
-        <a href="/product/{{this.id}}" class="cps-btn-buy">
-            MUA NGAY
-        </a>
-    </div>
 </div>
 
 <!-- Modal xem nhanh sản phẩm -->
@@ -90,9 +80,10 @@
         display: flex;
         flex-direction: column;
         width: 234px;
-        height: 350px;
+        height: 320px;
         position: relative;
         margin: 0 auto;
+        cursor: pointer;
     }
 
     .cps-product-card:hover {
@@ -107,6 +98,7 @@
         display: flex;
         flex-direction: column;
         flex: 1;
+        height: 100%;
     }
 
     /* Hình ảnh */
@@ -115,18 +107,19 @@
         height: 180px;
         background: #f8f8f8;
         overflow: hidden;
+        flex-shrink: 0;
     }
 
     .cps-product-image img {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        padding: 4px;
+        padding: 8px;
         transition: transform 0.3s ease;
     }
 
     .cps-product-card:hover .cps-product-image img {
-        transform: scale(1.05);
+        transform: scale(1.08);
     }
 
     /* Badges */
@@ -136,8 +129,8 @@
         left: 8px;
         background: linear-gradient(135deg, #d70018 0%, #ff0033 100%);
         color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
+        padding: 5px 10px;
+        border-radius: 6px;
         font-size: 11px;
         font-weight: 700;
         z-index: 2;
@@ -146,12 +139,12 @@
 
     /* Tên sản phẩm */
     .cps-product-name {
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 600;
         color: #333;
-        margin: 10px 10px 6px;
-        line-height: 1.3;
-        height: 2.6em;
+        margin: 12px 12px 8px;
+        line-height: 1.4;
+        height: 2.8em;
         overflow: hidden;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -164,34 +157,35 @@
 
     /* Giá */
     .cps-price-wrapper {
-        margin: 0 10px 6px;
+        margin: 0 12px 10px;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         flex-wrap: wrap;
     }
 
     .cps-current-price {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         color: #d70018;
     }
 
     .cps-original-price {
-        font-size: 12px;
-        color: #707070;
+        font-size: 13px;
+        color: #999;
         text-decoration: line-through;
+        font-weight: 400;
     }
 
     /* Meta info */
     .cps-product-meta {
-        margin: 0 10px 10px;
+        margin: auto 12px 12px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 10px;
+        font-size: 11px;
         color: #666;
-        padding-top: 6px;
+        padding-top: 10px;
         border-top: 1px solid #f0f0f0;
     }
 
@@ -203,182 +197,85 @@
 
     .cps-rating i {
         color: #ffa500;
-        font-size: 11px;
+        font-size: 12px;
+    }
+
+    .cps-rating span:first-of-type {
+        font-weight: 600;
+        color: #333;
     }
 
     .cps-reviews {
         color: #999;
+        font-size: 10px;
     }
 
     .cps-sold {
         display: flex;
         align-items: center;
         gap: 4px;
+        font-weight: 500;
     }
 
     .cps-sold i {
         color: #d70018;
+        font-size: 11px;
     }
 
-    /* Actions */
-    .cps-actions {
-        margin-top: auto;
-        padding: 0 10px 10px;
-        display: flex;
-        gap: 6px;
+    /* Hover effect overlay */
+    .cps-product-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 0;
+        background: linear-gradient(to top, rgba(215, 0, 24, 0.05), transparent);
+        transition: height 0.3s ease;
+        pointer-events: none;
     }
 
-    .cps-btn-cart {
-        width: 40px;
-        height: 36px;
-        border: 1px solid #d70018;
-        background: #fff;
-        border-radius: 6px;
-        color: #d70018;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-
-    .cps-btn-cart:hover {
-        background: #d70018;
-        color: #fff;
-        transform: scale(1.05);
-    }
-
-    .cps-btn-buy {
-        flex: 1;
-        height: 36px;
-        border: none;
-        background: linear-gradient(135deg, #d70018 0%, #ff0033 100%);
-        color: #fff;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .cps-btn-buy:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(215, 0, 24, 0.3);
-    }
-
-    .cps-btn-buy:active {
-        transform: translateY(0);
+    .cps-product-card:hover::after {
+        height: 100%;
     }
 
     /* Responsive */
     @media (max-width: 576px) {
+        .cps-product-card {
+            height: 300px;
+        }
+
+        .cps-product-image {
+            height: 160px;
+        }
+
         .cps-product-name {
             font-size: 13px;
+            margin: 10px 10px 6px;
         }
 
         .cps-current-price {
             font-size: 15px;
         }
 
-        .cps-promotions {
-            padding: 6px;
+        .cps-price-wrapper {
+            margin: 0 10px 8px;
         }
 
-        .cps-promo-item {
+        .cps-product-meta {
+            margin: auto 10px 10px;
             font-size: 10px;
         }
     }
 </style>
 
 <script>
-  // CellphoneS Style Product Card JavaScript
-  // Sử dụng event delegation để tránh đăng ký nhiều lần
-  (function() {
-    // Đảm bảo chỉ đăng ký 1 lần
-    if (window.cpsCartHandlerRegistered) return;
-    window.cpsCartHandlerRegistered = true;
-    
-    // Event delegation trên document
-    document.addEventListener('click', async function(e) {
-      const button = e.target.closest('.cps-btn-cart');
-      if (!button) return;
-      
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const productId = button.getAttribute('data-product-id');
-      console.log('🛒 Thêm vào giỏ:', productId);
-      
-      // Kiểm tra đăng nhập
-      const userId = AuthHelper.getUserId();
-      if (!userId) {
-        alert('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
-        window.location.href = '/login';
-        return;
-      }
-      
-      try {
-        // Gọi API thêm vào giỏ
-        const response = await fetch('/api/cart', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            san_pham_id: productId,
-            so_luong: 1,
-            userId: userId
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          // Animation hiệu ứng thêm vào giỏ
-          const originalHTML = button.innerHTML;
-          button.innerHTML = '<i class="fas fa-check"></i>';
-          button.style.background = '#28a745';
-          button.style.borderColor = '#28a745';
-          button.style.color = '#fff';
-          
-          // Cập nhật badge giỏ hàng
-          if (typeof CartManager !== 'undefined' && CartManager.updateCartBadge) {
-            CartManager.updateCartBadge();
-          }
-          
-          setTimeout(() => {
-            button.innerHTML = originalHTML;
-            button.style.background = '';
-            button.style.borderColor = '';
-            button.style.color = '';
-          }, 1500);
-        } else {
-          alert(result.message || 'Không thể thêm vào giỏ hàng');
-        }
-      } catch (error) {
-        console.error('Lỗi thêm vào giỏ:', error);
-        alert('Đã xảy ra lỗi khi thêm vào giỏ hàng');
-      }
-    });
-  })();
-
-  // Xử lý click vào link sản phẩm
+  // Product card click - navigate to detail page
   document.addEventListener('DOMContentLoaded', function() {
     const cpsProductLinks = document.querySelectorAll('.cps-product-link');
     cpsProductLinks.forEach(link => {
       link.addEventListener('click', function(e) {
-        // Cho phép click vào link trừ khi click vào button
-        if (e.target.closest('.cps-actions')) {
-          e.preventDefault();
-        }
+        // Allow normal link navigation
       });
     });
   });

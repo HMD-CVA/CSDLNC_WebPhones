@@ -758,6 +758,30 @@ app.get('/cart', async (req, res) => {
     }
 });
 
+// Trang thanh toán
+app.get('/payment', async (req, res) => {
+    try {
+        res.render('payment', { 
+            layout: 'HomeMain.handlebars'
+        });
+    } catch (err) {
+        console.error('Error loading payment page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// Trang xác nhận đơn hàng
+app.get('/order-confirmation', async (req, res) => {
+    try {
+        res.render('order-confirmation', { 
+            layout: 'HomeMain.handlebars'
+        });
+    } catch (err) {
+        console.error('Error loading order confirmation page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
 // ========== CART API ==========
 
 // GET /api/cart - Lấy giỏ hàng của user hiện tại
@@ -810,7 +834,7 @@ app.get('/api/cart', async (req, res) => {
             cartId = cartResult.recordset[0].id;
         }
         
-        // Lấy các sản phẩm trong giỏ hàng
+        // Lấy các sản phẩm trong giỏ hàng (với thông tin variant từ inventory)
         const itemsRequest = new sql.Request();
         const itemsResult = await itemsRequest
             .input('cartId', sql.UniqueIdentifier, cartId)
@@ -818,7 +842,7 @@ app.get('/api/cart', async (req, res) => {
                 SELECT 
                     ci.id,
                     ci.gio_hang_id,
-                    ci.san_pham_id,
+                    ci.san_pham_id, -- Lưu variant_id ở đây
                     ci.so_luong,
                     ci.ngay_them,
                     p.ten_san_pham,
@@ -826,7 +850,8 @@ app.get('/api/cart', async (req, res) => {
                     p.link_anh,
                     p.gia_niem_yet,
                     p.gia_ban,
-                    ISNULL(inv.so_luong_kha_dung, 0) as ton_kho,
+                    p.mongo_detail_id,
+                    inv.so_luong_kha_dung as ton_kho,
                     b.ten_thuong_hieu,
                     c.ten_danh_muc,
                     CAST(CASE 
@@ -839,32 +864,101 @@ app.get('/api/cart', async (req, res) => {
                         ELSE 0 
                     END AS INT) as phan_tram_giam
                 FROM cart_items ci
-                INNER JOIN products p ON ci.san_pham_id = p.id
+                LEFT JOIN inventory inv ON ci.san_pham_id = inv.san_pham_id
+                LEFT JOIN products p ON inv.san_pham_id = p.id
                 LEFT JOIN brands b ON p.thuong_hieu_id = b.id
                 LEFT JOIN categories c ON p.danh_muc_id = c.id
-                LEFT JOIN (
-                    SELECT san_pham_id, SUM(so_luong_kha_dung) as so_luong_kha_dung
-                    FROM inventory
-                    GROUP BY san_pham_id
-                ) inv ON p.id = inv.san_pham_id
                 WHERE ci.gio_hang_id = @cartId
                 ORDER BY ci.ngay_them DESC
             `);
-        
-        // Format giá tiền
-        const cartItems = itemsResult.recordset.map(item => ({
-            ...item,
-            gia_ban_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_ban),
-            gia_niem_yet_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_niem_yet),
-            thanh_tien_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_ban * item.so_luong)
+
+        // Lấy thông tin variant từ MongoDB cho mỗi item (san_pham_id LUÔN LÀ variant_id)
+        const cartItemsWithVariants = await Promise.all(itemsResult.recordset.map(async (item) => {
+            let variantInfo = null;
+            let variantName = '';
+            let variantImage = item.link_anh || '/image/default-product.png';
+            let variantSKU = item.ma_sku || 'N/A';
+            let productName = item.ten_san_pham || 'Sản phẩm';
+            
+            // LUÔN LUÔN tìm variant trong MongoDB (giống flash_sale)
+            if (item.san_pham_id) {
+                try {
+                    // Sử dụng DataModel để truy cập MongoDB
+                    const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+                    
+                    let foundDoc = null;
+                    let foundVariant = null;
+                    
+                    for (const doc of allProducts) {
+                        const combinations = doc.variants?.variant_combinations || [];
+                        const variant = combinations.find(v => 
+                            v.variant_id && v.variant_id.toLowerCase() === item.san_pham_id.toLowerCase()
+                        );
+                        
+                        if (variant) {
+                            foundDoc = doc;
+                            foundVariant = variant;
+                            break;
+                        }
+                    }
+                    
+                    if (foundDoc && foundVariant) {
+                        variantName = foundVariant.name || '';
+                        variantSKU = foundVariant.sku || variantSKU;
+                        variantImage = foundDoc.link_avatar || variantImage;
+                        
+                        // Lấy product name từ SQL
+                        if (foundDoc.sql_product_id) {
+                            const sqlProduct = await DataModel.SQL.Product.findById(foundDoc.sql_product_id);
+                            if (sqlProduct) {
+                                productName = sqlProduct.ten_san_pham;
+                            }
+                        }
+                        
+                        variantInfo = {
+                            variant_id: foundVariant.variant_id,
+                            name: foundVariant.name,
+                            sku: foundVariant.sku,
+                            price: foundVariant.price,
+                            stock: foundVariant.stock || 0,
+                            active: foundVariant.active !== undefined ? foundVariant.active : true
+                        };
+                    } else {
+                        console.warn('⚠️ Không tìm thấy variant_id trong MongoDB:', item.san_pham_id);
+                    }
+                } catch (err) {
+                    console.error('Error fetching variant info:', err);
+                }
+            }
+            
+            // Ưu tiên sử dụng giá và stock từ variant_info (MongoDB)
+            const actualPrice = variantInfo?.price || item.gia_ban;
+            const actualStock = variantInfo?.stock || item.ton_kho || 0;
+            const isActive = variantInfo?.active !== undefined ? variantInfo.active : true;
+            
+            return {
+                ...item,
+                variant_info: variantInfo,
+                variant_name: variantName,
+                ma_sku: variantSKU,
+                link_anh: variantImage,
+                ten_san_pham: productName,
+                ten_san_pham_day_du: variantName ? `${productName} - ${variantName}` : productName,
+                gia_ban: actualPrice,  // Giá từ variant
+                ton_kho: actualStock,  // Stock từ variant
+                is_active: isActive,   // Trạng thái variant
+                gia_ban_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(actualPrice),
+                gia_niem_yet_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.gia_niem_yet),
+                thanh_tien_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(actualPrice * item.so_luong)
+            };
         }));
         
         res.json({
             success: true,
             data: {
                 cartId: cartId,
-                items: cartItems,
-                count: cartItems.length
+                items: cartItemsWithVariants,
+                count: cartItemsWithVariants.length
             }
         });
         
@@ -880,66 +974,44 @@ app.get('/api/cart', async (req, res) => {
 // POST /api/cart - Thêm sản phẩm vào giỏ hàng
 app.post('/api/cart', async (req, res) => {
     try {
-        const { san_pham_id, so_luong, userId } = req.body;
-        
+        // Nhận variant_id (MongoDB) và lưu vào san_pham_id (giống flash_sale_items)
+        const { variant_id, so_luong, userId } = req.body;
+
         if (!userId) {
             return res.status(401).json({
                 success: false,
                 message: 'Vui lòng đăng nhập để thêm vào giỏ hàng'
             });
         }
-        
+
+        if (!variant_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn phiên bản sản phẩm'
+            });
+        }
+
         // Lấy thông tin user
         const userRequest = new sql.Request();
         const userResult = await userRequest
             .input('userId', sql.UniqueIdentifier, userId)
             .query('SELECT id, vung_id FROM users WHERE id = @userId');
-        
+
         if (!userResult.recordset || userResult.recordset.length === 0) {
             return res.status(401).json({
                 success: false,
                 message: 'Phiên đăng nhập không hợp lệ'
             });
         }
-        
+
         const vungId = userResult.recordset[0].vung_id;
-        
-        // Kiểm tra sản phẩm tồn tại và còn hàng
-        const productRequest = new sql.Request();
-        const productResult = await productRequest
-            .input('productId', sql.UniqueIdentifier, san_pham_id)
-            .query(`
-                SELECT 
-                    p.id, 
-                    p.ten_san_pham,
-                    ISNULL(SUM(inv.so_luong_kha_dung), 0) as so_luong_ton
-                FROM products p
-                LEFT JOIN inventory inv ON p.id = inv.san_pham_id
-                WHERE p.id = @productId AND p.trang_thai = 1
-                GROUP BY p.id, p.ten_san_pham
-            `);
-        
-        if (!productResult.recordset || productResult.recordset.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Sản phẩm không tồn tại hoặc đã ngừng bán'
-            });
-        }
-        
-        const product = productResult.recordset[0];
-        if (product.so_luong_ton < so_luong) {
-            return res.status(400).json({
-                success: false,
-                message: `Chỉ còn ${product.so_luong_ton} sản phẩm trong kho`
-            });
-        }
-        
+
         // Tìm hoặc tạo giỏ hàng
         let cartRequest = new sql.Request();
         let cartResult = await cartRequest
             .input('userId', sql.UniqueIdentifier, userId)
             .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId');
-        
+
         let cartId;
         if (!cartResult.recordset || cartResult.recordset.length === 0) {
             const createCartRequest = new sql.Request();
@@ -955,79 +1027,68 @@ app.post('/api/cart', async (req, res) => {
         } else {
             cartId = cartResult.recordset[0].id;
         }
-        
+
         // Sử dụng MERGE để tránh race condition và duplicate key
-        // Nếu sản phẩm đã tồn tại -> UPDATE số lượng
+        // Lưu variant_id vào san_pham_id (giống flash_sale_items)
+        // Nếu variant này đã tồn tại -> UPDATE số lượng
         // Nếu chưa tồn tại -> INSERT mới
         const mergeRequest = new sql.Request();
         const mergeResult = await mergeRequest
             .input('cartId', sql.UniqueIdentifier, cartId)
-            .input('productId', sql.UniqueIdentifier, san_pham_id)
+            .input('variantId', sql.NVarChar, variant_id)
             .input('quantity', sql.Int, so_luong)
-            .input('maxStock', sql.Int, product.so_luong_ton)
             .query(`
                 DECLARE @existed BIT = 0;
                 DECLARE @newQty INT;
-                
-                -- Kiểm tra nếu đã tồn tại
-                IF EXISTS (SELECT 1 FROM cart_items WHERE gio_hang_id = @cartId AND san_pham_id = @productId)
+
+                -- Kiểm tra nếu variant_id này đã tồn tại trong giỏ (lưu ở san_pham_id)
+                IF EXISTS (SELECT 1 FROM cart_items WHERE gio_hang_id = @cartId AND san_pham_id = @variantId)
                 BEGIN
                     SET @existed = 1;
-                    
+
                     -- Tính số lượng mới
                     SELECT @newQty = so_luong + @quantity 
                     FROM cart_items 
-                    WHERE gio_hang_id = @cartId AND san_pham_id = @productId;
-                    
-                    -- Kiểm tra tồn kho
-                    IF @newQty > @maxStock
-                    BEGIN
-                        SELECT 
-                            0 as success,
-                            'Chỉ còn ' + CAST(@maxStock AS NVARCHAR) + ' sản phẩm trong kho' as message,
-                            @existed as existed
-                    END
-                    ELSE
-                    BEGIN
-                        -- Cập nhật số lượng
-                        UPDATE cart_items 
-                        SET so_luong = @newQty 
-                        WHERE gio_hang_id = @cartId AND san_pham_id = @productId;
-                        
-                        SELECT 
-                            1 as success,
-                            'Đã cập nhật số lượng trong giỏ hàng' as message,
-                            @existed as existed
-                    END
+                    WHERE gio_hang_id = @cartId AND san_pham_id = @variantId;
+
+                    -- Cập nhật số lượng
+                    UPDATE cart_items 
+                    SET so_luong = @newQty 
+                    WHERE gio_hang_id = @cartId AND san_pham_id = @variantId;
+
+                    SELECT 
+                        1 as success,
+                        'Đã cập nhật số lượng trong giỏ hàng' as message,
+                        @existed as existed
                 END
                 ELSE
                 BEGIN
-                    -- Thêm mới
+                    -- Thêm mới với variant_id (lưu vào san_pham_id, giống flash_sale_items)
                     INSERT INTO cart_items (gio_hang_id, san_pham_id, so_luong)
-                    VALUES (@cartId, @productId, @quantity);
-                    
+                    VALUES (@cartId, @variantId, @quantity);
+
                     SELECT 
                         1 as success,
                         'Đã thêm vào giỏ hàng' as message,
                         @existed as existed
                 END
             `);
-        
+
         const result = mergeResult.recordset[0];
-        
+
         if (!result.success) {
             return res.status(400).json({
                 success: false,
                 message: result.message
             });
         }
-        
+
         res.json({
             success: true,
-            message: `${result.message}: ${product.ten_san_pham}`,
+            message: result.message,
             existed: result.existed === 1
         });
-        
+
     } catch (error) {
         console.error('Add to cart error:', error);
         res.status(500).json({
@@ -1050,20 +1111,16 @@ app.put('/api/cart/:itemId', async (req, res) => {
             });
         }
         
-        // Kiểm tra số lượng tồn kho
+        // Lấy thông tin cart item (san_pham_id là variant_id)
         const checkRequest = new sql.Request();
         const checkResult = await checkRequest
             .input('itemId', sql.UniqueIdentifier, itemId)
             .query(`
                 SELECT 
                     ci.id, 
-                    p.ten_san_pham,
-                    ISNULL(SUM(inv.so_luong_kha_dung), 0) as so_luong_ton
+                    ci.san_pham_id
                 FROM cart_items ci
-                INNER JOIN products p ON ci.san_pham_id = p.id
-                LEFT JOIN inventory inv ON p.id = inv.san_pham_id
                 WHERE ci.id = @itemId
-                GROUP BY ci.id, p.ten_san_pham
             `);
         
         if (!checkResult.recordset || checkResult.recordset.length === 0) {
@@ -1073,11 +1130,57 @@ app.put('/api/cart/:itemId', async (req, res) => {
             });
         }
         
-        const item = checkResult.recordset[0];
-        if (so_luong > item.so_luong_ton) {
+        const cartItem = checkResult.recordset[0];
+        const variantId = cartItem.san_pham_id;
+        
+        // Tìm variant trong MongoDB để lấy stock
+        const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+        
+        let foundVariant = null;
+        let productName = 'Sản phẩm';
+        
+        for (const doc of allProducts) {
+            const combinations = doc.variants?.variant_combinations || [];
+            const variant = combinations.find(v => 
+                v.variant_id && v.variant_id.toLowerCase() === variantId.toLowerCase()
+            );
+            
+            if (variant) {
+                foundVariant = variant;
+                // Lấy tên sản phẩm từ SQL
+                if (doc.sql_product_id) {
+                    const sqlProduct = await DataModel.SQL.Product.findById(doc.sql_product_id);
+                    if (sqlProduct) {
+                        productName = sqlProduct.ten_san_pham;
+                    }
+                }
+                break;
+            }
+        }
+        
+        if (!foundVariant) {
             return res.status(400).json({
                 success: false,
-                message: `Chỉ còn ${item.so_luong_ton} sản phẩm trong kho`
+                message: 'Không tìm thấy thông tin biến thể sản phẩm'
+            });
+        }
+        
+        // Kiểm tra variant có active không
+        if (foundVariant.active === false) {
+            return res.status(400).json({
+                success: false,
+                message: 'Sản phẩm này đã ngừng bán'
+            });
+        }
+        
+        // Kiểm tra số lượng tồn kho từ variant
+        const availableStock = foundVariant.stock || 0;
+        
+        if (so_luong > availableStock) {
+            return res.status(400).json({
+                success: false,
+                message: `Chỉ còn ${availableStock} sản phẩm trong kho`,
+                availableStock: availableStock
             });
         }
         
@@ -1090,7 +1193,11 @@ app.put('/api/cart/:itemId', async (req, res) => {
         
         res.json({
             success: true,
-            message: 'Đã cập nhật số lượng sản phẩm'
+            message: 'Đã cập nhật số lượng sản phẩm',
+            data: {
+                so_luong: so_luong,
+                availableStock: availableStock
+            }
         });
         
     } catch (error) {
@@ -1480,33 +1587,33 @@ app.get('/api/profile/:userId', async (req, res) => {
         const { userId } = req.params;
         
         // Lấy thông tin user từ SQL Server
-        const userQuery = `
-            SELECT id, email, ho_ten, so_dien_thoai, vung_id, 
-                   mongo_profile_id, ngay_dang_ky, trang_thai
-            FROM users 
-            WHERE id = @userId
-        `;
+        const request = new sql.Request();
+        const userResult = await request
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT id, email, ho_ten, so_dien_thoai, vung_id, 
+                       mongo_profile_id, ngay_dang_ky, trang_thai
+                FROM users 
+                WHERE id = @userId
+            `);
         
-        const userResult = await db.querySQL(userQuery, [
-            { name: 'userId', type: db.sql.UniqueIdentifier, value: userId }
-        ]);
-        
-        if (!userResult || userResult.length === 0) {
+        if (!userResult.recordset || userResult.recordset.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Không tìm thấy người dùng'
             });
         }
         
-        const user = userResult[0];
+        const user = userResult.recordset[0];
         
         // Lấy thông tin mở rộng từ MongoDB nếu có
         let extendedProfile = null;
         if (user.mongo_profile_id) {
             try {
-                extendedProfile = await db.mongoDB
+                const ObjectId = require('mongodb').ObjectId;
+                extendedProfile = await DataModel.Mongo.db
                     .collection('user_profiles')
-                    .findOne({ _id: new db.ObjectId(user.mongo_profile_id) });
+                    .findOne({ _id: new ObjectId(user.mongo_profile_id) });
             } catch (mongoError) {
                 console.warn('MongoDB profile not found:', mongoError);
             }
@@ -1625,6 +1732,259 @@ app.put('/api/profile/:userId', async (req, res) => {
     }
 });
 
+// =============================================
+// API ĐỊA CHỈ NGƯỜI DÙNG (USER_ADDRESSES)
+// =============================================
+
+// GET /api/user-addresses/:userId - Lấy tất cả địa chỉ của user
+app.get('/api/user-addresses/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const request = new sql.Request();
+        const result = await request
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT 
+                    ua.id,
+                    ua.loai_dia_chi,
+                    ua.is_default,
+                    ua.ten_nguoi_nhan,
+                    ua.sdt_nguoi_nhan,
+                    ua.dia_chi_cu_the,
+                    ua.ghi_chu,
+                    ua.phuong_xa_id,
+                    w.ten_phuong_xa,
+                    w.tinh_thanh_id,
+                    p.ten_tinh,
+                    p.vung_id,
+                    r.ten_vung
+                FROM user_addresses ua
+                INNER JOIN wards w ON ua.phuong_xa_id = w.id
+                INNER JOIN provinces p ON w.tinh_thanh_id = p.id
+                INNER JOIN regions r ON p.vung_id = r.ma_vung
+                WHERE ua.user_id = @userId AND ua.trang_thai = 1
+                ORDER BY ua.is_default DESC, ua.ngay_tao DESC
+            `);
+        
+        res.json({
+            success: true,
+            data: result.recordset
+        });
+    } catch (error) {
+        console.error('Get user addresses error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách địa chỉ'
+        });
+    }
+});
+
+// GET /api/user-addresses/:userId/default - Lấy địa chỉ mặc định của user
+app.get('/api/user-addresses/:userId/default', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const request = new sql.Request();
+        const result = await request
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT TOP 1
+                    ua.id,
+                    ua.loai_dia_chi,
+                    ua.is_default,
+                    ua.ten_nguoi_nhan,
+                    ua.sdt_nguoi_nhan,
+                    ua.dia_chi_cu_the,
+                    ua.ghi_chu,
+                    ua.phuong_xa_id,
+                    w.ten_phuong_xa,
+                    w.tinh_thanh_id,
+                    p.ten_tinh,
+                    p.vung_id,
+                    r.ten_vung
+                FROM user_addresses ua
+                INNER JOIN wards w ON ua.phuong_xa_id = w.id
+                INNER JOIN provinces p ON w.tinh_thanh_id = p.id
+                INNER JOIN regions r ON p.vung_id = r.ma_vung
+                WHERE ua.user_id = @userId AND ua.trang_thai = 1
+                ORDER BY ua.is_default DESC, ua.ngay_tao DESC
+            `);
+        
+        if (result.recordset.length === 0) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'User chưa có địa chỉ'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.recordset[0]
+        });
+    } catch (error) {
+        console.error('Get default address error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy địa chỉ mặc định'
+        });
+    }
+});
+
+// POST /api/user-addresses - Thêm địa chỉ mới
+app.post('/api/user-addresses', async (req, res) => {
+    try {
+        const { 
+            userId, 
+            loai_dia_chi, 
+            is_default,
+            ten_nguoi_nhan, 
+            sdt_nguoi_nhan, 
+            phuong_xa_id, 
+            dia_chi_cu_the, 
+            ghi_chu 
+        } = req.body;
+        
+        // Nếu set làm mặc định, cần bỏ default của các địa chỉ khác
+        if (is_default) {
+            const updateRequest = new sql.Request();
+            await updateRequest
+                .input('userId1', sql.UniqueIdentifier, userId)
+                .query(`UPDATE user_addresses SET is_default = 0 WHERE user_id = @userId1`);
+        }
+        
+        const request = new sql.Request();
+        
+        // Insert without OUTPUT because table has triggers
+        await request
+            .input('userId', sql.UniqueIdentifier, userId)
+            .input('loai_dia_chi', sql.NVarChar(20), loai_dia_chi || 'nha_rieng')
+            .input('is_default', sql.Bit, is_default || 0)
+            .input('ten_nguoi_nhan', sql.NVarChar(100), ten_nguoi_nhan)
+            .input('sdt_nguoi_nhan', sql.VarChar(15), sdt_nguoi_nhan)
+            .input('phuong_xa_id', sql.UniqueIdentifier, phuong_xa_id)
+            .input('dia_chi_cu_the', sql.NVarChar(200), dia_chi_cu_the)
+            .input('ghi_chu', sql.NVarChar(500), ghi_chu || null)
+            .query(`
+                INSERT INTO user_addresses (
+                    user_id, loai_dia_chi, is_default, ten_nguoi_nhan, 
+                    sdt_nguoi_nhan, phuong_xa_id, dia_chi_cu_the, ghi_chu
+                )
+                VALUES (
+                    @userId, @loai_dia_chi, @is_default, @ten_nguoi_nhan,
+                    @sdt_nguoi_nhan, @phuong_xa_id, @dia_chi_cu_the, @ghi_chu
+                )
+            `);
+        
+        // Get the last inserted ID
+        const getIdRequest = new sql.Request();
+        const result = await getIdRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT TOP 1 id 
+                FROM user_addresses 
+                WHERE user_id = @userId 
+                ORDER BY ngay_tao DESC
+            `);
+        
+        res.json({
+            success: true,
+            data: { id: result.recordset[0]?.id },
+            message: 'Thêm địa chỉ thành công'
+        });
+    } catch (error) {
+        console.error('Add address error:', error);
+        console.error('Error details:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi thêm địa chỉ: ' + error.message
+        });
+    }
+});
+
+// PUT /api/user-addresses/:addressId - Cập nhật địa chỉ
+app.put('/api/user-addresses/:addressId', async (req, res) => {
+    try {
+        const { addressId } = req.params;
+        const { 
+            userId,
+            loai_dia_chi, 
+            is_default,
+            ten_nguoi_nhan, 
+            sdt_nguoi_nhan, 
+            phuong_xa_id, 
+            dia_chi_cu_the, 
+            ghi_chu 
+        } = req.body;
+        
+        // Nếu set làm mặc định, cần bỏ default của các địa chỉ khác
+        if (is_default) {
+            const updateRequest = new sql.Request();
+            await updateRequest
+                .input('userId1', sql.UniqueIdentifier, userId)
+                .query(`UPDATE user_addresses SET is_default = 0 WHERE user_id = @userId1`);
+        }
+        
+        const request = new sql.Request();
+        await request
+            .input('addressId', sql.UniqueIdentifier, addressId)
+            .input('loai_dia_chi', sql.NVarChar(20), loai_dia_chi)
+            .input('is_default', sql.Bit, is_default)
+            .input('ten_nguoi_nhan', sql.NVarChar(100), ten_nguoi_nhan)
+            .input('sdt_nguoi_nhan', sql.VarChar(15), sdt_nguoi_nhan)
+            .input('phuong_xa_id', sql.UniqueIdentifier, phuong_xa_id)
+            .input('dia_chi_cu_the', sql.NVarChar(200), dia_chi_cu_the)
+            .input('ghi_chu', sql.NVarChar(500), ghi_chu || null)
+            .query(`
+                UPDATE user_addresses SET
+                    loai_dia_chi = @loai_dia_chi,
+                    is_default = @is_default,
+                    ten_nguoi_nhan = @ten_nguoi_nhan,
+                    sdt_nguoi_nhan = @sdt_nguoi_nhan,
+                    phuong_xa_id = @phuong_xa_id,
+                    dia_chi_cu_the = @dia_chi_cu_the,
+                    ghi_chu = @ghi_chu,
+                    ngay_cap_nhat = GETDATE()
+                WHERE id = @addressId
+            `);
+        
+        res.json({
+            success: true,
+            message: 'Cập nhật địa chỉ thành công'
+        });
+    } catch (error) {
+        console.error('Update address error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi cập nhật địa chỉ'
+        });
+    }
+});
+
+// DELETE /api/user-addresses/:addressId - Xóa địa chỉ
+app.delete('/api/user-addresses/:addressId', async (req, res) => {
+    try {
+        const { addressId } = req.params;
+        
+        const request = new sql.Request();
+        await request
+            .input('addressId', sql.UniqueIdentifier, addressId)
+            .query(`UPDATE user_addresses SET trang_thai = 0 WHERE id = @addressId`);
+        
+        res.json({
+            success: true,
+            message: 'Xóa địa chỉ thành công'
+        });
+    } catch (error) {
+        console.error('Delete address error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi xóa địa chỉ'
+        });
+    }
+});
+
 // POST /api/profile/:userId/change-password - Đổi mật khẩu
 app.post('/api/profile/:userId/change-password', async (req, res) => {
     try {
@@ -1714,32 +2074,44 @@ app.get('/product/:id', async (req, res) => {
         }
 
         // ✅ KIỂM TRA FLASH SALE ĐANG ACTIVE
-        const flashSaleItem = await DataModel.SQL.FlashSaleItem.findActiveByProductId(productId);
         let isFlashSale = false;
         let flashSaleInfo = null;
         let priceToDisplay = product.gia_ban;
         
-        if (flashSaleItem) {
-            isFlashSale = true;
-            priceToDisplay = flashSaleItem.gia_flash_sale;
-            const conLaiFlashSale = flashSaleItem.so_luong_ton - flashSaleItem.da_ban;
+        try {
+            const flashSaleItems = await DataModel.SQL.FlashSaleItem.findActiveByProductId(productId);
             
-            flashSaleInfo = {
-                id: flashSaleItem.id,
-                flash_sale_id: flashSaleItem.flash_sale_id,
-                ten_flash_sale: flashSaleItem.ten_flash_sale,
-                gia_goc: flashSaleItem.gia_goc,
-                gia_flash_sale: flashSaleItem.gia_flash_sale,
-                phan_tram_giam: Math.round((1 - flashSaleItem.gia_flash_sale / flashSaleItem.gia_goc) * 100),
-                so_luong_gioi_han: flashSaleItem.so_luong_ton,
-                da_ban: flashSaleItem.da_ban,
-                con_lai: conLaiFlashSale,
-                gioi_han_mua: flashSaleItem.gioi_han_mua,
-                ngay_bat_dau: flashSaleItem.ngay_bat_dau,
-                ngay_ket_thuc: flashSaleItem.ngay_ket_thuc,
-                is_low_stock: conLaiFlashSale < 10 && conLaiFlashSale > 0
-            };
-            console.log('🔥 Flash Sale Active:', flashSaleInfo);
+            if (flashSaleItems && flashSaleItems.length > 0) {
+                // Lấy flash sale item đầu tiên (giá thấp nhất hoặc ưu tiên nhất)
+                const flashSaleItem = flashSaleItems[0];
+                isFlashSale = true;
+                priceToDisplay = flashSaleItem.gia_flash_sale;
+                const conLaiFlashSale = flashSaleItem.so_luong_ton - flashSaleItem.da_ban;
+                
+                // Safe calculation for discount percentage
+                const giaGoc = flashSaleItem.gia_goc || flashSaleItem.gia_flash_sale;
+                const phanTramGiam = giaGoc > 0 ? Math.round((1 - flashSaleItem.gia_flash_sale / giaGoc) * 100) : 0;
+                
+                flashSaleInfo = {
+                    id: flashSaleItem.id,
+                    flash_sale_id: flashSaleItem.flash_sale_id,
+                    ten_flash_sale: flashSaleItem.ten_flash_sale,
+                    gia_goc: giaGoc,
+                    gia_flash_sale: flashSaleItem.gia_flash_sale,
+                    phan_tram_giam: phanTramGiam,
+                    so_luong_gioi_han: flashSaleItem.so_luong_ton,
+                    da_ban: flashSaleItem.da_ban,
+                    con_lai: conLaiFlashSale,
+                    gioi_han_mua: flashSaleItem.gioi_han_mua,
+                    ngay_bat_dau: flashSaleItem.ngay_bat_dau,
+                    ngay_ket_thuc: flashSaleItem.ngay_ket_thuc,
+                    is_low_stock: conLaiFlashSale < 10 && conLaiFlashSale > 0
+                };
+                console.log('🔥 Flash Sale Active:', flashSaleInfo);
+            }
+        } catch (flashSaleError) {
+            console.error('⚠️ Error loading flash sale info:', flashSaleError);
+            // Continue without flash sale info
         }
 
         // Lấy tất cả variants (inventory) của sản phẩm
@@ -3125,7 +3497,7 @@ app.put('/api/sanpham/:id/status', async (req, res) => {
 // POST /api/mongo/sanpham - Tạo document mới trong MongoDB
 app.post('/api/mongo/sanpham', async (req, res) => {
     try {
-        const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, video_links, variants, thong_tin_khac, link_avatar, mo_ta_chi_tiet, trang_thai, san_pham_noi_bat, slug, chi_tiet } = req.body;
+        let { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, video_links, variants, thong_tin_khac, link_avatar, mo_ta_chi_tiet, trang_thai, san_pham_noi_bat, slug, chi_tiet } = req.body;
 
         console.log('🔄 API: Tạo document MongoDB mới');
         console.log('📝 Request data:', {
@@ -3142,6 +3514,33 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             has_chi_tiet: !!chi_tiet,
             slug
         });
+
+        // ===== KIỂM TRA XEM CÓ DỮ LIỆU MONGO NÀO KHÔNG =====
+        const hasMongoData = (
+            (thong_so_ky_thuat && Object.keys(thong_so_ky_thuat).length > 0) ||
+            (hinh_anh && Array.isArray(hinh_anh) && hinh_anh.length > 0) ||
+            (videos && Array.isArray(videos) && videos.length > 0) ||
+            (video_links && Array.isArray(video_links) && video_links.length > 0) ||
+            (variants && typeof variants === 'object' && (
+                (variants.variant_options && variants.variant_options.length > 0) ||
+                (variants.variant_combinations && variants.variant_combinations.length > 0)
+            )) ||
+            (thong_tin_khac && typeof thong_tin_khac === 'object' && Object.keys(thong_tin_khac).length > 0) ||
+            link_avatar ||
+            mo_ta_chi_tiet ||
+            (chi_tiet && typeof chi_tiet === 'object' && Object.keys(chi_tiet).length > 0)
+        );
+
+        if (!hasMongoData) {
+            console.log('⚠️ Không có dữ liệu MongoDB nào để lưu - bỏ qua tạo document');
+            return res.status(200).json({
+                success: true,
+                message: 'Không có dữ liệu MongoDB để lưu',
+                skipped: true
+            });
+        }
+
+        console.log('✅ Có dữ liệu MongoDB - tiến hành tạo document');
 
         // Kiểm tra kết nối MongoDB
         const dbState = mongoose.connection.readyState;
@@ -3238,7 +3637,7 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         let minOriginalPrice = null;
         if (variants && typeof variants === 'object') {
             // Ensure all variants have variant_id (or create default variant with sql_product_id)
-            variants = ensureVariantIds(variants, newProduct.id);
+            variants = ensureVariantIds(variants, sql_product_id);
             
             // Variants có cấu trúc: {variant_options: [], variant_combinations: []}
             documentData.variants = variants;
@@ -3265,7 +3664,7 @@ app.post('/api/mongo/sanpham', async (req, res) => {
             }
         } else {
             // No variants provided - create default variant with sql_product_id
-            documentData.variants = ensureVariantIds(null, newProduct.id);
+            documentData.variants = ensureVariantIds(null, sql_product_id);
         }
         
         // Lưu giá vào documentData để update SQL sau
@@ -3991,7 +4390,8 @@ const deleteVideoFromCloudinary = async (videoUrl) => {
 // CẬP NHẬT MONGODB PRODUCT DETAILS API ĐỂ HỖ TRỢ VIDEO
 // =============================================
 
-// Cập nhật POST /api/mongo/sanpham để hỗ trợ video
+// DUPLICATE ROUTE - COMMENTED OUT (đã merge vào route chính ở line 3245)
+/*
 app.post('/api/mongo/sanpham', async (req, res) => {
     try {
         // THÊM videos vào destructuring
@@ -4043,6 +4443,7 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         // ... existing error handling ...
     }
 });
+*/
 
 
 
@@ -4232,6 +4633,104 @@ app.get('/api/sanpham/:id/videos', async (req, res) => {
         });
     }
 });
+
+// =============================================
+// API ĐỂ LẤY ĐÁNH GIÁ SẢN PHẨM TỪ SQL SERVER
+// =============================================
+
+// GET /api/reviews/:productId - Lấy danh sách đánh giá từ bảng reviews
+app.get('/api/reviews/:productId', async (req, res) => {
+    try {
+        const productId = req.params.productId;
+        console.log(`⭐ API: Lấy đánh giá cho sản phẩm ${productId}`);
+
+        const request = new sql.Request();
+        const result = await request
+            .input('san_pham_id', sql.UniqueIdentifier, productId)
+            .query(`
+                SELECT 
+                    r.id,
+                    r.diem_danh_gia,
+                    r.tieu_de,
+                    r.mongo_review_content_id,
+                    r.ngay_tao,
+                    u.ho_ten as reviewer_name,
+                    u.email as reviewer_email
+                FROM reviews r
+                INNER JOIN users u ON r.nguoi_dung_id = u.id
+                WHERE r.san_pham_id = @san_pham_id 
+                    AND r.trang_thai = 1
+                ORDER BY r.ngay_tao DESC
+            `);
+
+        // Calculate average rating
+        let avgRating = 0;
+        let totalReviews = result.recordset.length;
+        
+        if (totalReviews > 0) {
+            const sumRating = result.recordset.reduce((sum, review) => sum + review.diem_danh_gia, 0);
+            avgRating = (sumRating / totalReviews).toFixed(1);
+        }
+
+        // Format reviews for frontend
+        const reviews = result.recordset.map(review => ({
+            id: review.id,
+            rating: review.diem_danh_gia,
+            title: review.tieu_de,
+            content: review.mongo_review_content_id || review.tieu_de, // Use title if no MongoDB content
+            reviewer_name: review.reviewer_name,
+            created_date: review.ngay_tao,
+            formatted_date: formatDateAgo(review.ngay_tao)
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                reviews: reviews,
+                avg_rating: parseFloat(avgRating),
+                total_reviews: totalReviews
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Lỗi khi lấy đánh giá:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi lấy đánh giá',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// Helper function to format date
+function formatDateAgo(date) {
+    const now = new Date();
+    const reviewDate = new Date(date);
+    const diffInMs = now - reviewDate;
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) {
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        if (diffInHours === 0) {
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+            return diffInMinutes === 0 ? 'Vừa xong' : `${diffInMinutes} phút trước`;
+        }
+        return `${diffInHours} giờ trước`;
+    } else if (diffInDays === 1) {
+        return 'Hôm qua';
+    } else if (diffInDays < 7) {
+        return `${diffInDays} ngày trước`;
+    } else if (diffInDays < 30) {
+        const weeks = Math.floor(diffInDays / 7);
+        return `${weeks} tuần trước`;
+    } else if (diffInDays < 365) {
+        const months = Math.floor(diffInDays / 30);
+        return `${months} tháng trước`;
+    } else {
+        const years = Math.floor(diffInDays / 365);
+        return `${years} năm trước`;
+    }
+}
 
 // =============================================
 // CẬP NHẬT MULTER CONFIG CHÍNH ĐỂ HỖ TRỢ VIDEO
@@ -5859,6 +6358,216 @@ app.get('/admin/inventory', async (req, res) => {
     }
 });
 
+// =============================================
+// QUẢN LÝ ĐỠN HÀNG (ORDERS)
+// =============================================
+
+// GET /admin/donhang - Render order management page
+app.get('/admin/donhang', async (req, res) => {
+    try {
+        console.log('🚀 Loading admin orders page...');
+        
+        res.render('donhang', { 
+            layout: 'AdminMain', 
+            title: 'Quản lý Đơn hàng'
+        });
+        
+    } catch (err) {
+        console.error('❌ Lỗi trong route /admin/donhang:', err);
+        res.status(500).send(`
+            <html>
+                <head><title>Lỗi</title></head>
+                <body>
+                    <h1>Đã xảy ra lỗi</h1>
+                    <p>Không thể tải trang quản lý đơn hàng: ${err.message}</p>
+                    <a href="/admin">Quay lại trang chủ</a>
+                </body>
+            </html>
+        `);
+    }
+});
+
+// API ENDPOINTS FOR ORDERS
+
+// GET /api/donhang - Get all orders with details
+app.get('/api/donhang', async (req, res) => {
+    try {
+        console.log('🔄 API /api/donhang called');
+        
+        const pool = await sql.connect(sqlConfig);
+        const result = await pool.request().query(`
+            SELECT 
+                o.id,
+                o.ma_don_hang,
+                o.nguoi_dung_id,
+                o.vung_don_hang,
+                o.tong_tien_hang,
+                o.phi_van_chuyen,
+                o.gia_tri_giam_voucher,
+                o.tong_thanh_toan,
+                o.trang_thai,
+                o.ngay_tao,
+                o.ngay_cap_nhat,
+                u.ho_ten,
+                u.email,
+                u.so_dien_thoai,
+                w.ten_kho
+            FROM orders o
+            LEFT JOIN users u ON o.nguoi_dung_id = u.id
+            LEFT JOIN warehouses w ON o.kho_giao_hang = w.id
+            ORDER BY o.ngay_tao DESC
+        `);
+
+        res.json({ 
+            success: true, 
+            orders: result.recordset 
+        });
+        
+    } catch (error) {
+        console.error('Orders GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy danh sách đơn hàng' 
+        });
+    }
+});
+
+// GET /api/donhang/:id - Get single order with full details
+app.get('/api/donhang/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log('🔄 API /api/donhang/:id called with id:', id);
+        
+        const pool = await sql.connect(sqlConfig);
+        
+        // Get order info
+        const orderResult = await pool.request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                SELECT 
+                    o.id,
+                    o.ma_don_hang,
+                    o.nguoi_dung_id,
+                    o.vung_don_hang,
+                    o.tong_tien_hang,
+                    o.phi_van_chuyen,
+                    o.gia_tri_giam_voucher,
+                    o.tong_thanh_toan,
+                    o.trang_thai,
+                    o.ngay_tao,
+                    o.ngay_cap_nhat,
+                    u.ho_ten,
+                    u.email,
+                    u.so_dien_thoai,
+                    w.ten_kho,
+                    ua.dia_chi_chi_tiet,
+                    ua.phuong_xa,
+                    ua.quan_huyen,
+                    ua.tinh_thanh,
+                    sm.ten_phuong_thuc
+                FROM orders o
+                LEFT JOIN users u ON o.nguoi_dung_id = u.id
+                LEFT JOIN warehouses w ON o.kho_giao_hang = w.id
+                LEFT JOIN user_addresses ua ON o.dia_chi_giao_hang_id = ua.id
+                LEFT JOIN shipping_method_regions smr ON o.shipping_method_region_id = smr.id
+                LEFT JOIN shipping_methods sm ON smr.phuong_thuc_van_chuyen_id = sm.id
+                WHERE o.id = @id
+            `);
+
+        if (orderResult.recordset.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Không tìm thấy đơn hàng' 
+            });
+        }
+
+        const order = orderResult.recordset[0];
+
+        // Get order items
+        const itemsResult = await pool.request()
+            .input('orderId', sql.UniqueIdentifier, id)
+            .query(`
+                SELECT 
+                    od.id,
+                    od.san_pham_id,
+                    od.so_luong,
+                    od.don_gia,
+                    od.thanh_tien,
+                    p.ten_san_pham,
+                    p.ma_sku
+                FROM order_details od
+                LEFT JOIN products p ON od.san_pham_id = p.id
+                WHERE od.don_hang_id = @orderId
+            `);
+
+        // Format delivery address
+        const addressParts = [
+            order.dia_chi_chi_tiet,
+            order.phuong_xa,
+            order.quan_huyen,
+            order.tinh_thanh
+        ].filter(Boolean);
+        
+        order.dia_chi_giao_hang = addressParts.join(', ');
+        order.items = itemsResult.recordset;
+
+        res.json({ 
+            success: true, 
+            order 
+        });
+        
+    } catch (error) {
+        console.error('Order Detail GET Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi lấy chi tiết đơn hàng' 
+        });
+    }
+});
+
+// PUT /api/donhang/:id/status - Update order status
+app.put('/api/donhang/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { trang_thai } = req.body;
+        
+        console.log('🔄 API /api/donhang/:id/status called with:', { id, trang_thai });
+
+        // Validate status
+        const validStatuses = ['cho_xac_nhan', 'dang_xu_ly', 'dang_giao', 'hoan_thanh', 'huy'];
+        if (!validStatuses.includes(trang_thai)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Trạng thái không hợp lệ' 
+            });
+        }
+
+        const pool = await sql.connect(sqlConfig);
+        await pool.request()
+            .input('id', sql.UniqueIdentifier, id)
+            .input('trang_thai', sql.NVarChar(20), trang_thai)
+            .input('ngay_cap_nhat', sql.DateTime2, new Date())
+            .query(`
+                UPDATE orders 
+                SET trang_thai = @trang_thai,
+                    ngay_cap_nhat = @ngay_cap_nhat
+                WHERE id = @id
+            `);
+
+        res.json({ 
+            success: true, 
+            message: 'Cập nhật trạng thái thành công' 
+        });
+        
+    } catch (error) {
+        console.error('Order Status Update Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Lỗi khi cập nhật trạng thái đơn hàng' 
+        });
+    }
+});
+
 // API ENDPOINTS FOR INVENTORY
 
 // GET /api/inventory - Get all inventory items
@@ -6425,10 +7134,10 @@ app.post('/api/warehouses', async (req, res) => {
         console.log('📥 Creating warehouse:', warehouseData);
 
         // Validate required fields
-        if (!warehouseData.ten_kho || !warehouseData.so_dien_thoai || !warehouseData.dia_chi_chi_tiet) {
+        if (!warehouseData.ten_kho || !warehouseData.vung_id || !warehouseData.phuong_xa_id || !warehouseData.so_dien_thoai || !warehouseData.dia_chi_chi_tiet) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Thiếu thông tin bắt buộc (tên kho, số điện thoại, địa chỉ)' 
+                message: 'Thiếu thông tin bắt buộc (tên kho, vùng miền, phường/xã, số điện thoại, địa chỉ)' 
             });
         }
 
@@ -7215,6 +7924,400 @@ app.post('/api/vouchers/validate', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Lỗi khi kiểm tra voucher: ' + error.message
+        });
+    }
+});
+
+// =============================================
+// ORDER API ROUTES
+// =============================================
+
+// POST /api/orders - Tạo đơn hàng mới
+app.post('/api/orders', async (req, res) => {
+    try {
+        const { userId, addressId, items, paymentMethod, voucher_id, subtotal, discount, shipping, total, regionId, warehouseId, shippingMethodRegionId } = req.body;
+
+        if (!userId || !addressId || !items || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu thông tin đơn hàng'
+            });
+        }
+
+        // Validate required IDs
+        if (!regionId || !warehouseId || !shippingMethodRegionId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu thông tin vùng, kho hàng hoặc phương thức vận chuyển'
+            });
+        }
+
+        // Tạo đơn hàng trong transaction
+        const transaction = new sql.Transaction();
+        await transaction.begin();
+
+        try {
+            // 1. Tạo order với schema mới
+            const orderRequest = new sql.Request(transaction);
+            const orderResult = await orderRequest
+                .input('nguoi_dung_id', sql.UniqueIdentifier, userId)
+                .input('vung_don_hang', sql.NVarChar, regionId)
+                .input('shipping_method_region_id', sql.UniqueIdentifier, shippingMethodRegionId)
+                .input('dia_chi_giao_hang_id', sql.UniqueIdentifier, addressId)
+                .input('kho_giao_hang', sql.UniqueIdentifier, warehouseId)
+                .input('voucher_id', sql.UniqueIdentifier, voucher_id || null)
+                .input('tong_tien_hang', sql.Decimal(18, 2), subtotal)
+                .input('gia_tri_giam_voucher', sql.Decimal(18, 2), discount)
+                .input('phi_van_chuyen', sql.Decimal(18, 2), shipping)
+                .input('tong_thanh_toan', sql.Decimal(18, 2), total)
+                .input('trang_thai', sql.NVarChar, 'cho_xac_nhan')
+                .query(`
+                    INSERT INTO orders (
+                        nguoi_dung_id, vung_don_hang, shipping_method_region_id,
+                        dia_chi_giao_hang_id, kho_giao_hang, voucher_id,
+                        tong_tien_hang, gia_tri_giam_voucher, phi_van_chuyen, tong_thanh_toan,
+                        trang_thai, ngay_tao
+                    )
+                    VALUES (
+                        @nguoi_dung_id, @vung_don_hang, @shipping_method_region_id,
+                        @dia_chi_giao_hang_id, @kho_giao_hang, @voucher_id,
+                        @tong_tien_hang, @gia_tri_giam_voucher, @phi_van_chuyen, @tong_thanh_toan,
+                        @trang_thai, GETDATE()
+                    );
+                    
+                    SELECT TOP 1 id, ma_don_hang 
+                    FROM orders 
+                    WHERE nguoi_dung_id = @nguoi_dung_id 
+                    ORDER BY ngay_tao DESC
+                `);
+
+            const orderId = orderResult.recordset[0].id;
+            const orderCode = orderResult.recordset[0].ma_don_hang;
+
+            // 2. Thêm order details
+            for (const item of items) {
+                const itemRequest = new sql.Request(transaction);
+                await itemRequest
+                    .input('don_hang_id', sql.UniqueIdentifier, orderId)
+                    .input('san_pham_id', sql.UniqueIdentifier, item.san_pham_id)
+                    .input('so_luong', sql.Int, item.so_luong)
+                    .input('don_gia', sql.Decimal(18, 2), item.gia_ban)
+                    .input('thanh_tien', sql.Decimal(18, 2), item.gia_ban * item.so_luong)
+                    .query(`
+                        INSERT INTO order_details (
+                            don_hang_id, san_pham_id, so_luong, don_gia, thanh_tien
+                        )
+                        VALUES (
+                            @don_hang_id, @san_pham_id, @so_luong, @don_gia, @thanh_tien
+                        )
+                    `);
+
+                // 3. Xóa item khỏi giỏ hàng
+                if (item.cart_item_id) {
+                    const deleteCartRequest = new sql.Request(transaction);
+                    await deleteCartRequest
+                        .input('cart_item_id', sql.UniqueIdentifier, item.cart_item_id)
+                        .query('DELETE FROM cart_items WHERE id = @cart_item_id');
+                }
+
+                // 4. Cập nhật stock trong MongoDB
+                try {
+                    const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+                    
+                    for (const doc of allProducts) {
+                        const combinations = doc.variants?.variant_combinations || [];
+                        const variantIndex = combinations.findIndex(v => 
+                            v.variant_id && v.variant_id.toLowerCase() === item.san_pham_id.toLowerCase()
+                        );
+                        
+                        if (variantIndex !== -1) {
+                            const currentStock = combinations[variantIndex].stock || 0;
+                            const newStock = Math.max(0, currentStock - item.so_luong);
+                            
+                            await DataModel.Mongo.ProductDetail.updateOne(
+                                { _id: doc._id },
+                                { $set: { [`variants.variant_combinations.${variantIndex}.stock`]: newStock } }
+                            );
+                            break;
+                        }
+                    }
+                } catch (mongoError) {
+                    console.error('Error updating MongoDB stock:', mongoError);
+                    // Không rollback transaction vì đây chỉ là cập nhật stock
+                }
+            }
+
+            // 5. Cập nhật số lần sử dụng voucher
+            if (voucher_id) {
+                const voucherRequest = new sql.Request(transaction);
+                await voucherRequest
+                    .input('voucher_id', sql.UniqueIdentifier, voucher_id)
+                    .query(`
+                        UPDATE vouchers 
+                        SET so_lan_da_su_dung = so_lan_da_su_dung + 1
+                        WHERE id = @voucher_id
+                    `);
+
+                // Thêm vào voucher_usage_history
+                const usageRequest = new sql.Request(transaction);
+                await usageRequest
+                    .input('voucher_id', sql.UniqueIdentifier, voucher_id)
+                    .input('nguoi_dung_id', sql.UniqueIdentifier, userId)
+                    .input('don_hang_id', sql.UniqueIdentifier, orderId)
+                    .input('gia_tri_giam', sql.Decimal(18, 2), discount)
+                    .query(`
+                        INSERT INTO voucher_usage_history (
+                            voucher_id, nguoi_dung_id, don_hang_id, gia_tri_giam, ngay_su_dung
+                        )
+                        VALUES (
+                            @voucher_id, @nguoi_dung_id, @don_hang_id, @gia_tri_giam, GETDATE()
+                        )
+                    `);
+            }
+
+            // Commit transaction
+            await transaction.commit();
+
+            res.json({
+                success: true,
+                message: 'Đặt hàng thành công',
+                data: {
+                    orderId: orderId,
+                    orderCode: orderCode
+                }
+            });
+
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
+
+    } catch (error) {
+        console.error('Create Order Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tạo đơn hàng: ' + error.message
+        });
+    }
+});
+
+// GET /api/orders/:orderId - Lấy thông tin đơn hàng
+app.get('/api/orders/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        const orderRequest = new sql.Request();
+        const orderResult = await orderRequest
+            .input('orderId', sql.UniqueIdentifier, orderId)
+            .query(`
+                SELECT 
+                    o.*,
+                    u.ho_ten as ten_khach_hang,
+                    u.email as email_khach_hang,
+                    ua.ten_nguoi_nhan,
+                    ua.sdt_nguoi_nhan,
+                    ua.dia_chi_cu_the,
+                    w.ten_phuong_xa,
+                    p.ten_tinh as ten_tinh_thanh,
+                    r.ten_vung,
+                    wh.ten_kho
+                FROM orders o
+                LEFT JOIN users u ON o.nguoi_dung_id = u.id
+                LEFT JOIN user_addresses ua ON o.dia_chi_giao_hang_id = ua.id
+                LEFT JOIN wards w ON ua.phuong_xa_id = w.id
+                LEFT JOIN provinces p ON w.tinh_thanh_id = p.id
+                LEFT JOIN regions r ON o.vung_don_hang = r.ma_vung
+                LEFT JOIN warehouses wh ON o.kho_giao_hang = wh.id
+                WHERE o.id = @orderId
+            `);
+
+        if (orderResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy đơn hàng'
+            });
+        }
+
+        const order = orderResult.recordset[0];
+
+        // Lấy items
+        const itemsRequest = new sql.Request();
+        const itemsResult = await itemsRequest
+            .input('orderId', sql.UniqueIdentifier, orderId)
+            .query(`
+                SELECT 
+                    od.*
+                FROM order_details od
+                WHERE od.don_hang_id = @orderId
+            `);
+
+        // Lấy thông tin variant cho mỗi item
+        const itemsWithVariants = await Promise.all(itemsResult.recordset.map(async (item) => {
+            const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+            
+            let variantInfo = null;
+            let productName = 'Sản phẩm';
+            let variantImage = '/image/default-product.png';
+
+            for (const doc of allProducts) {
+                const combinations = doc.variants?.variant_combinations || [];
+                const variant = combinations.find(v => 
+                    v.variant_id && v.variant_id.toLowerCase() === item.san_pham_id.toLowerCase()
+                );
+                
+                if (variant) {
+                    variantInfo = variant;
+                    variantImage = doc.link_avatar || variantImage;
+                    
+                    if (doc.sql_product_id) {
+                        const sqlProduct = await DataModel.SQL.Product.findById(doc.sql_product_id);
+                        if (sqlProduct) {
+                            productName = sqlProduct.ten_san_pham;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            return {
+                ...item,
+                variant_info: variantInfo,
+                ten_san_pham: productName,
+                ten_san_pham_day_du: variantInfo ? `${productName} - ${variantInfo.name}` : productName,
+                link_anh: variantImage,
+                gia_ban: item.don_gia,
+                gia_ban_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.don_gia),
+                thanh_tien_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.thanh_tien)
+            };
+        }));
+
+        res.json({
+            success: true,
+            data: {
+                order: {
+                    ...order,
+                    tong_tien_hang_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.tong_tien_hang),
+                    gia_tri_giam_voucher_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.gia_tri_giam_voucher || 0),
+                    phi_van_chuyen_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.phi_van_chuyen),
+                    tong_thanh_toan_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.tong_thanh_toan)
+                },
+                items: itemsWithVariants
+            }
+        });
+
+    } catch (error) {
+        console.error('Get Order Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin đơn hàng: ' + error.message
+        });
+    }
+});
+
+// =============================================
+// WAREHOUSE & SHIPPING API ROUTES
+// =============================================
+
+// GET /api/warehouses/by-region/:regionId - Lấy kho hàng theo vùng
+app.get('/api/warehouses/by-region/:regionId', async (req, res) => {
+    try {
+        const { regionId } = req.params;
+
+        const request = new sql.Request();
+        const result = await request
+            .input('regionId', sql.NVarChar, regionId)
+            .query(`
+                SELECT TOP 1 id, ten_kho, vung_id
+                FROM warehouses
+                WHERE vung_id = @regionId AND trang_thai = 1
+                ORDER BY ngay_tao ASC
+            `);
+
+        if (result.recordset.length === 0) {
+            // Fallback: lấy warehouse đầu tiên nếu không tìm thấy theo vùng
+            const fallbackResult = await new sql.Request().query(`
+                SELECT TOP 1 id, ten_kho, vung_id
+                FROM warehouses
+                WHERE trang_thai = 1
+                ORDER BY ngay_tao ASC
+            `);
+            
+            return res.json({
+                success: true,
+                data: fallbackResult.recordset[0] || null
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.recordset[0]
+        });
+
+    } catch (error) {
+        console.error('Get Warehouse Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy thông tin kho hàng: ' + error.message
+        });
+    }
+});
+
+// GET /api/shipping-methods/by-region/:regionId - Lấy phương thức vận chuyển theo vùng
+app.get('/api/shipping-methods/by-region/:regionId', async (req, res) => {
+    try {
+        const { regionId } = req.params;
+
+        const request = new sql.Request();
+        const result = await request
+            .input('regionId', sql.NVarChar, regionId)
+            .query(`
+                SELECT TOP 1 
+                    smr.id,
+                    smr.phuong_thuc_id,
+                    smr.vung_id,
+                    smr.chi_phi_bo_sung,
+                    smr.thoi_gian_giao_du_kien,
+                    sm.ten_phuong_thuc,
+                    sm.chi_phi_co_ban
+                FROM shipping_method_regions smr
+                JOIN shipping_methods sm ON smr.phuong_thuc_id = sm.id
+                WHERE smr.vung_id = @regionId AND smr.trang_thai = 1
+                ORDER BY smr.chi_phi_bo_sung ASC
+            `);
+
+        if (result.recordset.length === 0) {
+            // Fallback: lấy phương thức đầu tiên
+            const fallbackResult = await new sql.Request().query(`
+                SELECT TOP 1 
+                    smr.id,
+                    smr.phuong_thuc_id,
+                    smr.vung_id,
+                    smr.chi_phi_bo_sung,
+                    smr.thoi_gian_giao_du_kien,
+                    sm.ten_phuong_thuc,
+                    sm.chi_phi_co_ban
+                FROM shipping_method_regions smr
+                JOIN shipping_methods sm ON smr.phuong_thuc_id = sm.id
+                WHERE smr.trang_thai = 1
+                ORDER BY smr.chi_phi_bo_sung ASC
+            `);
+            
+            return res.json({
+                success: true,
+                data: fallbackResult.recordset[0] || null
+            });
+        }
+
+        res.json({
+            success: true,
+            data: result.recordset[0]
+        });
+
+    } catch (error) {
+        console.error('Get Shipping Method Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy phương thức vận chuyển: ' + error.message
         });
     }
 });
