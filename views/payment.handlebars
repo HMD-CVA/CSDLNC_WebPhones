@@ -41,6 +41,17 @@
           </button>
         </div>
 
+        <!-- Shipping Method Section -->
+        <div class="payment-section shipping-method-section">
+          <h2><i class="fas fa-shipping-fast"></i> Phương thức vận chuyển</h2>
+          
+          <div id="shippingMethodsList" class="shipping-methods-list">
+            <div class="loading">
+              <i class="fas fa-spinner fa-spin"></i> Đang tải phương thức vận chuyển...
+            </div>
+          </div>
+        </div>
+
         <!-- Payment Method -->
         <div class="payment-section">
           <h2><i class="fas fa-wallet"></i> Phương thức thanh toán</h2>
@@ -362,6 +373,173 @@
   grid-template-columns: 1fr 420px;
   gap: 24px;
   align-items: start;
+}
+
+/* Payment Section */
+.payment-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.payment-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Shipping Methods List */
+.shipping-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shipping-method-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.shipping-method-item:hover {
+  border-color: #d70018;
+  background: rgba(215, 0, 24, 0.02);
+}
+
+.shipping-method-item.selected {
+  border-color: #d70018;
+  background: rgba(215, 0, 24, 0.05);
+}
+
+.shipping-method-item input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.shipping-method-item .radio-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  margin-right: 16px;
+  position: relative;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.shipping-method-item.selected .radio-custom {
+  border-color: #d70018;
+}
+
+.shipping-method-item.selected .radio-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  background: #d70018;
+  border-radius: 50%;
+}
+
+.shipping-method-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shipping-method-info h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 4px 0;
+}
+
+.shipping-method-info p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.shipping-method-price {
+  text-align: right;
+}
+
+.shipping-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #d70018;
+  display: block;
+}
+
+.shipping-time {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+
+.shipping-method-item.free-shipping .shipping-price {
+  color: #28a745;
+}
+
+/* No shipping / Error states */
+.no-shipping,
+.error-message {
+  text-align: center;
+  padding: 32px 20px;
+  color: #999;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.no-shipping i,
+.error-message i {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+  display: block;
+}
+
+.no-shipping p,
+.error-message p {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+}
+
+.error-message {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.error-message i {
+  color: #ffc107;
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+}
+
+.loading i {
+  font-size: 24px;
+  margin-right: 8px;
 }
 
 /* Payment Section */
@@ -1244,6 +1422,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   let appliedVoucher = null;
   let userProfile = null;
   let selectedAddress = null;
+  let selectedShippingMethod = null;
+  let shippingMethods = [];
   let userAddresses = [];
   let allProvinces = [];
   let currentEditAddressId = null;
@@ -1309,7 +1489,168 @@ document.addEventListener('DOMContentLoaded', async function() {
         </div>
       </div>
     `;
+    
+    // Load shipping methods for this address
+    loadShippingMethods();
   }
+
+  function displayNoAddress() {
+    const container = document.getElementById('selectedAddressDisplay');
+    container.className = 'selected-address';
+    container.innerHTML = `
+      <div style="text-align: center; color: #999;">
+        <i class="fas fa-map-marker-alt" style="font-size: 32px; margin-bottom: 12px; opacity: 0.3;"></i>
+        <p>Chưa có địa chỉ nhận hàng</p>
+        <p style="font-size: 13px;">Vui lòng thêm địa chỉ mới</p>
+      </div>
+    `;
+    
+    // Clear shipping methods when no address
+    const shippingContainer = document.getElementById('shippingMethodsList');
+    if (shippingContainer) {
+      shippingContainer.innerHTML = `
+        <div class="no-shipping">
+          <i class="fas fa-info-circle"></i>
+          <p>Vui lòng chọn địa chỉ nhận hàng để xem phương thức vận chuyển</p>
+        </div>
+      `;
+    }
+  }
+
+  // ============== SHIPPING METHODS ==============
+  
+  async function loadShippingMethods() {
+    if (!selectedAddress || !selectedAddress.id) {
+      console.log('No address selected');
+      return;
+    }
+
+    try {
+      const container = document.getElementById('shippingMethodsList');
+      container.innerHTML = `
+        <div class="loading">
+          <i class="fas fa-spinner fa-spin"></i> Đang tải phương thức vận chuyển...
+        </div>
+      `;
+
+      const response = await fetch(`/api/shipping-methods/by-address/${selectedAddress.id}`);
+      const result = await response.json();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        shippingMethods = result.data;
+        
+        // Auto select first shipping method if none selected
+        if (!selectedShippingMethod && shippingMethods.length > 0) {
+          selectedShippingMethod = shippingMethods[0];
+        }
+        
+        renderShippingMethods();
+        updateOrderSummary();
+      } else {
+        container.innerHTML = `
+          <div class="no-shipping">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Không có phương thức vận chuyển cho vùng này</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading shipping methods:', error);
+      const container = document.getElementById('shippingMethodsList');
+      container.innerHTML = `
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>Không thể tải phương thức vận chuyển. Vui lòng thử lại.</p>
+        </div>
+      `;
+    }
+  }
+
+  function renderShippingMethods() {
+    const container = document.getElementById('shippingMethodsList');
+    
+    if (!shippingMethods || shippingMethods.length === 0) {
+      container.innerHTML = `
+        <div class="no-shipping">
+          <i class="fas fa-info-circle"></i>
+          <p>Không có phương thức vận chuyển khả dụng</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = shippingMethods.map((method, index) => {
+      const isSelected = selectedShippingMethod && 
+                        selectedShippingMethod.shipping_method_region_id === method.shipping_method_region_id;
+      const isFree = method.tong_phi === 0;
+      
+      return `
+        <div class="shipping-method-item ${isSelected ? 'selected' : ''} ${isFree ? 'free-shipping' : ''}" 
+             data-shipping-id="${method.shipping_method_region_id}"
+             data-shipping-fee="${method.tong_phi}">
+          <input type="radio" 
+                 name="shippingMethod" 
+                 value="${method.shipping_method_region_id}"
+                 ${isSelected ? 'checked' : ''}
+                 id="shipping_${index}">
+          <label for="shipping_${index}" style="display: contents; cursor: pointer;">
+            <div class="radio-custom"></div>
+            <div class="shipping-method-content">
+              <div class="shipping-method-info">
+                <h4>${method.ten_phuong_thuc}</h4>
+                <p>
+                  <i class="fas fa-clock"></i> ${method.thoi_gian_text}
+                  ${method.ten_vung ? ` • ${method.ten_vung}` : ''}
+                </p>
+              </div>
+              <div class="shipping-method-price">
+                <span class="shipping-price">
+                  ${isFree ? 'Miễn phí' : method.chi_phi_formatted}
+                </span>
+                ${method.chi_phi_van_chuyen > 0 ? 
+                  `<span class="shipping-time">Phụ phí: ${Utils.formatCurrency(method.chi_phi_van_chuyen)}</span>` : 
+                  ''}
+              </div>
+            </div>
+          </label>
+        </div>
+      `;
+    }).join('');
+
+    // Add click event listeners
+    document.querySelectorAll('.shipping-method-item').forEach(item => {
+      item.addEventListener('click', function() {
+        const shippingId = this.getAttribute('data-shipping-id');
+        selectShippingMethod(shippingId);
+      });
+    });
+  }
+
+  function selectShippingMethod(shippingId) {
+    selectedShippingMethod = shippingMethods.find(
+      m => m.shipping_method_region_id === shippingId
+    );
+    
+    if (!selectedShippingMethod) return;
+
+    // Update UI
+    document.querySelectorAll('.shipping-method-item').forEach(item => {
+      item.classList.remove('selected');
+    });
+    
+    const selectedItem = document.querySelector(`[data-shipping-id="${shippingId}"]`);
+    if (selectedItem) {
+      selectedItem.classList.add('selected');
+      selectedItem.querySelector('input[type="radio"]').checked = true;
+    }
+
+    // Update order summary
+    updateOrderSummary();
+    
+    console.log('Selected shipping method:', selectedShippingMethod);
+  }
+
+  // ============== OTHER FUNCTIONS ==============
 
   function displayNoAddress() {
     const container = document.getElementById('selectedAddressDisplay');
@@ -1767,6 +2108,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   function calculateSummary() {
+    updateOrderSummary();
+  }
+
+  function updateOrderSummary() {
     let subtotal = 0;
 
     orderItems.forEach(item => {
@@ -1784,7 +2129,12 @@ document.addEventListener('DOMContentLoaded', async function() {
       }
     }
 
-    const shipping = (subtotal >= 500000 || isFreeShip) ? 0 : 30000;
+    // Get shipping fee from selected shipping method
+    let shipping = 0;
+    if (selectedShippingMethod && !isFreeShip) {
+      shipping = selectedShippingMethod.tong_phi || 0;
+    }
+
     const total = subtotal - discount + shipping;
 
     document.getElementById('summarySubtotal').textContent = Utils.formatCurrency(subtotal);
@@ -1797,6 +2147,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Validate address
     if (!selectedAddress) {
       Utils.showToast('Vui lòng chọn địa chỉ nhận hàng', 'error');
+      return;
+    }
+
+    // Validate shipping method
+    if (!selectedShippingMethod) {
+      Utils.showToast('Vui lòng chọn phương thức vận chuyển', 'error');
       return;
     }
 

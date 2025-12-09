@@ -160,10 +160,10 @@
                         <p><i class="fas fa-map-marker-alt"></i> {{this.dia_chi_chi_tiet}}</p>
                     </div>
                     <div class="wh-actions">
-                        <button class="btn-secondary" onclick="exportWarehouse({{this.id}})">
+                        <button class="btn-secondary" onclick="exportWarehouse('{{this.id}}')">
                             <i class="fas fa-file-excel"></i> Xuất Excel
                         </button>
-                        <button class="btn-primary" onclick="addToWarehouse({{this.id}})">
+                        <button class="btn-primary" onclick="addToWarehouse('{{this.id}}')">
                             <i class="fas fa-plus"></i> Thêm sản phẩm
                         </button>
                     </div>
@@ -260,11 +260,25 @@
                     <input type="hidden" id="inventoryWarehouseId">
                     
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
                             <label class="form-label">Sản phẩm *</label>
                             <select class="form-select" id="inventoryProduct" required>
                                 <option value="">Chọn sản phẩm</option>
+                                {{#each products}}
+                                <option value="{{this.id}}">{{this.ten_san_pham}} ({{this.ma_san_pham}})</option>
+                                {{/each}}
                             </select>
+                            <small class="text-muted">Chọn sản phẩm (dữ liệu đồng bộ trên cả 3 vùng)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Biến thể sản phẩm (Variant) *</label>
+                            <select class="form-select" id="inventoryVariant" required disabled>
+                                <option value="">Chọn sản phẩm trước</option>
+                            </select>
+                            <small class="text-muted">Chọn variant (màu sắc, dung lượng) thuộc vùng của kho</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Kho *</label>
@@ -361,8 +375,8 @@
                     <div class="mb-3">
                         <label class="form-label">Trạng thái</label>
                         <select class="form-select" id="warehouseStatus">
-                            <option value="1">Hoạt động</option>
-                            <option value="0">Không hoạt động</option>
+                            <option value="true">Hoạt động</option>
+                            <option value="false">Không hoạt động</option>
                         </select>
                     </div>
                 </div>
@@ -429,6 +443,8 @@
 // Global state
 let inventoryData = [];
 let warehousesData = [];
+let variantsData = [];
+let productsData = [];
 let currentWarehouseId = null;
 let regionsData = [];
 let provincesData = [];
@@ -569,44 +585,17 @@ async function loadData() {
             wardsData = [];
         }
         
-        // Load products for dropdown
-        const prodRes = await API.get('/api/sanpham');
-        console.log('Raw prodRes:', prodRes);
-        let products = [];
-        if (Array.isArray(prodRes)) {
-            products = prodRes;
-        } else if (prodRes && prodRes.data) {
-            console.log('prodRes.data:', prodRes.data);
-            if (Array.isArray(prodRes.data)) {
-                products = prodRes.data;
-            } else if (prodRes.data.products && Array.isArray(prodRes.data.products)) {
-                products = prodRes.data.products;
-            } else if (prodRes.data.data && Array.isArray(prodRes.data.data)) {
-                products = prodRes.data.data;
-            } else {
-                // Try to extract from any nested structure
-                const dataKeys = Object.keys(prodRes.data);
-                console.log('Available keys in data:', dataKeys);
-                for (const key of dataKeys) {
-                    if (Array.isArray(prodRes.data[key])) {
-                        products = prodRes.data[key];
-                        console.log('Found products array in key:', key);
-                        break;
-                    }
-                }
-            }
-        }
-        console.log('Final products array:', products);
-        
-        // Populate product dropdown
-        const productSelect = document.getElementById('inventoryProduct');
-        if (products.length > 0) {
-            productSelect.innerHTML = '<option value="">Chọn sản phẩm</option>' +
-                products.map(p => `<option value="${p.id}">${p.ten_san_pham}</option>`).join('');
+        // Load variants for dropdown (thay vì products)
+        const variantsRes = await API.get('/api/variants');
+        console.log('Raw variantsRes:', variantsRes);
+        if (Array.isArray(variantsRes)) {
+            variantsData = variantsRes;
+        } else if (variantsRes && variantsRes.data) {
+            variantsData = Array.isArray(variantsRes.data) ? variantsRes.data : [];
         } else {
-            productSelect.innerHTML = '<option value="">Không có sản phẩm</option>';
-            console.warn('Products data is empty or invalid:', prodRes);
+            variantsData = [];
         }
+        console.log('Final variants array:', variantsData);
         
         // Populate region dropdown
         const regionSelect = document.getElementById('warehouseRegion');
@@ -704,7 +693,9 @@ function renderWarehouseTable(warehouseId, searchTerm = '', filterLevel = '') {
     // Apply search
     if (searchTerm) {
         data = data.filter(item =>
-            (item.ten_san_pham || '').toLowerCase().includes(searchTerm.toLowerCase())
+            (item.ten_san_pham || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.ten_variant || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.ma_sku || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
     }
     
@@ -730,7 +721,10 @@ function renderWarehouseTable(warehouseId, searchTerm = '', filterLevel = '') {
     tbody.innerHTML = data.map((item, idx) => `
         <tr>
             <td class='text-center'>${idx + 1}</td>
-            <td>${item.ten_san_pham || 'N/A'}</td>
+            <td>
+                <div><strong>${item.ten_san_pham || 'N/A'}</strong></div>
+                <small class='text-muted'>${item.ten_variant || ''} (${item.ma_sku || ''})</small>
+            </td>
             <td class='text-center'><span class='badge bg-success'>${Utils.formatNumber(item.so_luong_kha_dung)}</span></td>
             <td class='text-center'><span class='badge bg-info'>${Utils.formatNumber(item.so_luong_da_dat)}</span></td>
             <td class='text-center'>${item.muc_ton_kho_toi_thieu || 0}</td>
@@ -788,6 +782,60 @@ function renderWarehouseManagement() {
     }).join('');
 }
 
+// Filter variants by warehouse region and selected product
+function filterVariantsByProduct(productId, warehouseId) {
+    const warehouse = warehousesData.find(w => w.id == warehouseId);
+    if (!warehouse) {
+        console.error('Warehouse not found:', warehouseId);
+        return;
+    }
+    
+    // Lấy vung_id từ warehouse
+    const vungId = warehouse.vung_id;
+    console.log('🏭 Warehouse:', warehouse.ten_kho, '| vung_id:', vungId);
+    console.log('📦 Selected product:', productId);
+    console.log('📊 Total variants available:', variantsData.length);
+    
+    // Debug: Xem một vài variants
+    console.log('🔍 Sample variants:');
+    variantsData.slice(0, 3).forEach((v, i) => {
+        console.log(`  [${i+1}] san_pham_id: ${v.san_pham_id}, site_origin: "${v.site_origin}"`);
+    });
+    
+    console.log('🎯 Looking for: san_pham_id =', productId, '& site_origin =', `"${vungId}"`);
+    
+    // Filter variants: san_pham_id = productId AND site_origin = vung_id
+    const filteredVariants = variantsData.filter(v => {
+        const matchProduct = v.san_pham_id === productId;
+        const matchSite = v.site_origin === vungId;
+        if (matchProduct) {
+            console.log(`  Variant ${v.ma_sku}: product match=${matchProduct}, site match=${matchSite} (v.site_origin="${v.site_origin}" vs vungId="${vungId}")`);
+        }
+        return matchProduct && matchSite;
+    });
+    console.log('✅ Filtered variants (site_origin = vung_id):', filteredVariants);
+    
+    // Populate variant dropdown
+    const variantSelect = document.getElementById('inventoryVariant');
+    if (filteredVariants.length > 0) {
+        variantSelect.disabled = false;
+        variantSelect.innerHTML = '<option value="">Chọn variant</option>' +
+            filteredVariants.map(v => `<option value="${v.id}">${v.ten_hien_thi || v.ma_sku} - ${v.ma_sku}</option>`).join('');
+    } else {
+        variantSelect.disabled = true;
+        variantSelect.innerHTML = '<option value="">Không có variant cho vùng này</option>';
+        console.warn('⚠️ No variants found for product:', productId, 'and site_origin:', vungId);
+    }
+}
+
+// Filter variants by warehouse region
+function filterVariantsByWarehouse(warehouseId) {
+    // Reset variant dropdown
+    const variantSelect = document.getElementById('inventoryVariant');
+    variantSelect.disabled = true;
+    variantSelect.innerHTML = '<option value="">Chọn sản phẩm trước</option>';
+}
+
 // Inventory CRUD
 function addToWarehouse(warehouseId) {
     currentWarehouseId = warehouseId;
@@ -795,11 +843,16 @@ function addToWarehouse(warehouseId) {
     document.getElementById('inventoryWarehouseId').value = warehouseId;
     document.getElementById('inventoryWarehouse').value = warehouseId;
     document.getElementById('inventoryProduct').value = '';
+    document.getElementById('inventoryVariant').value = '';
     document.getElementById('availableQty').value = '0';
     document.getElementById('reservedQty').value = '0';
     document.getElementById('minStock').value = '0';
     document.getElementById('reorderQty').value = '0';
     document.getElementById('inventoryModalTitle').innerHTML = '<i class="fas fa-box"></i> Thêm tồn kho';
+    
+    // Populate products và reset variants
+    filterVariantsByWarehouse(warehouseId);
+    
     new bootstrap.Modal(document.getElementById('inventoryModal')).show();
 }
 
@@ -809,7 +862,7 @@ async function editInventory(id) {
         const item = await API.get('/api/inventory/' + id);
         document.getElementById('inventoryId').value = item.id;
         document.getElementById('inventoryWarehouse').value = item.kho_id;
-        document.getElementById('inventoryProduct').value = item.san_pham_id;
+        document.getElementById('inventoryVariant').value = item.variant_id;  // Đổi thành variant_id
         document.getElementById('availableQty').value = item.so_luong_kha_dung;
         document.getElementById('reservedQty').value = item.so_luong_da_dat;
         document.getElementById('minStock').value = item.muc_ton_kho_toi_thieu;
@@ -825,7 +878,7 @@ async function editInventory(id) {
 async function saveInventory() {
     const id = document.getElementById('inventoryId').value;
     const data = {
-        san_pham_id: document.getElementById('inventoryProduct').value,
+        variant_id: document.getElementById('inventoryVariant').value,  // Đổi thành variant_id
         kho_id: document.getElementById('inventoryWarehouse').value,
         so_luong_kha_dung: parseInt(document.getElementById('availableQty').value) || 0,
         so_luong_da_dat: parseInt(document.getElementById('reservedQty').value) || 0,
@@ -833,8 +886,8 @@ async function saveInventory() {
         so_luong_nhap_lai: parseInt(document.getElementById('reorderQty').value) || 0
     };
     
-    if (!data.san_pham_id || !data.kho_id) {
-        Utils.showError('Vui lòng chọn sản phẩm và kho');
+    if (!data.variant_id || !data.kho_id) {
+        Utils.showError('Vui lòng chọn variant và kho');
         return;
     }
     
@@ -909,7 +962,7 @@ function openWarehouseModal() {
     document.getElementById('warehouseWard').value = '';
     document.getElementById('warehousePhone').value = '';
     document.getElementById('warehouseAddress').value = '';
-    document.getElementById('warehouseStatus').value = '1';
+    document.getElementById('warehouseStatus').value = 'true';
     document.getElementById('whModalTitle').textContent = 'Thêm kho mới';
     
     // Reset province and ward dropdowns
@@ -930,12 +983,17 @@ function handleRegionChange(regionId) {
     
     if (!regionId) return;
     
-    // Filter provinces by region
-    const filteredProvinces = provincesData.filter(p => p.ma_vung === regionId);
+    console.log('🔍 Filtering provinces for region:', regionId);
+    console.log('Available provincesData:', provincesData);
+    
+    // Filter provinces by region (vung_id)
+    const filteredProvinces = provincesData.filter(p => p.vung_id === regionId);
+    
+    console.log('Filtered provinces:', filteredProvinces);
     
     if (filteredProvinces.length > 0) {
         provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành phố --</option>' +
-            filteredProvinces.map(p => `<option value="${p.id}">${p.ten_tinh_thanh}</option>`).join('');
+            filteredProvinces.map(p => `<option value="${p.id}">${p.ten_tinh}</option>`).join('');
     }
 }
 
@@ -948,8 +1006,13 @@ function handleProvinceChange(provinceId) {
     
     if (!provinceId) return;
     
+    console.log('🔍 Filtering wards for province:', provinceId);
+    console.log('Available wardsData:', wardsData);
+    
     // Filter wards by province
     const filteredWards = wardsData.filter(w => w.tinh_thanh_id === provinceId);
+    
+    console.log('Filtered wards:', filteredWards);
     
     if (filteredWards.length > 0) {
         wardSelect.innerHTML = '<option value="">-- Chọn phường/xã --</option>' +
@@ -960,13 +1023,19 @@ function handleProvinceChange(provinceId) {
 async function editWarehouse(id) {
     try {
         Utils.showLoading();
-        const wh = await API.get('/api/warehouses/' + id);
+        const response = await API.get('/api/warehouses/' + id);
+        const wh = response.data || response; // Handle both {data: ...} and direct response
+        
+        console.log('📦 Warehouse data:', wh);
+        
         document.getElementById('warehouseId').value = wh.id;
         document.getElementById('warehouseName').value = wh.ten_kho;
         document.getElementById('warehouseRegion').value = wh.vung_id || '';
         document.getElementById('warehousePhone').value = wh.so_dien_thoai;
         document.getElementById('warehouseAddress').value = wh.dia_chi_chi_tiet;
-        document.getElementById('warehouseStatus').value = wh.trang_thai;
+        document.getElementById('warehouseStatus').value = wh.trang_thai ? 'true' : 'false';
+        
+        console.log('Status value set to:', document.getElementById('warehouseStatus').value);
         
         // Load provinces for selected region
         if (wh.vung_id) {
@@ -990,19 +1059,21 @@ async function editWarehouse(id) {
         Swal.close();
         new bootstrap.Modal(document.getElementById('warehouseModal')).show();
     } catch (error) {
+        console.error('Edit warehouse error:', error);
         Utils.showError('Không thể tải thông tin');
     }
 }
 
 async function saveWarehouse() {
     const id = document.getElementById('warehouseId').value;
+    const statusValue = document.getElementById('warehouseStatus').value;
     const data = {
         ten_kho: document.getElementById('warehouseName').value,
         vung_id: document.getElementById('warehouseRegion').value,
         phuong_xa_id: document.getElementById('warehouseWard').value,
         so_dien_thoai: document.getElementById('warehousePhone').value,
         dia_chi_chi_tiet: document.getElementById('warehouseAddress').value,
-        trang_thai: document.getElementById('warehouseStatus').value
+        trang_thai: statusValue === 'true' ? 1 : 0
     };
     
     if (!data.ten_kho || !data.vung_id || !data.phuong_xa_id || !data.so_dien_thoai || !data.dia_chi_chi_tiet) {
@@ -1020,7 +1091,7 @@ async function saveWarehouse() {
             Utils.showSuccess('Thêm thành công');
         }
         bootstrap.Modal.getInstance(document.getElementById('warehouseModal')).hide();
-        setTimeout(() => location.reload(), 1000);
+        await loadData();
     } catch (error) {
         Utils.showError('Có lỗi xảy ra');
     }
@@ -1033,7 +1104,7 @@ async function deleteWarehouse(id) {
         Utils.showLoading();
         await API.delete('/api/warehouses/' + id);
         Utils.showSuccess('Xóa thành công');
-        setTimeout(() => location.reload(), 1000);
+        await loadData();
     } catch (error) {
         Utils.showError('Không thể xóa');
     }
@@ -1104,6 +1175,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (provinceSelect) {
         provinceSelect.addEventListener('change', (e) => handleProvinceChange(e.target.value));
+    }
+    
+    // Product selection -> filter variants
+    const productSelect = document.getElementById('inventoryProduct');
+    if (productSelect) {
+        productSelect.addEventListener('change', (e) => {
+            const productId = e.target.value;
+            const warehouseId = document.getElementById('inventoryWarehouse').value;
+            if (productId && warehouseId) {
+                filterVariantsByProduct(productId, warehouseId);
+            } else {
+                // Reset variant dropdown
+                const variantSelect = document.getElementById('inventoryVariant');
+                variantSelect.disabled = true;
+                variantSelect.innerHTML = '<option value="">Chọn sản phẩm trước</option>';
+            }
+        });
     }
     
     // Initial load

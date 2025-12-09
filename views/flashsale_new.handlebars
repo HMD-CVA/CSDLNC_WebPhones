@@ -1,0 +1,1081 @@
+<div class="main-content">
+    <div class="admin-dashboard">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <div class="title-icon">⚡</div>
+                    <div>
+                        <h1>QUẢN LÝ FLASH SALE</h1>
+                        <p>Theo dõi và quản lý các chương trình Flash Sale theo vùng miền</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-primary" id="addFlashSaleBtn">
+                        <i class="fas fa-plus"></i>
+                        <span>Tạo Flash Sale</span>
+                    </button>
+                    <button class="btn-secondary" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Làm mới</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon total">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalFlashSales">0</h3>
+                    <p>Tổng Flash Sale</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon available">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="activeFlashSales">0</h3>
+                    <p>Đang diễn ra</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon busy">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="upcomingFlashSales">0</h3>
+                    <p>Sắp diễn ra</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon premium">
+                    <i class="fas fa-box-open"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalVariants">0</h3>
+                    <p>Tổng variants</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="search-filter-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Tìm kiếm flash sale...">
+            </div>
+            <div class="filter-controls">
+                <select class="filter-select" id="statusFilter">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="cho">Chờ diễn ra</option>
+                    <option value="dang_dien_ra">Đang diễn ra</option>
+                    <option value="ket_thuc">Đã kết thúc</option>
+                </select>
+                <select class="filter-select" id="regionFilter">
+                    <option value="">Tất cả vùng</option>
+                    <option value="bac">Miền Bắc</option>
+                    <option value="trung">Miền Trung</option>
+                    <option value="nam">Miền Nam</option>
+                </select>
+                <button class="clear-filters" id="clearFilters">
+                    <i class="fas fa-times"></i>
+                    Xóa lọc
+                </button>
+            </div>
+        </div>
+
+        <!-- Flash Sales Table -->
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>Tên Flash Sale</th>
+                            <th>Vùng</th>
+                            <th>Thời gian bắt đầu</th>
+                            <th>Thời gian kết thúc</th>
+                            <th>Số variants</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flashSaleTableBody">
+                        <tr><td colspan="7" class="text-center">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-footer">
+                <div class="table-info">
+                    Hiển thị <span id="displayCount">0</span> flash sale
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Sale Modal -->
+<div class="modal fade modal-premium" id="flashSaleModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">
+                    <i class="fas fa-bolt"></i>
+                    Tạo Flash Sale Mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="flashSaleForm">
+                    <input type="hidden" id="flashSaleId">
+                    
+                    <!-- Basic Info Section -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="fas fa-info-circle"></i>
+                            Thông tin cơ bản
+                        </div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Tên Flash Sale <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="tenFlashSale" required placeholder="VD: Flash Sale 12.12">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Vùng miền <span class="text-danger">*</span></label>
+                                <select class="form-select" id="vungId" required>
+                                    <option value="">-- Chọn vùng --</option>
+                                    <option value="bac">Miền Bắc</option>
+                                    <option value="trung">Miền Trung</option>
+                                    <option value="nam">Miền Nam</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Mô tả</label>
+                            <textarea class="form-control" id="moTa" rows="2" placeholder="Mô tả về flash sale..."></textarea>
+                        </div>
+                        <div class="form-grid-3">
+                            <div class="form-group">
+                                <label class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="ngayBatDau" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="ngayKetThuc" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Trạng thái</label>
+                                <select class="form-select" id="trangThai">
+                                    <option value="cho">Chờ diễn ra</option>
+                                    <option value="dang_dien_ra">Đang diễn ra</option>
+                                    <option value="ket_thuc">Đã kết thúc</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Variants Selection -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <i class="fas fa-box-open"></i>
+                            Chọn Variants tham gia Flash Sale
+                        </div>
+                        
+                        <!-- Search Product -->
+                        <div class="form-group">
+                            <label class="form-label">Tìm sản phẩm</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="productSearchInput" placeholder="Nhập tên sản phẩm để tìm kiếm...">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                        </div>
+
+                        <!-- Product Select -->
+                        <div class="form-group">
+                            <label class="form-label">Chọn sản phẩm</label>
+                            <select class="form-select" id="productSelect" size="5">
+                                <option value="">-- Chọn sản phẩm để xem variants --</option>
+                            </select>
+                        </div>
+
+                        <!-- Variants Table -->
+                        <div id="variantsSection" style="display: none; margin-top: 20px;">
+                            <h5>
+                                <i class="fas fa-box"></i>
+                                Variants của sản phẩm
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="50"><input type="checkbox" id="selectAllVariants"></th>
+                                            <th>SKU</th>
+                                            <th>Tên hiển thị</th>
+                                            <th>Giá bán</th>
+                                            <th>Tồn kho</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="variantsTableBody"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary" id="addSelectedVariants">
+                                <i class="fas fa-plus"></i> Thêm variants đã chọn
+                            </button>
+                        </div>
+
+                        <!-- Selected Variants List -->
+                        <div style="margin-top: 20px;">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-check-circle"></i>
+                                    Variants đã chọn (<span id="selectedCount">0</span>)
+                                </h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Sản phẩm</th>
+                                            <th>SKU</th>
+                                            <th>Giá gốc</th>
+                                            <th>Giá Flash Sale</th>
+                                            <th>Số lượng</th>
+                                            <th>Giới hạn/KH</th>
+                                            <th>Thứ tự</th>
+                                            <th width="80">Xóa</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selectedVariantsTable">
+                                        <tr class="empty-row">
+                                            <td colspan="8" class="text-center text-muted py-4">
+                                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                                <p>Chưa có variant nào được chọn</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="saveFlashSaleBtn">
+                    <i class="fas fa-save"></i> Lưu Flash Sale
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Variants Modal -->
+<div class="modal fade modal-premium" id="viewVariantsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i>
+                    Danh sách Variants trong Flash Sale
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>STT</th>
+                                <th>Sản phẩm</th>
+                                <th>SKU</th>
+                                <th>Variant</th>
+                                <th>Giá gốc</th>
+                                <th>Giá Flash Sale</th>
+                                <th>Giảm</th>
+                                <th>Tồn</th>
+                                <th>Đã bán</th>
+                                <th>Giới hạn</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viewVariantsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+    :root {
+        --primary: #667eea;
+        --secondary: #764ba2;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-500: #6b7280;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+    }
+
+    body { font-family: 'Inter', sans-serif; background: var(--gray-50); }
+    .main-content { padding: 24px; }
+
+    /* Header */
+    .dashboard-header {
+        background: white;
+        border-radius: 12px;
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        border-top: 4px solid;
+        border-image: linear-gradient(135deg, var(--primary), var(--secondary)) 1;
+    }
+
+    .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    .header-title { display: flex; align-items: center; gap: 16px; }
+    .title-icon {
+        font-size: 2.75rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .header-title h1 { margin: 0; font-size: 1.875rem; font-weight: 700; color: var(--gray-800); }
+    .header-title p { margin: 4px 0 0 0; color: var(--gray-500); }
+
+    .header-actions { display: flex; gap: 12px; }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+
+    .btn-secondary {
+        background: white;
+        color: var(--gray-700);
+        border: 2px solid var(--gray-300);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+
+    .btn-secondary:hover { background: var(--gray-100); border-color: var(--gray-500); }
+
+    /* Stats */
+    .stats-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 4px solid var(--primary);
+        transition: all 0.3s;
+    }
+
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+
+    .stat-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.total { background: linear-gradient(135deg, #fef3c7, #fde68a); color: var(--warning); }
+    .stat-icon.available { background: linear-gradient(135deg, #c6f6d5, #9ae6b4); color: var(--success); }
+    .stat-icon.busy { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #3b82f6; }
+    .stat-icon.premium { background: linear-gradient(135deg, #e9d8fd, #d6bcfa); color: #805ad5; }
+
+    .stat-info h3 { margin: 0; font-size: 2rem; color: var(--gray-800); font-weight: 700; }
+    .stat-info p { margin: 4px 0 0 0; color: var(--gray-500); font-weight: 500; }
+
+    /* Search & Filter */
+    .search-filter-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .search-box {
+        display: flex;
+        align-items: center;
+        background: var(--gray-100);
+        border-radius: 8px;
+        padding: 12px 20px;
+        flex: 1;
+        min-width: 300px;
+        border: 2px solid var(--gray-200);
+    }
+
+    .search-box:focus-within { border-color: var(--primary); }
+    .search-box i { color: var(--gray-500); margin-right: 12px; }
+    .search-box input { border: none; background: none; outline: none; flex: 1; font-size: 0.95rem; }
+
+    .filter-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+    
+    .filter-select {
+        padding: 10px 16px;
+        border: 2px solid var(--gray-200);
+        border-radius: 8px;
+        background: white;
+        min-width: 160px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .filter-select:focus { border-color: var(--primary); outline: none; }
+
+    .clear-filters {
+        background: white;
+        border: 2px solid var(--gray-200);
+        color: var(--gray-700);
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .clear-filters:hover { background: var(--gray-100); }
+
+    /* Table */
+    .table-container {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .table-responsive { overflow-x: auto; }
+
+    .products-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .products-table th {
+        background: var(--gray-50);
+        padding: 16px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--gray-700);
+        border-bottom: 2px solid var(--gray-200);
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .products-table td {
+        padding: 16px 12px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .products-table tbody tr:hover { background: var(--gray-50); }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-badge.cho { background: rgba(107, 114, 128, 0.1); color: var(--gray-700); }
+    .status-badge.dang_dien_ra { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .status-badge.ket_thuc { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+    .region-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .region-badge.bac { background: #dbeafe; color: #1e40af; }
+    .region-badge.trung { background: #fef3c7; color: #92400e; }
+    .region-badge.nam { background: #d1fae5; color: #065f46; }
+
+    /* Action Buttons */
+    .action-buttons { display: flex; gap: 6px; justify-content: center; }
+    
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        color: white;
+    }
+
+    .btn-action.view { background: #3b82f6; }
+    .btn-action.edit { background: var(--primary); }
+    .btn-action.delete { background: var(--danger); }
+    .btn-action:hover { transform: scale(1.1); }
+
+    /* Modal */
+    .modal-premium .modal-content { border: none; border-radius: 16px; overflow: hidden; }
+    .modal-premium .modal-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: 24px 28px;
+    }
+
+    .modal-premium .modal-title { font-weight: 700; font-size: 1.4rem; }
+    .modal-premium .modal-body { padding: 28px; max-height: 70vh; overflow-y: auto; }
+
+    .form-section {
+        background: var(--gray-50);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid var(--gray-200);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--gray-800);
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .form-group { margin-bottom: 16px; }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 8px;
+        display: block;
+        font-size: 0.95rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid var(--gray-200);
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.95rem;
+        width: 100%;
+        transition: all 0.3s;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+
+    .table-footer {
+        padding: 16px 24px;
+        border-top: 1px solid var(--gray-200);
+        background: var(--gray-50);
+    }
+
+    .text-center { text-align: center; }
+    .text-danger { color: var(--danger); }
+    .text-muted { color: var(--gray-500); }
+
+    @media (max-width: 768px) {
+        .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+        .stats-overview { grid-template-columns: 1fr; }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let flashSales = [];
+    let filteredFlashSales = [];
+    let currentFlashSaleId = null;
+    let currentProduct = null;
+    let currentVariants = [];
+    let selectedVariants = [];
+
+    const modal = new bootstrap.Modal(document.getElementById('flashSaleModal'));
+    const viewModal = new bootstrap.Modal(document.getElementById('viewVariantsModal'));
+
+    // Initialize
+    loadFlashSales();
+    loadProducts();
+    attachEventListeners();
+
+    function attachEventListeners() {
+        document.getElementById('addFlashSaleBtn').addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn').addEventListener('click', loadFlashSales);
+        document.getElementById('searchInput').addEventListener('input', filterFlashSales);
+        document.getElementById('statusFilter').addEventListener('change', filterFlashSales);
+        document.getElementById('regionFilter').addEventListener('change', filterFlashSales);
+        document.getElementById('clearFilters').addEventListener('click', clearFilters);
+        document.getElementById('productSearchInput').addEventListener('input', searchProduct);
+        document.getElementById('productSelect').addEventListener('change', loadProductVariants);
+        document.getElementById('selectAllVariants').addEventListener('change', toggleSelectAllVariants);
+        document.getElementById('addSelectedVariants').addEventListener('click', addSelectedVariants);
+        document.getElementById('saveFlashSaleBtn').addEventListener('click', saveFlashSale);
+    }
+
+    async function loadFlashSales() {
+        try {
+            const res = await fetch('/api/flash-sales');
+            const data = await res.json();
+            flashSales = Array.isArray(data) ? data : (data.data || []);
+            filteredFlashSales = [...flashSales];
+            renderTable();
+            updateStats();
+        } catch (error) {
+            console.error('Error loading flash sales:', error);
+            Swal.fire('Lỗi', 'Không thể tải dữ liệu flash sales', 'error');
+        }
+    }
+
+    async function loadProducts() {
+        try {
+            const res = await fetch('/api/sanpham');
+            const data = await res.json();
+            const products = data.data?.sanphams || data.sanphams || data;
+            
+            const select = document.getElementById('productSelect');
+            select.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+            products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.ten_san_pham} (${p.ma_san_pham})`;
+                opt.dataset.product = JSON.stringify(p);
+                select.appendChild(opt);
+            });
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    }
+
+    async function loadProductVariants(e) {
+        const productId = e.target.value;
+        if (!productId) {
+            document.getElementById('variantsSection').style.display = 'none';
+            return;
+        }
+
+        try {
+            const opt = e.target.options[e.target.selectedIndex];
+            currentProduct = JSON.parse(opt.dataset.product);
+
+            // Load variants from SQL
+            const res = await fetch(`/api/product-variants/${productId}`);
+            const data = await res.json();
+            currentVariants = Array.isArray(data) ? data : (data.data || []);
+
+            renderVariantsTable();
+            document.getElementById('variantsSection').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading variants:', error);
+            Swal.fire('Lỗi', 'Không thể tải variants', 'error');
+        }
+    }
+
+    function renderVariantsTable() {
+        const tbody = document.getElementById('variantsTableBody');
+        if (currentVariants.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Không có variant nào</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = currentVariants.map(v => `
+            <tr>
+                <td><input type="checkbox" class="variant-checkbox" data-variant='${JSON.stringify(v)}'></td>
+                <td>${v.ma_sku}</td>
+                <td>${v.ten_hien_thi || 'Mặc định'}</td>
+                <td>${formatCurrency(v.gia_ban)}</td>
+                <td>${v.so_luong_ton_kho || 0}</td>
+            </tr>
+        `).join('');
+    }
+
+    function toggleSelectAllVariants(e) {
+        document.querySelectorAll('.variant-checkbox').forEach(cb => {
+            cb.checked = e.target.checked;
+        });
+    }
+
+    function addSelectedVariants() {
+        const checked = document.querySelectorAll('.variant-checkbox:checked');
+        if (checked.length === 0) {
+            Swal.fire('Thông báo', 'Vui lòng chọn ít nhất 1 variant', 'info');
+            return;
+        }
+
+        checked.forEach(cb => {
+            const variant = JSON.parse(cb.dataset.variant);
+            const exists = selectedVariants.find(v => v.variant_id === variant.id);
+            if (!exists) {
+                selectedVariants.push({
+                    variant_id: variant.id,
+                    product_name: currentProduct.ten_san_pham,
+                    sku: variant.ma_sku,
+                    ten_hien_thi: variant.ten_hien_thi,
+                    gia_goc: variant.gia_ban,
+                    gia_flash_sale: variant.gia_ban * 0.9, // Default 10% discount
+                    so_luong_ton: variant.so_luong_ton_kho || 10,
+                    gioi_han_mua: 2,
+                    thu_tu: selectedVariants.length + 1,
+                    trang_thai: 'dang_ban'
+                });
+            }
+        });
+
+        renderSelectedVariants();
+        updateSelectedCount();
+        Swal.fire('Thành công', `Đã thêm ${checked.length} variant`, 'success');
+    }
+
+    function renderSelectedVariants() {
+        const tbody = document.getElementById('selectedVariantsTable');
+        if (selectedVariants.length === 0) {
+            tbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>Chưa có variant nào được chọn</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = selectedVariants.map((v, i) => `
+            <tr>
+                <td>${v.product_name}<br><small class="text-muted">${v.ten_hien_thi}</small></td>
+                <td>${v.sku}</td>
+                <td><input type="number" class="form-control form-control-sm" value="${v.gia_goc}" onchange="updateVariantField(${i}, 'gia_goc', this.value)"></td>
+                <td><input type="number" class="form-control form-control-sm" value="${v.gia_flash_sale}" onchange="updateVariantField(${i}, 'gia_flash_sale', this.value)"></td>
+                <td><input type="number" class="form-control form-control-sm" value="${v.so_luong_ton}" onchange="updateVariantField(${i}, 'so_luong_ton', this.value)"></td>
+                <td><input type="number" class="form-control form-control-sm" value="${v.gioi_han_mua}" onchange="updateVariantField(${i}, 'gioi_han_mua', this.value)"></td>
+                <td><input type="number" class="form-control form-control-sm" value="${v.thu_tu}" onchange="updateVariantField(${i}, 'thu_tu', this.value)"></td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeVariant(${i})"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    }
+
+    window.updateVariantField = function(index, field, value) {
+        selectedVariants[index][field] = parseFloat(value) || 0;
+    };
+
+    window.removeVariant = function(index) {
+        selectedVariants.splice(index, 1);
+        renderSelectedVariants();
+        updateSelectedCount();
+    };
+
+    function updateSelectedCount() {
+        document.getElementById('selectedCount').textContent = selectedVariants.length;
+    }
+
+    async function saveFlashSale() {
+        const data = {
+            ten_flash_sale: document.getElementById('tenFlashSale').value,
+            mo_ta: document.getElementById('moTa').value,
+            ngay_bat_dau: document.getElementById('ngayBatDau').value,
+            ngay_ket_thuc: document.getElementById('ngayKetThuc').value,
+            vung_id: document.getElementById('vungId').value,
+            trang_thai: document.getElementById('trangThai').value,
+            variants: selectedVariants
+        };
+
+        if (!data.ten_flash_sale || !data.ngay_bat_dau || !data.ngay_ket_thuc || !data.vung_id) {
+            Swal.fire('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
+            return;
+        }
+
+        if (selectedVariants.length === 0) {
+            Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 variant', 'error');
+            return;
+        }
+
+        try {
+            const url = currentFlashSaleId ? `/api/flash-sales/${currentFlashSaleId}` : '/api/flash-sales';
+            const method = currentFlashSaleId ? 'PUT' : 'POST';
+            
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.message || 'Lưu thất bại');
+
+            Swal.fire('Thành công', currentFlashSaleId ? 'Đã cập nhật flash sale' : 'Đã tạo flash sale mới', 'success');
+            modal.hide();
+            loadFlashSales();
+        } catch (error) {
+            console.error('Error saving flash sale:', error);
+            Swal.fire('Lỗi', error.message, 'error');
+        }
+    }
+
+    function filterFlashSales() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const region = document.getElementById('regionFilter').value;
+
+        filteredFlashSales = flashSales.filter(fs => {
+            const matchSearch = fs.ten_flash_sale.toLowerCase().includes(search);
+            const matchStatus = !status || fs.trang_thai === status;
+            const matchRegion = !region || fs.vung_id === region;
+            return matchSearch && matchStatus && matchRegion;
+        });
+
+        renderTable();
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('regionFilter').value = '';
+        filteredFlashSales = [...flashSales];
+        renderTable();
+    }
+
+    function searchProduct(e) {
+        const term = e.target.value.toLowerCase();
+        const opts = document.getElementById('productSelect').options;
+        for (let i = 1; i < opts.length; i++) {
+            opts[i].style.display = opts[i].textContent.toLowerCase().includes(term) ? '' : 'none';
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('flashSaleTableBody');
+        if (filteredFlashSales.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Không có dữ liệu</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filteredFlashSales.map(fs => `
+            <tr>
+                <td>${fs.ten_flash_sale}</td>
+                <td><span class="region-badge ${fs.vung_id}">${getRegionName(fs.vung_id)}</span></td>
+                <td>${formatDateTime(fs.ngay_bat_dau)}</td>
+                <td>${formatDateTime(fs.ngay_ket_thuc)}</td>
+                <td>${fs.variant_count || 0}</td>
+                <td><span class="status-badge ${fs.trang_thai}">${getStatusText(fs.trang_thai)}</span></td>
+                <td class="action-buttons">
+                    <button class="btn-action view" onclick="viewVariants('${fs.id}')" title="Xem variants"><i class="fas fa-eye"></i></button>
+                    <button class="btn-action edit" onclick="editFlashSale('${fs.id}')" title="Sửa"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action delete" onclick="deleteFlashSale('${fs.id}')" title="Xóa"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+
+        document.getElementById('displayCount').textContent = filteredFlashSales.length;
+    }
+
+    function updateStats() {
+        document.getElementById('totalFlashSales').textContent = flashSales.length;
+        document.getElementById('activeFlashSales').textContent = flashSales.filter(f => f.trang_thai === 'dang_dien_ra').length;
+        document.getElementById('upcomingFlashSales').textContent = flashSales.filter(f => f.trang_thai === 'cho').length;
+        document.getElementById('totalVariants').textContent = flashSales.reduce((sum, f) => sum + (f.variant_count || 0), 0);
+    }
+
+    function openModal(id = null) {
+        currentFlashSaleId = id;
+        selectedVariants = [];
+        currentVariants = [];
+        
+        document.getElementById('flashSaleForm').reset();
+        document.getElementById('flashSaleId').value = '';
+        document.getElementById('variantsSection').style.display = 'none';
+        renderSelectedVariants();
+        updateSelectedCount();
+
+        document.getElementById('modalTitle').innerHTML = id ? '<i class="fas fa-edit"></i> Sửa Flash Sale' : '<i class="fas fa-plus"></i> Tạo Flash Sale Mới';
+        
+        if (id) {
+            loadFlashSaleData(id);
+        }
+
+        modal.show();
+    }
+
+    async function loadFlashSaleData(id) {
+        try {
+            const res = await fetch(`/api/flash-sales/${id}`);
+            const data = await res.json();
+            const fs = data.data || data;
+
+            document.getElementById('tenFlashSale').value = fs.ten_flash_sale;
+            document.getElementById('moTa').value = fs.mo_ta || '';
+            document.getElementById('ngayBatDau').value = formatDateTimeLocal(fs.ngay_bat_dau);
+            document.getElementById('ngayKetThuc').value = formatDateTimeLocal(fs.ngay_ket_thuc);
+            document.getElementById('vungId').value = fs.vung_id;
+            document.getElementById('trangThai').value = fs.trang_thai;
+
+            // Load variants
+            const varRes = await fetch(`/api/flash-sales/${id}/items`);
+            const varData = await varRes.json();
+            selectedVariants = (varData.data || varData || []).map(item => ({
+                variant_id: item.variant_id,
+                product_name: item.product_name || 'N/A',
+                sku: item.sku || 'N/A',
+                ten_hien_thi: item.ten_hien_thi || '',
+                gia_goc: item.gia_goc,
+                gia_flash_sale: item.gia_flash_sale,
+                so_luong_ton: item.so_luong_ton,
+                gioi_han_mua: item.gioi_han_mua,
+                thu_tu: item.thu_tu,
+                trang_thai: item.trang_thai
+            }));
+
+            renderSelectedVariants();
+            updateSelectedCount();
+        } catch (error) {
+            console.error('Error loading flash sale:', error);
+        }
+    }
+
+    window.viewVariants = async function(id) {
+        try {
+            const res = await fetch(`/api/flash-sales/${id}/items`);
+            const data = await res.json();
+            const items = data.data || data || [];
+
+            const tbody = document.getElementById('viewVariantsTableBody');
+            tbody.innerHTML = items.map((item, i) => {
+                const discount = Math.round((1 - item.gia_flash_sale / item.gia_goc) * 100);
+                return `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${item.product_name || 'N/A'}</td>
+                        <td>${item.sku || 'N/A'}</td>
+                        <td>${item.ten_hien_thi || 'Mặc định'}</td>
+                        <td>${formatCurrency(item.gia_goc)}</td>
+                        <td><strong class="text-danger">${formatCurrency(item.gia_flash_sale)}</strong></td>
+                        <td><span class="badge bg-success">-${discount}%</span></td>
+                        <td>${item.so_luong_ton || 0}</td>
+                        <td>${item.da_ban || 0}</td>
+                        <td>${item.gioi_han_mua || 'N/A'}</td>
+                        <td><span class="badge ${item.trang_thai === 'dang_ban' ? 'bg-success' : 'bg-secondary'}">${item.trang_thai}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+            viewModal.show();
+        } catch (error) {
+            console.error('Error viewing variants:', error);
+            Swal.fire('Lỗi', 'Không thể tải danh sách variants', 'error');
+        }
+    };
+
+    window.editFlashSale = function(id) {
+        openModal(id);
+    };
+
+    window.deleteFlashSale = async function(id) {
+        const result = await Swal.fire({
+            title: 'Xác nhận xóa?',
+            text: 'Bạn không thể hoàn tác hành động này!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#ef4444'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const res = await fetch(`/api/flash-sales/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Xóa thất bại');
+            
+            Swal.fire('Thành công', 'Đã xóa flash sale', 'success');
+            loadFlashSales();
+        } catch (error) {
+            console.error('Error deleting:', error);
+            Swal.fire('Lỗi', 'Không thể xóa flash sale', 'error');
+        }
+    };
+
+    // Utility functions
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '';
+        return new Date(dateStr).toLocaleString('vi-VN');
+    }
+
+    function formatDateTimeLocal(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function getRegionName(id) {
+        const map = { 'bac': 'Miền Bắc', 'trung': 'Miền Trung', 'nam': 'Miền Nam' };
+        return map[id] || id;
+    }
+
+    function getStatusText(status) {
+        const map = { 'cho': 'Chờ diễn ra', 'dang_dien_ra': 'Đang diễn ra', 'ket_thuc': 'Đã kết thúc' };
+        return map[status] || status;
+    }
+});
+</script>

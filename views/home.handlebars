@@ -28,18 +28,33 @@
     <div class="flash-sale-wrapper">
       <!-- Flash Sale Tabs -->
       {{#if (gt flashSaleEvents.length 1)}}
-      <div class="flash-sale-tabs">
-        {{#each flashSaleEvents}}
-        <button class="flash-tab {{#if @first}}active{{/if}}" data-tab="flash-{{@index}}">
-          <i class="fas fa-bolt"></i>
-          <span class="tab-title">{{this.info.ten_flash_sale}}</span>
-          {{#if this.info.is_active}}
-          <span class="tab-status active-status">ĐANG DIỄN RA</span>
-          {{else}}
-          <span class="tab-status upcoming-status">SẮP DIỄN RA</span>
-          {{/if}}
+      <div class="flash-sale-tabs-container">
+        <button class="tab-slide-btn tab-slide-prev">
+          <i class="fas fa-chevron-left"></i>
         </button>
-        {{/each}}
+        <div class="flash-sale-tabs-wrapper">
+          <div class="flash-sale-tabs">
+            {{#each flashSaleEvents}}
+            <button class="flash-tab {{#if @first}}active{{/if}}" data-tab="flash-{{@index}}" data-tab-index="{{@index}}">
+              <i class="fas fa-bolt"></i>
+              <span class="tab-title">{{this.info.ten_flash_sale}}</span>
+              {{#if this.info.is_active}}
+              <span class="tab-status active-status">ĐANG DIỄN RA</span>
+              {{else}}
+              <span class="tab-status upcoming-status">SẮP DIỄN RA</span>
+              {{/if}}
+            </button>
+            {{/each}}
+          </div>
+        </div>
+        <button class="tab-slide-btn tab-slide-next">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <div class="flash-tabs-dots">
+          {{#each flashSaleEvents}}
+          <span class="tab-dot {{#if @first}}active{{/if}}" data-slide="{{@index}}"></span>
+          {{/each}}
+        </div>
       </div>
       {{/if}}
       
@@ -48,18 +63,18 @@
       <div class="flash-sale-content {{#if @first}}active{{/if}}" id="flash-{{@index}}">
         <div class="flash-sale-header">
           <div class="flash-header-content">
-            <!-- Left: Title Section -->
+            <!-- Title Section - Top -->
             <div class="flash-title-section">
               <div class="flash-icon-wrapper">
                 <i class="fas fa-bolt flash-bolt-icon"></i>
               </div>
               <div class="flash-title-text">
                 <h1 class="flash-main-title">{{this.info.ten_flash_sale}}</h1>
-                <p class="flash-subtitle">Giảm giá sốc - Số lượng có hạn</p>
+                <p class="flash-subtitle" style="white-space: pre-line;">{{this.info.mo_ta}}</p>
               </div>
             </div>
             
-            <!-- Right: Countdown Timer -->
+            <!-- Countdown Timer - Bottom -->
             <div class="flash-time-info">
               {{#if this.info.is_active}}
               <!-- Flash Sale đang diễn ra - Chỉ hiển thị countdown -->
@@ -133,7 +148,7 @@
           </button>
           
           <div class="flash-products-slider" data-flash-index="{{@index}}">
-            <div class="flash-products-track">
+            <div class="flash-products-track" data-flash-index="{{@index}}">
               {{#each this.items}}
               <div class="flash-product-card">
             <!-- Flash Badge -->
@@ -206,6 +221,7 @@
           <button class="flash-slider-btn flash-next" data-flash-index="{{@index}}">
             <i class="fas fa-chevron-right"></i>
           </button>
+          <div class="flash-products-dots" data-flash-index="{{@index}}"></div>
         </div>
       </div>
       {{/each}}
@@ -356,31 +372,89 @@
 }
 
 /* Flash Sale Tabs */
+.flash-sale-tabs-container {
+  position: relative;
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border-bottom: 2px solid rgba(215, 0, 24, 0.1);
+  padding: 20px 60px 50px;
+}
+
+.flash-sale-tabs-wrapper {
+  overflow: hidden;
+  position: relative;
+}
+
 .flash-sale-tabs {
   display: flex;
   gap: 10px;
-  padding: 20px;
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  transition: transform 0.5s ease;
   position: relative;
   z-index: 3;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #d70018 rgba(215, 0, 24, 0.1);
-  border-bottom: 2px solid rgba(215, 0, 24, 0.1);
 }
 
-.flash-sale-tabs::-webkit-scrollbar {
-  height: 6px;
+.tab-slide-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #d70018, #ff0033);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(215, 0, 24, 0.4);
+  transition: all 0.3s ease;
+  opacity: 0.9;
 }
 
-.flash-sale-tabs::-webkit-scrollbar-track {
-  background: rgba(215, 0, 24, 0.05);
-  border-radius: 10px;
+.tab-slide-btn:hover {
+  background: linear-gradient(135deg, #ff0033, #ff6b6b);
+  box-shadow: 0 6px 20px rgba(215, 0, 24, 0.6);
+  transform: translateY(-50%) scale(1.1);
+  opacity: 1;
 }
 
-.flash-sale-tabs::-webkit-scrollbar-thumb {
+.tab-slide-prev {
+  left: 10px;
+}
+
+.tab-slide-next {
+  right: 10px;
+}
+
+.flash-tabs-dots {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.tab-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(215, 0, 24, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-dot.active {
   background: #d70018;
-  border-radius: 10px;
+  width: 30px;
+  border-radius: 5px;
+}
+
+.tab-dot:hover {
+  background: rgba(215, 0, 24, 0.6);
 }
 
 .flash-tab {
@@ -400,6 +474,10 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: auto;
+  min-width: 180px;
+  max-width: 350px;
+  flex: 0 0 auto;
 }
 
 .flash-tab::before {
@@ -513,23 +591,25 @@
 
 .flash-header-content {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 40px;
+  gap: 30px;
   position: relative;
   z-index: 2;
   width: 100%;
 }
 
-/* Title Section - Left Side */
+/* Title Section - Top */
 .flash-title-section {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 20px;
-  text-align: left;
+  text-align: center;
   flex-shrink: 0;
+  width: 100%;
+  justify-content: center;
 }
 
 .flash-icon-wrapper {
@@ -591,7 +671,7 @@
 
 .flash-title-text {
   color: #2c3e50;
-  text-align: left;
+  text-align: center;
 }
 
 .flash-main-title {
@@ -613,13 +693,12 @@
   letter-spacing: 1.5px;
 }
 
-/* Time Information - Right Side */
+/* Time Information - Bottom */
 .flash-time-info {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  flex: 1;
-  min-width: 0;
+  justify-content: center;
+  width: 100%;
 }
 
 .flash-time-block {
@@ -794,10 +873,10 @@
 
 /* Active Countdown - Horizontal Right Side */
 .flash-countdown-wrapper.active-countdown {
-  padding: 18px 25px;
+  padding: 30px 45px;
   background: linear-gradient(135deg, #d70018 0%, #ff0033 50%, #ff6b6b 100%);
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 
     0 0 30px rgba(215, 0, 24, 0.4),
     0 10px 25px rgba(0, 0, 0, 0.2),
@@ -806,10 +885,10 @@
 
 /* Upcoming Countdown - Blue/Green Theme */
 .flash-countdown-wrapper.upcoming-countdown {
-  padding: 18px 25px;
+  padding: 30px 45px;
   background: linear-gradient(135deg, #0288d1 0%, #00acc1 50%, #26c6da 100%);
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: 
     0 0 30px rgba(2, 136, 209, 0.4),
     0 10px 25px rgba(0, 0, 0, 0.2),
@@ -863,21 +942,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 12px;
+  margin-bottom: 20px;
   position: relative;
   z-index: 1;
 }
 
 .countdown-fire-icon {
-  font-size: 20px;
+  font-size: 28px;
   color: #FFD700;
   animation: fire-flicker 1.5s infinite alternate;
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
 }
 
 .countdown-clock-icon {
-  font-size: 20px;
+  font-size: 28px;
   color: #FFD700;
   animation: clock-tick 2s infinite;
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
@@ -911,10 +990,10 @@
 
 .countdown-label {
   color: #fff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
   text-align: center;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   text-shadow: 
     0 2px 4px rgba(0, 0, 0, 0.3),
@@ -927,7 +1006,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 15px;
   position: relative;
   z-index: 1;
 }
@@ -961,11 +1040,11 @@
 .timer-number {
   background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
   color: #d70018;
-  padding: 18px 24px;
-  border-radius: 16px;
-  font-size: 52px;
+  padding: 25px 35px;
+  border-radius: 20px;
+  font-size: 68px;
   font-weight: 900;
-  min-width: 100px;
+  min-width: 130px;
   text-align: center;
   border: 3px solid rgba(255, 255, 255, 0.6);
   box-shadow: 
@@ -995,7 +1074,7 @@
 
 .timer-text {
   color: #fff;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -1032,9 +1111,39 @@
 /* Flash Products Slider - Horizontal Scrolling */
 .flash-products-slider-wrapper {
   position: relative;
-  padding: 30px 60px;
+  padding: 30px 60px 50px;
   background: #fff;
   border-radius: 0 0 16px 16px;
+}
+
+.flash-products-dots {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.flash-product-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(215, 0, 24, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.flash-product-dot.active {
+  background: linear-gradient(135deg, #d70018, #ff0033);
+  width: 30px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(215, 0, 24, 0.4);
+}
+
+.flash-product-dot:hover {
+  background: rgba(215, 0, 24, 0.6);
 }
 
 .flash-products-slider {
@@ -1049,7 +1158,7 @@
   padding: 10px 0;
 }
 
-/* Slider Navigation Buttons */
+/* Flash Products Slider Navigation Buttons */
 .flash-slider-btn {
   position: absolute;
   top: 50%;
@@ -2042,39 +2151,226 @@
 <script>
   // JavaScript cho chức năng banner và sản phẩm
   document.addEventListener('DOMContentLoaded', function () {
-    // Flash Sale Tab Switching
-    const flashTabs = document.querySelectorAll('.flash-tab');
-    const flashContents = document.querySelectorAll('.flash-sale-content');
     
-    flashTabs.forEach(tab => {
-      tab.addEventListener('click', function() {
-        // Remove active class from all tabs and contents
-        flashTabs.forEach(t => t.classList.remove('active'));
-        flashContents.forEach(c => c.classList.remove('active'));
+    // =============================================
+    // TAB SLIDER - Hoàn toàn độc lập
+    // =============================================
+    (function initializeTabSlider() {
+      const tabsContainer = document.querySelector('.flash-sale-tabs');
+      if (!tabsContainer) return;
+      
+      const flashTabs = document.querySelectorAll('.flash-tab');
+      const flashContents = document.querySelectorAll('.flash-sale-content');
+      const tabDotsContainer = document.querySelector('.flash-tabs-dots');
+      const tabPrevBtn = document.querySelector('.tab-slide-prev');
+      const tabNextBtn = document.querySelector('.tab-slide-next');
+      
+      if (flashTabs.length === 0) return;
+      
+      let currentTabSlide = 0;
+      let tabAutoSlideInterval = null;
+      const TAB_AUTO_SLIDE_DURATION = 5000;
+      
+      // Auto-adjust tab widths based on content
+      function adjustTabWidths() {
+        flashTabs.forEach(tab => {
+          tab.style.width = 'auto';
+          tab.style.minWidth = '180px';
+          tab.style.maxWidth = '350px';
+          tab.style.flex = '0 0 auto';
+        });
+      }
+      
+      function getVisibleTabsCount() {
+        if (flashTabs.length === 0) return 1;
         
-        // Add active class to clicked tab
-        this.classList.add('active');
+        const wrapper = tabsContainer.parentElement;
+        if (!wrapper) return 1;
         
-        // Show corresponding content
-        const tabId = this.getAttribute('data-tab');
-        const content = document.getElementById(tabId);
-        if (content) {
-          content.classList.add('active');
+        const wrapperWidth = wrapper.offsetWidth;
+        const buttonSpace = 120; // Space for prev/next buttons (60px each side)
+        const availableWidth = wrapperWidth - buttonSpace;
+        const gap = 10; // Gap between tabs
+        
+        let totalWidth = 0;
+        let count = 0;
+        
+        // Calculate how many tabs can fit
+        for (let i = 0; i < flashTabs.length; i++) {
+          const tabWidth = flashTabs[i].offsetWidth;
+          const widthNeeded = totalWidth + tabWidth + (i > 0 ? gap : 0);
           
-          // Re-initialize slider for the active tab
-          const activeSlider = content.querySelector('.flash-products-slider');
-          if (activeSlider) {
-            const flashIndex = activeSlider.getAttribute('data-flash-index');
-            initializeFlashSlider(activeSlider, flashIndex);
+          if (widthNeeded <= availableWidth) {
+            totalWidth = widthNeeded;
+            count++;
+          } else {
+            break;
           }
         }
         
-        // Hide all slider buttons first
-        document.querySelectorAll('.flash-slider-btn').forEach(btn => {
-          btn.style.display = 'none';
+        // Return at least 1 tab
+        return Math.max(1, count);
+      }
+      
+      function getTotalSlides() {
+        const visibleCount = getVisibleTabsCount();
+        const totalSlides = Math.ceil(flashTabs.length / visibleCount);
+        return Math.max(1, totalSlides);
+      }
+      
+      function getMaxSlide() {
+        const visibleCount = getVisibleTabsCount();
+        return Math.max(0, flashTabs.length - visibleCount);
+      }
+      
+      function updateTabSlider(slideIndex, animate = true) {
+        adjustTabWidths(); // Adjust widths first
+        
+        const visibleCount = getVisibleTabsCount();
+        const maxSlide = getMaxSlide();
+        
+        currentTabSlide = Math.max(0, Math.min(slideIndex, maxSlide));
+        
+        // Calculate offset based on actual tab widths
+        let offset = 0;
+        const gap = 10;
+        for (let i = 0; i < currentTabSlide; i++) {
+          offset += flashTabs[i].offsetWidth + gap;
+        }
+        
+        tabsContainer.style.transition = animate ? 'transform 0.5s ease' : 'none';
+        tabsContainer.style.transform = `translateX(-${offset}px)`;
+        
+        // Update tab dots - each dot represents a "page" of visible tabs
+        if (tabDotsContainer) {
+          const totalSlides = getTotalSlides();
+          const currentPage = Math.floor(currentTabSlide / visibleCount);
+          
+          const dots = tabDotsContainer.querySelectorAll('.tab-dot');
+          
+          // Always recreate dots to ensure sync
+          tabDotsContainer.innerHTML = '';
+          for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('span');
+            dot.className = `tab-dot ${i === currentPage ? 'active' : ''}`;
+            dot.dataset.slide = (i * visibleCount).toString();
+            tabDotsContainer.appendChild(dot);
+          }
+        }
+        
+        // Update buttons - always visible
+        if (tabPrevBtn) {
+          tabPrevBtn.style.display = 'flex';
+          tabPrevBtn.style.opacity = '1';
+          tabPrevBtn.style.pointerEvents = 'all';
+        }
+        if (tabNextBtn) {
+          tabNextBtn.style.display = 'flex';
+          tabNextBtn.style.opacity = '1';
+          tabNextBtn.style.pointerEvents = 'all';
+        }
+      }
+      
+      function startTabAutoSlide() {
+        stopTabAutoSlide();
+        tabAutoSlideInterval = setInterval(() => {
+          const maxSlide = getMaxSlide();
+          currentTabSlide = currentTabSlide + 1 > maxSlide ? 0 : currentTabSlide + 1;
+          updateTabSlider(currentTabSlide);
+        }, TAB_AUTO_SLIDE_DURATION);
+      }
+      
+      function stopTabAutoSlide() {
+        if (tabAutoSlideInterval) {
+          clearInterval(tabAutoSlideInterval);
+          tabAutoSlideInterval = null;
+        }
+      }
+      
+      // Tab click handlers
+      flashTabs.forEach((tab) => {
+        tab.addEventListener('click', function() {
+          stopTabAutoSlide();
+          
+          flashTabs.forEach(t => t.classList.remove('active'));
+          flashContents.forEach(c => c.classList.remove('active'));
+          
+          this.classList.add('active');
+          
+          const tabId = this.getAttribute('data-tab');
+          const content = document.getElementById(tabId);
+          if (content) {
+            content.classList.add('active');
+            
+            // Re-initialize product slider for active tab
+            const activeSlider = content.querySelector('.flash-products-slider');
+            if (activeSlider) {
+              const flashIndex = activeSlider.getAttribute('data-flash-index');
+              initializeProductSlider(flashIndex);
+            }
+          }
+          
+          startTabAutoSlide();
         });
       });
-    });
+      
+      // Tab prev/next buttons
+      if (tabPrevBtn) {
+        tabPrevBtn.addEventListener('click', () => {
+          stopTabAutoSlide();
+          const maxSlide = getMaxSlide();
+          const newSlide = currentTabSlide - 1 < 0 ? maxSlide : currentTabSlide - 1;
+          updateTabSlider(newSlide);
+          startTabAutoSlide();
+        });
+      }
+      
+      if (tabNextBtn) {
+        tabNextBtn.addEventListener('click', () => {
+          stopTabAutoSlide();
+          const maxSlide = getMaxSlide();
+          const newSlide = currentTabSlide + 1 > maxSlide ? 0 : currentTabSlide + 1;
+          updateTabSlider(newSlide);
+          startTabAutoSlide();
+        });
+      }
+      
+      // Tab dots click - jump to specific page
+      if (tabDotsContainer) {
+        tabDotsContainer.addEventListener('click', (e) => {
+          if (e.target.classList.contains('tab-dot')) {
+            stopTabAutoSlide();
+            const slideIndex = parseInt(e.target.getAttribute('data-slide'));
+            updateTabSlider(slideIndex);
+            startTabAutoSlide();
+          }
+        });
+      }
+      
+      // Pause on hover
+      const tabsContainerWrapper = document.querySelector('.flash-sale-tabs-container');
+      if (tabsContainerWrapper) {
+        tabsContainerWrapper.addEventListener('mouseenter', stopTabAutoSlide);
+        tabsContainerWrapper.addEventListener('mouseleave', startTabAutoSlide);
+      }
+      
+      // Handle window resize
+      let resizeTimeout;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          stopTabAutoSlide();
+          adjustTabWidths();
+          updateTabSlider(currentTabSlide, false);
+          startTabAutoSlide();
+        }, 250);
+      });
+      
+      // Initialize
+      adjustTabWidths();
+      updateTabSlider(0, false);
+      startTabAutoSlide();
+    })();
     
     // Flash Sale Countdown Timers - Multiple Events
     const countdownWrappers = document.querySelectorAll('.flash-countdown-wrapper');
@@ -2122,110 +2418,170 @@
       setInterval(updateTimer, 1000);
     });
 
-    // Flash Sale Product Slider Logic - Extract to function
-    function initializeFlashSlider(slider, flashIndex) {
-      const track = slider.querySelector('.flash-products-track');
-      const cards = track ? track.querySelectorAll('.flash-product-card') : [];
-      const prevBtn = document.querySelector(`.flash-prev[data-flash-index="${flashIndex}"]`);
-      const nextBtn = document.querySelector(`.flash-next[data-flash-index="${flashIndex}"]`);
+    
+    // =============================================
+    // PRODUCT SLIDER - Mỗi flash sale độc lập
+    // =============================================
+    const productSliders = {}; // Store slider instances
+    
+    function initializeProductSlider(flashIndex) {
+      const sliderWrapper = document.querySelector(`.flash-products-slider-wrapper:has([data-flash-index="${flashIndex}"])`);
+      if (!sliderWrapper) return;
       
-      // Hide buttons by default
-      if (prevBtn) prevBtn.style.display = 'none';
-      if (nextBtn) nextBtn.style.display = 'none';
+      const slider = sliderWrapper.querySelector('.flash-products-slider');
+      const track = sliderWrapper.querySelector('.flash-products-track');
+      const cards = track?.querySelectorAll('.flash-product-card') || [];
+      const prevBtn = sliderWrapper.querySelector('.flash-prev');
+      const nextBtn = sliderWrapper.querySelector('.flash-next');
+      const dotsContainer = sliderWrapper.querySelector('.flash-products-dots');
       
-      if (!track || cards.length === 0) {
-        return;
+      if (!track || cards.length === 0) return;
+      
+      // Stop previous instance if exists
+      if (productSliders[flashIndex]) {
+        clearInterval(productSliders[flashIndex].interval);
       }
       
       const cardWidth = 234;
       const gap = 20;
       const itemWidth = cardWidth + gap;
+      let currentPosition = 0;
+      let autoSlideInterval = null;
+      const AUTO_SLIDE_DURATION = 4000;
       
-      // Calculate visible cards and max scroll based on actual slider width
-      function calculateSliderParams() {
+      function calculateParams() {
         const sliderWidth = slider.offsetWidth;
         const visibleCards = Math.floor(sliderWidth / itemWidth);
         const maxScroll = Math.max(0, cards.length - visibleCards);
         return { visibleCards, maxScroll };
       }
       
-      let { visibleCards, maxScroll } = calculateSliderParams();
+      let { visibleCards, maxScroll } = calculateParams();
       
-      // Hide buttons if all cards fit in view (no need to scroll)
-      if (cards.length <= visibleCards || maxScroll === 0) {
+      // Create dots
+      if (dotsContainer && maxScroll > 0) {
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i <= maxScroll; i++) {
+          const dot = document.createElement('span');
+          dot.className = `flash-product-dot ${i === 0 ? 'active' : ''}`;
+          dot.dataset.page = i;
+          dotsContainer.appendChild(dot);
+        }
+        dotsContainer.style.display = 'flex';
+      }
+      
+      // Hide if no scrolling needed
+      if (maxScroll === 0) {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (dotsContainer) dotsContainer.style.display = 'none';
         return;
       }
       
-      let currentPosition = 0;
-      
-      function updateSlider() {
-        // Recalculate in case window was resized
-        const params = calculateSliderParams();
+      function updateProductSlider(animate = true) {
+        const params = calculateParams();
         visibleCards = params.visibleCards;
         maxScroll = params.maxScroll;
         
-        // Check if scrolling is still needed
         if (maxScroll === 0) {
           if (prevBtn) prevBtn.style.display = 'none';
           if (nextBtn) nextBtn.style.display = 'none';
+          if (dotsContainer) dotsContainer.style.display = 'none';
           return;
         }
         
-        // Adjust currentPosition if it exceeds maxScroll
-        if (currentPosition > maxScroll) {
-          currentPosition = maxScroll;
-        }
+        currentPosition = Math.max(0, Math.min(currentPosition, maxScroll));
         
         const offset = -currentPosition * itemWidth;
+        track.style.transition = animate ? 'transform 0.5s ease' : 'none';
         track.style.transform = `translateX(${offset}px)`;
         
-        // Update button visibility based on current position
+        // Update buttons - always visible
         if (prevBtn) {
-          prevBtn.style.display = currentPosition === 0 ? 'none' : 'flex';
+          prevBtn.style.display = 'flex';
+          prevBtn.style.opacity = '1';
+          prevBtn.style.pointerEvents = 'all';
+        }
+        if (nextBtn) {
+          nextBtn.style.display = 'flex';
+          nextBtn.style.opacity = '1';
+          nextBtn.style.pointerEvents = 'all';
         }
         
-        if (nextBtn) {
-          nextBtn.style.display = currentPosition >= maxScroll ? 'none' : 'flex';
+        // Update dots
+        if (dotsContainer) {
+          const dots = dotsContainer.querySelectorAll('.flash-product-dot');
+          dots.forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === currentPosition);
+          });
         }
       }
       
-      // Remove old event listeners by cloning buttons
+      function startAutoSlide() {
+        stopAutoSlide();
+        autoSlideInterval = setInterval(() => {
+          currentPosition = currentPosition + 1 > maxScroll ? 0 : currentPosition + 1;
+          updateProductSlider();
+        }, AUTO_SLIDE_DURATION);
+      }
+      
+      function stopAutoSlide() {
+        if (autoSlideInterval) {
+          clearInterval(autoSlideInterval);
+          autoSlideInterval = null;
+        }
+      }
+      
+      // Event listeners
       if (prevBtn) {
-        const newPrevBtn = prevBtn.cloneNode(true);
-        prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
-        newPrevBtn.addEventListener('click', () => {
-          if (currentPosition > 0) {
-            currentPosition--;
-            updateSlider();
-          }
-        });
+        prevBtn.onclick = () => {
+          stopAutoSlide();
+          currentPosition = currentPosition - 1 < 0 ? maxScroll : currentPosition - 1;
+          updateProductSlider();
+          startAutoSlide();
+        };
       }
       
       if (nextBtn) {
-        const newNextBtn = nextBtn.cloneNode(true);
-        nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
-        newNextBtn.addEventListener('click', () => {
-          if (currentPosition < maxScroll) {
-            currentPosition++;
-            updateSlider();
-          }
-        });
+        nextBtn.onclick = () => {
+          stopAutoSlide();
+          currentPosition = currentPosition + 1 > maxScroll ? 0 : currentPosition + 1;
+          updateProductSlider();
+          startAutoSlide();
+        };
       }
       
-      // Initial update
-      updateSlider();
+      if (dotsContainer) {
+        dotsContainer.onclick = (e) => {
+          if (e.target.classList.contains('flash-product-dot')) {
+            stopAutoSlide();
+            currentPosition = parseInt(e.target.dataset.page);
+            updateProductSlider();
+            startAutoSlide();
+          }
+        };
+      }
+      
+      // Pause on hover
+      sliderWrapper.addEventListener('mouseenter', stopAutoSlide);
+      sliderWrapper.addEventListener('mouseleave', startAutoSlide);
+      
+      // Initialize
+      updateProductSlider(false);
+      startAutoSlide();
+      
+      // Store instance
+      productSliders[flashIndex] = {
+        interval: autoSlideInterval,
+        stop: stopAutoSlide
+      };
     }
     
-    // Flash Sale Product Slider Logic - Initialize all
-    const flashSliders = document.querySelectorAll('.flash-products-slider');
-    
-    flashSliders.forEach(slider => {
+    // Initialize all product sliders for active tabs
+    document.querySelectorAll('.flash-sale-content.active .flash-products-slider').forEach(slider => {
       const flashIndex = slider.getAttribute('data-flash-index');
-      const parentContent = slider.closest('.flash-sale-content');
-      
-      // Only initialize slider for active tab
-      if (parentContent && parentContent.classList.contains('active')) {
-        initializeFlashSlider(slider, flashIndex);
+      if (flashIndex) {
+        initializeProductSlider(flashIndex);
       }
     });
 

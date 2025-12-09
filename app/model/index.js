@@ -705,153 +705,614 @@ class SQLCategoryModel {
   }
 }
 
-// Model cho Product trong SQL Server
+// Model cho Product trong SQL Server - CẬP NHẬT CHO SCHEMA MỚI
 class SQLProductModel {
+  // Lấy tất cả products với variants
   static async findAll() {
     try {
       const request = new sql.Request();
-      const result = await request.query(`
+      
+      // Lấy products với thông tin category và brand
+      const productsResult = await request.query(`
         SELECT 
-          p.*, 
-          c.ten_danh_muc, 
-          b.ten_thuong_hieu,
-          (p.gia_niem_yet - p.gia_ban) as giam_gia
+          p.id,
+          p.ma_san_pham,
+          p.ten_san_pham,
+          p.danh_muc_id,
+          p.thuong_hieu_id,
+          p.mo_ta_ngan,
+          p.link_anh_dai_dien,
+          p.mongo_detail_id,
+          p.trang_thai,
+          p.luot_xem,
+          p.site_created,
+          p.gia_ban,
+          p.gia_niem_yet,
+          p.ngay_tao,
+          p.ngay_cap_nhat,
+          c.ten_danh_muc,
+          b.ten_thuong_hieu
         FROM products p
         INNER JOIN categories c ON p.danh_muc_id = c.id
         INNER JOIN brands b ON p.thuong_hieu_id = b.id
-        
-
+        ORDER BY p.ngay_tao DESC
       `);
-      // WHERE p.trang_thai = 1
-      // ORDER BY p.ngay_tao DESC
-      return result.recordset;
+
+      // Lấy tất cả variants
+      const variantsResult = await request.query(`
+        SELECT * FROM product_variants
+        ORDER BY ngay_tao DESC
+      `);
+
+      // Nhóm variants theo san_pham_id
+      const variantsByProduct = {};
+      variantsResult.recordset.forEach(variant => {
+        const productId = variant.san_pham_id.toLowerCase();
+        if (!variantsByProduct[productId]) {
+          variantsByProduct[productId] = [];
+        }
+        variantsByProduct[productId].push(variant);
+      });
+
+      // Kết hợp products với variants
+      const productsWithVariants = productsResult.recordset.map(product => {
+        const productId = product.id.toLowerCase();
+        const variants = variantsByProduct[productId] || [];
+
+        // Debug: Log product data để kiểm tra
+        if (product.id.toLowerCase() === '96d9423e-f36b-1410-8b02-00449f2bb6f5') {
+          console.log('🔍 DEBUG Product from SQL:', {
+            id: product.id,
+            ten_san_pham: product.ten_san_pham,
+            gia_ban: product.gia_ban,
+            gia_niem_yet: product.gia_niem_yet,
+            all_keys: Object.keys(product)
+          });
+        }
+
+        // Tính giá min/max từ variants
+        let gia_ban_min = 0;
+        let gia_ban_max = 0;
+        let gia_niem_yet_min = 0;
+        let tong_so_luong_ban = 0;
+
+        if (variants.length > 0) {
+          gia_ban_min = Math.min(...variants.map(v => v.gia_ban));
+          gia_ban_max = Math.max(...variants.map(v => v.gia_ban));
+          gia_niem_yet_min = Math.min(...variants.map(v => v.gia_niem_yet));
+          tong_so_luong_ban = variants.reduce((sum, v) => sum + (v.so_luong_ban || 0), 0);
+        }
+
+        return {
+          ...product,
+          variants: variants,
+          so_bien_the: variants.length,
+          gia_ban_min,
+          gia_ban_max,
+          gia_niem_yet_min,
+          tong_so_luong_ban,
+          // Tính giảm giá nếu có
+          giam_gia: gia_niem_yet_min && gia_ban_min ? gia_niem_yet_min - gia_ban_min : 0
+        };
+      });
+
+      return productsWithVariants;
     } catch (error) {
       console.error('SQL Product Error:', error);
       throw error;
     }
   }
 
+  // Lấy product theo ID với variants
+  static async findById(id) {
+    try {
+      const request = new sql.Request();
+      
+      // Lấy product info
+      const productResult = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT 
+            p.id,
+            p.ma_san_pham,
+            p.ten_san_pham,
+            p.danh_muc_id,
+            p.thuong_hieu_id,
+            p.mo_ta_ngan,
+            p.link_anh_dai_dien,
+            p.mongo_detail_id,
+            p.trang_thai,
+            p.luot_xem,
+            p.site_created,
+            p.gia_ban,
+            p.gia_niem_yet,
+            p.ngay_tao,
+            p.ngay_cap_nhat,
+            c.ten_danh_muc,
+            b.ten_thuong_hieu
+          FROM products p
+          INNER JOIN categories c ON p.danh_muc_id = c.id
+          INNER JOIN brands b ON p.thuong_hieu_id = b.id
+          WHERE p.id = @id
+        `);
+
+      if (productResult.recordset.length === 0) {
+        return null;
+      }
+
+      const product = productResult.recordset[0];
+
+      // Lấy variants
+      const variantsResult = await request
+        .input('san_pham_id', sql.UniqueIdentifier, id)
+        .query(`
+          SELECT * FROM product_variants
+          WHERE san_pham_id = @san_pham_id
+          ORDER BY ngay_tao DESC
+        `);
+
+      const variants = variantsResult.recordset;
+
+      // Tính giá từ variants
+      let gia_ban_min = 0;
+      let gia_ban_max = 0;
+      let gia_niem_yet_min = 0;
+      let tong_so_luong_ban = 0;
+
+      if (variants.length > 0) {
+        gia_ban_min = Math.min(...variants.map(v => v.gia_ban));
+        gia_ban_max = Math.max(...variants.map(v => v.gia_ban));
+        gia_niem_yet_min = Math.min(...variants.map(v => v.gia_niem_yet));
+        tong_so_luong_ban = variants.reduce((sum, v) => sum + (v.so_luong_ban || 0), 0);
+      }
+
+      return {
+        ...product,
+        variants: variants,
+        so_bien_the: variants.length,
+        gia_ban_min,
+        gia_ban_max,
+        gia_niem_yet_min,
+        tong_so_luong_ban,
+        giam_gia: gia_niem_yet_min && gia_ban_min ? gia_niem_yet_min - gia_ban_min : 0
+      };
+    } catch (error) {
+      console.error('SQL Product Error:', error);
+      throw error;
+    }
+  }
+
+  // Lấy products theo category
+  static async findByCategory(categoryId) {
+    try {
+      const request = new sql.Request();
+      
+      const productsResult = await request
+        .input('categoryId', sql.UniqueIdentifier, categoryId)
+        .query(`
+          SELECT 
+            p.id,
+            p.ma_san_pham,
+            p.ten_san_pham,
+            p.danh_muc_id,
+            p.thuong_hieu_id,
+            p.mo_ta_ngan,
+            p.link_anh_dai_dien,
+            p.mongo_detail_id,
+            p.trang_thai,
+            p.luot_xem,
+            p.site_created,
+            p.gia_ban,
+            p.gia_niem_yet,
+            p.ngay_tao,
+            p.ngay_cap_nhat,
+            c.ten_danh_muc,
+            b.ten_thuong_hieu
+          FROM products p
+          INNER JOIN categories c ON p.danh_muc_id = c.id
+          INNER JOIN brands b ON p.thuong_hieu_id = b.id
+          WHERE p.danh_muc_id = @categoryId
+          ORDER BY p.ngay_tao DESC
+        `);
+
+      // Lấy variants cho các products này
+      const productIds = productsResult.recordset.map(p => p.id);
+      
+      if (productIds.length === 0) {
+        return [];
+      }
+
+      const variantsResult = await request.query(`
+        SELECT * FROM product_variants
+        WHERE san_pham_id IN (${productIds.map(id => `'${id}'`).join(',')})
+        ORDER BY ngay_tao DESC
+      `);
+
+      // Nhóm variants theo product
+      const variantsByProduct = {};
+      variantsResult.recordset.forEach(variant => {
+        const productId = variant.san_pham_id.toLowerCase();
+        if (!variantsByProduct[productId]) {
+          variantsByProduct[productId] = [];
+        }
+        variantsByProduct[productId].push(variant);
+      });
+
+      // Kết hợp
+      return productsResult.recordset.map(product => {
+        const productId = product.id.toLowerCase();
+        const variants = variantsByProduct[productId] || [];
+
+        let gia_ban_min = 0;
+        let gia_ban_max = 0;
+        let gia_niem_yet_min = 0;
+
+        if (variants.length > 0) {
+          gia_ban_min = Math.min(...variants.map(v => v.gia_ban));
+          gia_ban_max = Math.max(...variants.map(v => v.gia_ban));
+          gia_niem_yet_min = Math.min(...variants.map(v => v.gia_niem_yet));
+        }
+
+        return {
+          ...product,
+          variants: variants,
+          so_bien_the: variants.length,
+          gia_ban_min,
+          gia_ban_max,
+          gia_niem_yet_min,
+          giam_gia: gia_niem_yet_min && gia_ban_min ? gia_niem_yet_min - gia_ban_min : 0
+        };
+      });
+    } catch (error) {
+      console.error('SQL Product Error:', error);
+      throw error;
+    }
+  }
+
+  // Tạo product mới
+  static async create(productData) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('ma_san_pham', sql.NVarChar(100), productData.ma_san_pham)
+        .input('ten_san_pham', sql.NVarChar(255), productData.ten_san_pham)
+        .input('danh_muc_id', sql.UniqueIdentifier, productData.danh_muc_id)
+        .input('thuong_hieu_id', sql.UniqueIdentifier, productData.thuong_hieu_id)
+        .input('mo_ta_ngan', sql.NVarChar(500), productData.mo_ta_ngan || null)
+        .input('link_anh_dai_dien', sql.NVarChar(500), productData.link_anh_dai_dien || null)
+        .input('site_origin', sql.NVarChar(10), productData.site_origin || 'bac')
+        .input('trang_thai', sql.Bit, productData.trang_thai !== undefined ? productData.trang_thai : 1)
+        .query(`
+          INSERT INTO products (
+            ma_san_pham, ten_san_pham, danh_muc_id, thuong_hieu_id,
+            mo_ta_ngan, link_anh_dai_dien, site_origin, trang_thai
+          )
+          OUTPUT INSERTED.*
+          VALUES (
+            @ma_san_pham, @ten_san_pham, @danh_muc_id, @thuong_hieu_id,
+            @mo_ta_ngan, @link_anh_dai_dien, @site_origin, @trang_thai
+          )
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Product Create Error:', error);
+      throw error;
+    }
+  }
+
+  // Cập nhật product
+  static async update(productData, id) {
+    try {
+      console.log('🔍 Updating Product ID:', id);
+      console.log('📦 Product Data:', JSON.stringify(productData, null, 2));
+      
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      
+      const setClauses = [];
+      
+      // Các trường của bảng products mới
+      const validFields = [
+        'ma_san_pham', 'ten_san_pham', 'danh_muc_id', 'thuong_hieu_id',
+        'mo_ta_ngan', 'link_anh_dai_dien', 'mongo_detail_id',
+        'site_created', 'trang_thai', 'luot_xem', 'gia_ban', 'gia_niem_yet'
+      ];
+
+      validFields.forEach(field => {
+        if (productData[field] !== undefined && productData[field] !== null) {
+          setClauses.push(`${field} = @${field}`);
+          
+          if (field === 'danh_muc_id' || field === 'thuong_hieu_id') {
+            request.input(field, sql.UniqueIdentifier, productData[field]);
+          } else if (field === 'trang_thai') {
+            request.input(field, sql.Bit, productData[field]);
+          } else if (field === 'luot_xem') {
+            request.input(field, sql.Int, productData[field]);
+          } else if (field === 'gia_ban' || field === 'gia_niem_yet') {
+            request.input(field, sql.Decimal(15, 2), productData[field]);
+          } else {
+            request.input(field, sql.NVarChar(sql.MAX), productData[field]);
+          }
+        }
+      });
+      
+      if (setClauses.length === 0) {
+        throw new Error('No fields to update');
+      }
+      
+      setClauses.push('ngay_cap_nhat = GETDATE()');
+      
+      const sqlQuery = `
+        UPDATE products 
+        SET ${setClauses.join(', ')}
+        WHERE id = @id
+      `;
+      
+      console.log('📝 Update Query:', sqlQuery);
+      
+      await request.query(sqlQuery);
+      
+      // Trả về sản phẩm đã cập nhật
+      return await this.findById(id);
+      
+    } catch (error) {
+      console.error('❌ SQL Product Update Error:', error);
+      throw error;
+    }
+  }
+
+  // Xóa product (cascade delete variants)
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      
+      // Xóa variants trước
+      await request
+        .input('san_pham_id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM product_variants WHERE san_pham_id = @san_pham_id');
+      
+      // Xóa product
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM products WHERE id = @id');
+      
+      return result.rowsAffected[0] > 0;
+    } catch (error) {
+      console.error('SQL Product Delete Error:', error);
+      throw error;
+    }
+  }
+}
+
+// Model cho Product Variant trong SQL Server - MỚI
+class SQLProductVariantModel {
+  // Lấy tất cả variants của một product
+  static async findByProductId(productId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('san_pham_id', sql.UniqueIdentifier, productId)
+        .query(`
+          SELECT * FROM product_variants
+          WHERE san_pham_id = @san_pham_id
+          ORDER BY ngay_tao DESC
+        `);
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Product Variant Error:', error);
+      throw error;
+    }
+  }
+
+  // Lấy variant theo ID
   static async findById(id) {
     try {
       const request = new sql.Request();
       const result = await request
         .input('id', sql.UniqueIdentifier, id)
         .query(`
-          SELECT 
-            p.*, 
-            c.ten_danh_muc, 
-            b.ten_thuong_hieu,
-            (p.gia_niem_yet - p.gia_ban) as giam_gia
-          FROM products p
-          INNER JOIN categories c ON p.danh_muc_id = c.id
-          INNER JOIN brands b ON p.thuong_hieu_id = b.id
-          WHERE p.id = @id AND p.trang_thai = 1
+          SELECT * FROM product_variants
+          WHERE id = @id
         `);
       return result.recordset[0];
     } catch (error) {
-      console.error('SQL Product Error:', error);
+      console.error('SQL Product Variant Error:', error);
       throw error;
     }
   }
 
-  static async findByCategory(categoryId) {
+  // Tìm variant theo SKU
+  static async findBySKU(ma_sku) {
     try {
       const request = new sql.Request();
       const result = await request
-        .input('categoryId', sql.UniqueIdentifier, categoryId)
+        .input('ma_sku', sql.NVarChar(100), ma_sku)
         .query(`
-          SELECT 
-            p.*, 
-            c.ten_danh_muc, 
-            b.ten_thuong_hieu
-          FROM products p
-          INNER JOIN categories c ON p.danh_muc_id = c.id
-          INNER JOIN brands b ON p.thuong_hieu_id = b.id
-          WHERE p.danh_muc_id = @categoryId AND p.trang_thai = 1
-          ORDER BY p.ngay_tao DESC
+          SELECT pv.*, p.ten_san_pham
+          FROM product_variants pv
+          INNER JOIN products p ON pv.san_pham_id = p.id
+          WHERE pv.ma_sku = @ma_sku
         `);
-      return result.recordset;
+      return result.recordset[0];
     } catch (error) {
-      console.error('SQL Product Error:', error);
+      console.error('SQL Product Variant Error:', error);
       throw error;
     }
   }
 
-  static async create(productData) {
+  // Tạo variant mới
+  static async create(variantData) {
     try {
       const request = new sql.Request();
       const result = await request
-        .input('ma_sku', sql.NVarChar(100), productData.ma_sku)
-        .input('ten_san_pham', sql.NVarChar(255), productData.ten_san_pham)
-        .input('danh_muc_id', sql.UniqueIdentifier, productData.danh_muc_id)
-        .input('thuong_hieu_id', sql.UniqueIdentifier, productData.thuong_hieu_id)
-        .input('gia_niem_yet', sql.Decimal(15, 2), productData.gia_niem_yet)
-        .input('gia_ban', sql.Decimal(15, 2), productData.gia_ban)
-        .input('mongo_detail_id', sql.NVarChar(50), productData.mongo_detail_id)
-        .input('link_anh', sql.NVarChar(500), productData.link_anh)
+        .input('san_pham_id', sql.UniqueIdentifier, variantData.san_pham_id)
+        .input('ma_sku', sql.NVarChar(100), variantData.ma_sku)
+        .input('ten_hien_thi', sql.NVarChar(255), variantData.ten_hien_thi)
+        .input('gia_niem_yet', sql.Decimal(15, 2), variantData.gia_niem_yet)
+        .input('gia_ban', sql.Decimal(15, 2), variantData.gia_ban)
+        .input('so_luong_ton_kho', sql.Int, variantData.so_luong_ton_kho || 0)
+        .input('luot_ban', sql.Int, variantData.luot_ban || 0)
+        .input('anh_dai_dien', sql.NVarChar(500), variantData.anh_dai_dien || null)
+        .input('site_origin', sql.NVarChar(10), variantData.site_origin || 'bac')
+        .input('trang_thai', sql.Bit, variantData.trang_thai !== undefined ? variantData.trang_thai : 1)
         .query(`
-          INSERT INTO products (ma_sku, ten_san_pham, danh_muc_id, thuong_hieu_id, gia_niem_yet, gia_ban, mongo_detail_id, link_anh)
+          INSERT INTO product_variants (
+            san_pham_id, ma_sku, ten_hien_thi, gia_niem_yet, gia_ban,
+            so_luong_ton_kho, luot_ban, anh_dai_dien, site_origin, trang_thai
+          )
           OUTPUT INSERTED.*
-          VALUES (@ma_sku, @ten_san_pham, @danh_muc_id, @thuong_hieu_id, @gia_niem_yet, @gia_ban, @mongo_detail_id, @link_anh)
+          VALUES (
+            @san_pham_id, @ma_sku, @ten_hien_thi, @gia_niem_yet, @gia_ban,
+            @so_luong_ton_kho, @luot_ban, @anh_dai_dien, @site_origin, @trang_thai
+          )
         `);
-      return result.recordset[0];
+      
+      const createdVariant = result.recordset[0];
+      
+      // Tự động đồng bộ inventory cho variant vừa tạo
+      if (createdVariant && createdVariant.id && variantData.site_origin) {
+        try {
+          await Inventory.syncInventoryForVariant(
+            createdVariant.id,
+            variantData.site_origin,
+            variantData.so_luong_ton_kho || 0
+          );
+        } catch (invError) {
+          console.error('⚠️ Lỗi đồng bộ inventory:', invError);
+          // Không throw error - variant đã tạo thành công
+        }
+      }
+      
+      return createdVariant;
     } catch (error) {
-      console.error('SQL Product Error:', error);
+      console.error('SQL Product Variant Create Error:', error);
       throw error;
     }
   }
-  static async update(productData, id) {
+
+  // Cập nhật variant
+  static async update(variantData, id) {
     try {
-        console.log('🔍 Updating Product ID:', id);
-        console.log('📦 Product Data:', JSON.stringify(productData, null, 2));
-        const request = new sql.Request();
-        
-        // Thêm id vào parameters
-        request.input('id', sql.UniqueIdentifier, id);
-        
-        // Xây dựng SET clause đơn giản
-        const setClauses = [];
-        const params = {};
+      const request = new sql.Request();
+      request.input('id', sql.UniqueIdentifier, id);
+      
+      const setClauses = [];
+      
+      const validFields = [
+        'ma_sku', 'ten_hien_thi', 'gia_niem_yet', 'gia_ban',
+        'so_luong_ton_kho', 'luot_ban', 'anh_dai_dien',
+        'site_origin', 'trang_thai'
+      ];
+
+      validFields.forEach(field => {
+        if (variantData[field] !== undefined && variantData[field] !== null) {
+          setClauses.push(`${field} = @${field}`);
           
-        // Chỉ cần duyệt qua các field trong productData
-        Object.keys(productData).forEach(key => {
-            if (productData[key] !== undefined && productData[key] !== null) {
-                setClauses.push(`${key} = @${key}`);
-                
-                // Xử lý kiểu dữ liệu cơ bản
-                if (key === 'danh_muc_id' || key === 'thuong_hieu_id') {
-                    request.input(key, sql.UniqueIdentifier, productData[key]);
-                } else if (key.includes('gia')) {
-                    request.input(key, sql.Decimal(15, 2), productData[key]);
-                } else if (key === 'trang_thai' || key === 'so_luong_ton' || key === 'luot_xem' || key === 'so_luong_ban') {
-                    request.input(key, sql.Int, productData[key]);
-                } else if (key === 'san_pham_noi_bat') {
-                    request.input(key, sql.Bit, productData[key] ? 1 : 0);
-                } else {
-                    request.input(key, sql.NVarChar(sql.MAX), productData[key]);
-                }
-            }
-        });
-        
-        // Thêm ngày cập nhật
-        setClauses.push('ngay_cap_nhat = GETDATE()');
-        
-        const sqlQuery = `
-            UPDATE products 
-            SET ${setClauses.join(', ')}
-            WHERE id = @id
-        `;
-        
-        console.log('📝 Update Query:', sqlQuery);
-        
-        const result = await request.query(sqlQuery);
-        
-        // Trả về sản phẩm đã được cập nhật
-        return await this.findById(id);
-        
+          if (field === 'gia_niem_yet' || field === 'gia_ban') {
+            request.input(field, sql.Decimal(15, 2), variantData[field]);
+          } else if (field === 'so_luong_ton_kho' || field === 'luot_ban') {
+            request.input(field, sql.Int, variantData[field]);
+          } else if (field === 'trang_thai') {
+            request.input(field, sql.Bit, variantData[field]);
+          } else {
+            request.input(field, sql.NVarChar(sql.MAX), variantData[field]);
+          }
+        }
+      });
+      
+      if (setClauses.length === 0) {
+        throw new Error('No fields to update');
+      }
+      
+      setClauses.push('ngay_cap_nhat = GETDATE()');
+      
+      const sqlQuery = `
+        UPDATE product_variants 
+        SET ${setClauses.join(', ')}
+        OUTPUT INSERTED.*
+        WHERE id = @id
+      `;
+      
+      const updateResult = await request.query(sqlQuery);
+      const updatedVariant = updateResult.recordset[0];
+      
+      // Đồng bộ inventory nếu so_luong_ton_kho hoặc site_origin được update
+      if (updatedVariant && (variantData.so_luong_ton_kho !== undefined || variantData.site_origin)) {
+        try {
+          await Inventory.syncInventoryForVariant(
+            updatedVariant.id,
+            updatedVariant.site_origin,
+            updatedVariant.so_luong_ton_kho || 0
+          );
+        } catch (invError) {
+          console.error('⚠️ Lỗi đồng bộ inventory:', invError);
+          // Không throw error - variant đã update thành công
+        }
+      }
+      
+      return updatedVariant;
     } catch (error) {
-        console.error('❌ SQL Product Update Error:', error);
-        throw error;
+      console.error('SQL Product Variant Update Error:', error);
+      throw error;
+    }
+  }
+
+  // Xóa variant
+  static async delete(id) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('id', sql.UniqueIdentifier, id)
+        .query('DELETE FROM product_variants WHERE id = @id');
+      
+      return result.rowsAffected[0] > 0;
+    } catch (error) {
+      console.error('SQL Product Variant Delete Error:', error);
+      throw error;
+    }
+  }
+
+  // Lấy khoảng giá (min/max) của một product
+  static async getPriceRange(productId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('san_pham_id', sql.UniqueIdentifier, productId)
+        .query(`
+          SELECT 
+            MIN(gia_ban) as gia_ban_min,
+            MAX(gia_ban) as gia_ban_max,
+            MIN(gia_niem_yet) as gia_niem_yet_min,
+            MAX(gia_niem_yet) as gia_niem_yet_max,
+            SUM(so_luong_ban) as tong_so_luong_ban
+          FROM product_variants
+          WHERE san_pham_id = @san_pham_id AND trang_thai = 1
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Product Variant Price Range Error:', error);
+      throw error;
+    }
+  }
+
+  // Kiểm tra SKU có tồn tại không (để tránh duplicate)
+  static async checkSKUExists(ma_sku, excludeId = null) {
+    try {
+      const request = new sql.Request();
+      request.input('ma_sku', sql.NVarChar(100), ma_sku);
+      
+      let query = 'SELECT COUNT(*) as count FROM product_variants WHERE ma_sku = @ma_sku';
+      
+      if (excludeId) {
+        request.input('excludeId', sql.UniqueIdentifier, excludeId);
+        query += ' AND id != @excludeId';
+      }
+      
+      const result = await request.query(query);
+      return result.recordset[0].count > 0;
+    } catch (error) {
+      console.error('SQL Product Variant Check SKU Error:', error);
+      throw error;
     }
   }
 }
@@ -876,6 +1337,7 @@ class SQLFlashSaleModel {
       const query = `
         SELECT 
           fs.*,
+          (SELECT COUNT(*) FROM flash_sale_items WHERE flash_sale_id = fs.id) as variant_count,
           (SELECT COUNT(*) FROM flash_sale_items WHERE flash_sale_id = fs.id) as so_san_pham,
           (SELECT ISNULL(SUM(da_ban), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as tong_da_ban,
           (SELECT ISNULL(SUM(da_ban * gia_flash_sale), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as doanh_thu
@@ -900,6 +1362,7 @@ class SQLFlashSaleModel {
         .query(`
           SELECT 
             fs.*,
+            (SELECT COUNT(*) FROM flash_sale_items WHERE flash_sale_id = fs.id) as variant_count,
             (SELECT COUNT(*) FROM flash_sale_items WHERE flash_sale_id = fs.id) as so_san_pham,
             (SELECT ISNULL(SUM(da_ban), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as tong_da_ban,
             (SELECT ISNULL(SUM(da_ban * gia_flash_sale), 0) FROM flash_sale_items WHERE flash_sale_id = fs.id) as doanh_thu
@@ -921,6 +1384,7 @@ class SQLFlashSaleModel {
         .input('mo_ta', sql.NVarChar(500), flashSaleData.mo_ta || null)
         .input('ngay_bat_dau', sql.DateTime2, new Date(flashSaleData.ngay_bat_dau))
         .input('ngay_ket_thuc', sql.DateTime2, new Date(flashSaleData.ngay_ket_thuc))
+        .input('vung_id', sql.NVarChar(20), flashSaleData.vung_id || null)
         .input('trang_thai', sql.NVarChar(20), flashSaleData.trang_thai || 'cho');
       
       // Chỉ thêm nguoi_tao nếu có giá trị hợp lệ
@@ -929,12 +1393,12 @@ class SQLFlashSaleModel {
       }
       
       const query = flashSaleData.nguoi_tao
-        ? `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, trang_thai, nguoi_tao)
+        ? `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, vung_id, trang_thai, nguoi_tao)
            OUTPUT INSERTED.*
-           VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @trang_thai, @nguoi_tao)`
-        : `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, trang_thai)
+           VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @vung_id, @trang_thai, @nguoi_tao)`
+        : `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, vung_id, trang_thai)
            OUTPUT INSERTED.*
-           VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @trang_thai)`;
+           VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @vung_id, @trang_thai)`;
       
       const result = await request.query(query);
       return result.recordset[0];
@@ -970,6 +1434,11 @@ class SQLFlashSaleModel {
       if (updateData.ngay_ket_thuc !== undefined) {
         request.input('ngay_ket_thuc', sql.DateTime2, new Date(updateData.ngay_ket_thuc));
         updates.push('ngay_ket_thuc = @ngay_ket_thuc');
+      }
+      
+      if (updateData.vung_id !== undefined) {
+        request.input('vung_id', sql.NVarChar(20), updateData.vung_id);
+        updates.push('vung_id = @vung_id');
       }
       
       if (updateData.trang_thai !== undefined) {
@@ -1029,12 +1498,14 @@ class SQLFlashSaleItemModel {
           SELECT 
             id,
             flash_sale_id,
-            san_pham_id,
+            variant_id as san_pham_id,
             gia_goc,
             gia_flash_sale,
             so_luong_ton,
             da_ban,
-            gioi_han_mua
+            gioi_han_mua,
+            thu_tu,
+            trang_thai
           FROM flash_sale_items
           WHERE flash_sale_id = @flashSaleId
           ORDER BY id
@@ -1058,19 +1529,19 @@ class SQLFlashSaleItemModel {
             fs.ten_flash_sale,
             fs.ngay_bat_dau,
             fs.ngay_ket_thuc,
-            i.mau_sac,
-            i.dung_luong,
-            i.so_luong_kha_dung as ton_kho_variant
+            pv.ten_hien_thi as ten_variant,
+            pv.ma_sku,
+            pv.so_luong_ton_kho as ton_kho_variant
           FROM flash_sale_items fsi
           INNER JOIN flash_sales fs ON fsi.flash_sale_id = fs.id
-          INNER JOIN inventory i ON fsi.inventory_id = i.id
-          WHERE i.san_pham_id = @productId
+          INNER JOIN product_variants pv ON fsi.variant_id = pv.id
+          WHERE pv.san_pham_id = @productId
             AND fs.trang_thai = 'dang_dien_ra'
             AND fs.ngay_bat_dau <= GETDATE()
             AND fs.ngay_ket_thuc > GETDATE()
             AND fsi.trang_thai = 'dang_ban'
             AND (fsi.so_luong_ton - fsi.da_ban) > 0
-          ORDER BY fs.ngay_bat_dau DESC, i.mau_sac, i.dung_luong
+          ORDER BY fs.ngay_bat_dau DESC, pv.ten_hien_thi
         `);
       return result.recordset; // Trả về array thay vì 1 item
     } catch (error) {
@@ -1079,12 +1550,12 @@ class SQLFlashSaleItemModel {
     }
   }
 
-  // Tìm flash sale item theo inventory_id cụ thể
-  static async findActiveByInventoryId(inventoryId) {
+  // Tìm flash sale item theo variant_id cụ thể
+  static async findActiveByVariantId(variantId) {
     try {
       const request = new sql.Request();
       const result = await request
-        .input('inventoryId', sql.UniqueIdentifier, inventoryId)
+        .input('variantId', sql.UniqueIdentifier, variantId)
         .query(`
           SELECT TOP 1
             fsi.*,
@@ -1093,7 +1564,7 @@ class SQLFlashSaleItemModel {
             fs.ngay_ket_thuc
           FROM flash_sale_items fsi
           INNER JOIN flash_sales fs ON fsi.flash_sale_id = fs.id
-          WHERE fsi.inventory_id = @inventoryId
+          WHERE fsi.variant_id = @variantId
             AND fs.trang_thai = 'dang_dien_ra'
             AND fs.ngay_bat_dau <= GETDATE()
             AND fs.ngay_ket_thuc > GETDATE()
@@ -1103,7 +1574,7 @@ class SQLFlashSaleItemModel {
         `);
       return result.recordset[0] || null;
     } catch (error) {
-      console.error('SQL Flash Sale Item findActiveByInventoryId Error:', error);
+      console.error('SQL Flash Sale Item findActiveByVariantId Error:', error);
       throw error;
     }
   }
@@ -1125,33 +1596,29 @@ class SQLFlashSaleItemModel {
     try {
       const request = new sql.Request();
       
-      // Lấy san_pham_id từ inventory_id
-      const inventoryResult = await request
-        .input('inventory_id', sql.UniqueIdentifier, itemData.inventory_id)
-        .query('SELECT san_pham_id FROM inventory WHERE id = @inventory_id');
-      
-      if (!inventoryResult.recordset || inventoryResult.recordset.length === 0) {
-        throw new Error('Không tìm thấy inventory');
+      // Chỉ hỗ trợ variant_id (bỏ inventory_id)
+      if (!itemData.variant_id) {
+        throw new Error('Phải cung cấp variant_id');
       }
       
-      const sanPhamId = inventoryResult.recordset[0].san_pham_id;
+      const variantId = itemData.variant_id;
       
       const request2 = new sql.Request();
       const result = await request2
         .input('flash_sale_id', sql.UniqueIdentifier, itemData.flash_sale_id)
-        .input('san_pham_id', sql.UniqueIdentifier, sanPhamId)
-        .input('inventory_id', sql.UniqueIdentifier, itemData.inventory_id)
+        .input('variant_id', sql.UniqueIdentifier, variantId)
         .input('gia_goc', sql.Decimal(15, 2), itemData.gia_goc)
         .input('gia_flash_sale', sql.Decimal(15, 2), itemData.gia_flash_sale)
-        .input('so_luong_ton', sql.Int, itemData.so_luong_ton)
+        .input('so_luong_ton', sql.Int, itemData.so_luong_ton || 0)
+        .input('da_ban', sql.Int, itemData.da_ban || 0)
         .input('gioi_han_mua', sql.Int, itemData.gioi_han_mua || null)
         .input('thu_tu', sql.Int, itemData.thu_tu || 0)
         .input('trang_thai', sql.NVarChar(20), itemData.trang_thai || 'dang_ban')
         .query(`
           INSERT INTO flash_sale_items 
-          (flash_sale_id, san_pham_id, inventory_id, gia_goc, gia_flash_sale, so_luong_ton, gioi_han_mua, thu_tu, trang_thai)
+          (flash_sale_id, variant_id, gia_goc, gia_flash_sale, so_luong_ton, da_ban, gioi_han_mua, thu_tu, trang_thai)
           OUTPUT INSERTED.*
-          VALUES (@flash_sale_id, @san_pham_id, @inventory_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @gioi_han_mua, @thu_tu, @trang_thai)
+          VALUES (@flash_sale_id, @variant_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @da_ban, @gioi_han_mua, @thu_tu, @trang_thai)
         `);
       return result.recordset[0];
     } catch (error) {
@@ -1223,6 +1690,20 @@ class SQLFlashSaleItemModel {
       return { success: true };
     } catch (error) {
       console.error('SQL Flash Sale Item Delete Error:', error);
+      throw error;
+    }
+  }
+
+  // Delete all items for a flash sale
+  static async deleteByFlashSaleId(flashSaleId) {
+    try {
+      const request = new sql.Request();
+      await request
+        .input('flashSaleId', sql.UniqueIdentifier, flashSaleId)
+        .query('DELETE FROM flash_sale_items WHERE flash_sale_id = @flashSaleId');
+      return { success: true };
+    } catch (error) {
+      console.error('SQL Flash Sale Item deleteByFlashSaleId Error:', error);
       throw error;
     }
   }
@@ -1929,14 +2410,17 @@ class SQLInventoryModel {
       const result = await request.query(`
         SELECT 
           i.*,
+          pv.ma_sku,
+          pv.ten_hien_thi as ten_variant,
+          pv.gia_ban,
+          pv.gia_niem_yet,
           p.ten_san_pham,
-          p.ma_sku,
-          p.gia_ban,
-          p.gia_niem_yet,
+          p.link_anh_dai_dien,
           w.ten_kho,
           w.dia_chi_chi_tiet as dia_chi_kho
         FROM inventory i
-        LEFT JOIN products p ON i.san_pham_id = p.id
+        LEFT JOIN product_variants pv ON i.variant_id = pv.id
+        LEFT JOIN products p ON pv.san_pham_id = p.id
         LEFT JOIN warehouses w ON i.kho_id = w.id
         ORDER BY i.ngay_tao DESC
       `);
@@ -1956,12 +2440,17 @@ class SQLInventoryModel {
         .query(`
           SELECT 
             i.*,
+            pv.ma_sku,
+            pv.ten_hien_thi as ten_variant,
+            pv.gia_ban,
+            pv.gia_niem_yet,
             p.ten_san_pham,
-            p.ma_sku,
+            p.link_anh_dai_dien,
             w.ten_kho,
             w.dia_chi_chi_tiet as dia_chi_kho
           FROM inventory i
-          LEFT JOIN products p ON i.san_pham_id = p.id
+          LEFT JOIN product_variants pv ON i.variant_id = pv.id
+          LEFT JOIN products p ON pv.san_pham_id = p.id
           LEFT JOIN warehouses w ON i.kho_id = w.id
           WHERE i.id = @id
         `);
@@ -1985,12 +2474,81 @@ class SQLInventoryModel {
             w.dia_chi_chi_tiet as dia_chi_kho
           FROM inventory i
           LEFT JOIN warehouses w ON i.kho_id = w.id
-          WHERE i.san_pham_id = @product_id
+          LEFT JOIN product_variants pv ON i.variant_id = pv.id
+          WHERE pv.san_pham_id = @product_id
         `);
       
       return result.recordset;
     } catch (error) {
       console.error('SQL Inventory findByProduct Error:', error);
+      throw error;
+    }
+  }
+
+  static async findByVariant(variantId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('variant_id', sql.UniqueIdentifier, variantId)
+        .query(`
+          SELECT 
+            i.*,
+            w.ten_kho,
+            w.vung_id,
+            w.dia_chi_chi_tiet as dia_chi_kho
+          FROM inventory i
+          LEFT JOIN warehouses w ON i.kho_id = w.id
+          WHERE i.variant_id = @variant_id
+        `);
+      
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Inventory findByVariant Error:', error);
+      throw error;
+    }
+  }
+
+  // Tìm inventory theo bien_the_san_pham_id (trả về 1 record đầu tiên)
+  static async findByVariantId(variantId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('variant_id', sql.UniqueIdentifier, variantId)
+        .query(`
+          SELECT TOP 1
+            i.*,
+            w.ten_kho,
+            w.vung_id,
+            w.dia_chi_chi_tiet as dia_chi_kho
+          FROM inventory i
+          LEFT JOIN warehouses w ON i.kho_id = w.id
+          WHERE i.variant_id = @variant_id
+          ORDER BY i.ngay_cap_nhat DESC
+        `);
+      
+      return result.recordset[0];
+    } catch (error) {
+      console.error('SQL Inventory findByVariantId Error:', error);
+      throw error;
+    }
+  }
+
+  // Tính tổng tồn kho của 1 variant (tổng tất cả kho)
+  static async getTotalStockByVariant(variantId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('variant_id', sql.UniqueIdentifier, variantId)
+        .query(`
+          SELECT 
+            ISNULL(SUM(so_luong_kha_dung), 0) as tong_ton_kho
+          FROM inventory
+          WHERE variant_id = @variant_id
+        `);
+      
+      return result.recordset[0]?.tong_ton_kho || 0;
+    } catch (error) {
+      console.error('SQL Inventory getTotalStockByVariant Error:', error);
       throw error;
     }
   }
@@ -2002,14 +2560,93 @@ class SQLInventoryModel {
         .input('product_id', sql.UniqueIdentifier, productId)
         .query(`
           SELECT 
-            ISNULL(SUM(so_luong_kha_dung), 0) as tong_ton_kho
-          FROM inventory
-          WHERE san_pham_id = @product_id
+            ISNULL(SUM(i.so_luong_kha_dung), 0) as tong_ton_kho
+          FROM inventory i
+          INNER JOIN product_variants pv ON i.variant_id = pv.id
+          WHERE pv.san_pham_id = @product_id
         `);
       
       return result.recordset[0]?.tong_ton_kho || 0;
     } catch (error) {
       console.error('SQL Inventory getTotalStockByProduct Error:', error);
+      throw error;
+    }
+  }
+
+  // Đồng bộ inventory khi tạo/update variant
+  // Tự động tạo/update inventory record cho kho của vùng đó
+  static async syncInventoryForVariant(variantId, siteOrigin, stockQuantity) {
+    try {
+      // 1. Tìm kho của vùng
+      const warehouseRequest = new sql.Request();
+      const warehouseResult = await warehouseRequest
+        .input('vung_id', sql.NVarChar(10), siteOrigin)
+        .query(`
+          SELECT id FROM warehouses WHERE vung_id = @vung_id AND trang_thai = 1
+        `);
+      
+      if (!warehouseResult.recordset || warehouseResult.recordset.length === 0) {
+        console.warn(`⚠️ Không tìm thấy kho cho vùng ${siteOrigin}`);
+        return null;
+      }
+      
+      const warehouseId = warehouseResult.recordset[0].id;
+      
+      // 2. Kiểm tra inventory đã tồn tại chưa
+      const checkRequest = new sql.Request();
+      const checkResult = await checkRequest
+        .input('variant_id', sql.UniqueIdentifier, variantId)
+        .input('kho_id', sql.UniqueIdentifier, warehouseId)
+        .query(`
+          SELECT id FROM inventory WHERE variant_id = @variant_id AND kho_id = @kho_id
+        `);
+      
+      if (checkResult.recordset && checkResult.recordset.length > 0) {
+        // 3a. Đã tồn tại → UPDATE
+        const inventoryId = checkResult.recordset[0].id;
+        const updateRequest = new sql.Request();
+        await updateRequest
+          .input('id', sql.UniqueIdentifier, inventoryId)
+          .input('so_luong_kha_dung', sql.Int, stockQuantity)
+          .query(`
+            UPDATE inventory
+            SET so_luong_kha_dung = @so_luong_kha_dung,
+                lan_nhap_hang_cuoi = GETDATE(),
+                ngay_cap_nhat = GETDATE()
+            WHERE id = @id
+          `);
+        
+        console.log(`✅ Updated inventory ${inventoryId} for variant ${variantId} in warehouse ${warehouseId}`);
+        return { action: 'updated', inventoryId };
+      } else {
+        // 3b. Chưa tồn tại → CREATE
+        const createRequest = new sql.Request();
+        const createResult = await createRequest
+          .input('variant_id', sql.UniqueIdentifier, variantId)
+          .input('kho_id', sql.UniqueIdentifier, warehouseId)
+          .input('so_luong_kha_dung', sql.Int, stockQuantity)
+          .input('so_luong_da_dat', sql.Int, 0)
+          .input('muc_ton_kho_toi_thieu', sql.Int, 10)
+          .input('so_luong_nhap_lai', sql.Int, 50)
+          .input('lan_nhap_hang_cuoi', sql.DateTime2, new Date())
+          .query(`
+            INSERT INTO inventory (
+              variant_id, kho_id, so_luong_kha_dung, so_luong_da_dat,
+              muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi
+            )
+            OUTPUT INSERTED.id
+            VALUES (
+              @variant_id, @kho_id, @so_luong_kha_dung, @so_luong_da_dat,
+              @muc_ton_kho_toi_thieu, @so_luong_nhap_lai, @lan_nhap_hang_cuoi
+            )
+          `);
+        
+        const inventoryId = createResult.recordset[0].id;
+        console.log(`✅ Created inventory ${inventoryId} for variant ${variantId} in warehouse ${warehouseId}`);
+        return { action: 'created', inventoryId };
+      }
+    } catch (error) {
+      console.error('SQL Inventory syncInventoryForVariant Error:', error);
       throw error;
     }
   }
@@ -2048,10 +2685,12 @@ class SQLInventoryModel {
         .query(`
           SELECT 
             i.*,
-            p.ten_san_pham,
-            p.ma_sku
+            pv.ten_hien_thi,
+            pv.ma_sku,
+            p.ten_san_pham
           FROM inventory i
-          LEFT JOIN products p ON i.san_pham_id = p.id
+          LEFT JOIN product_variants pv ON i.variant_id = pv.id
+          LEFT JOIN products p ON pv.san_pham_id = p.id
           WHERE i.kho_id = @warehouse_id
         `);
       
@@ -2087,33 +2726,33 @@ class SQLInventoryModel {
       
       const result = await request
         .input('id', sql.UniqueIdentifier, id)
-        .input('san_pham_id', sql.UniqueIdentifier, inventoryData.san_pham_id)
+        .input('variant_id', sql.UniqueIdentifier, inventoryData.variant_id)
         .input('kho_id', sql.UniqueIdentifier, inventoryData.kho_id)
         .input('so_luong_kha_dung', sql.Int, inventoryData.so_luong_kha_dung || 0)
         .input('so_luong_da_dat', sql.Int, inventoryData.so_luong_da_dat || 0)
-        .input('muc_ton_kho_toi_thieu', sql.Int, inventoryData.muc_ton_kho_toi_thieu || 0)
-        .input('so_luong_nhap_lai', sql.Int, inventoryData.so_luong_nhap_lai || 0)
+        .input('muc_ton_kho_toi_thieu', sql.Int, inventoryData.muc_ton_kho_toi_thieu || 10)
+        .input('so_luong_nhap_lai', sql.Int, inventoryData.so_luong_nhap_lai || 50)
         .input('lan_nhap_hang_cuoi', sql.DateTime2, inventoryData.lan_nhap_hang_cuoi || new Date())
         .input('ngay_tao', sql.DateTime2, new Date())
         .input('ngay_cap_nhat', sql.DateTime2, new Date())
         .query(`
           INSERT INTO inventory (
-            id, san_pham_id, kho_id, so_luong_kha_dung, so_luong_da_dat,
+            id, variant_id, kho_id, so_luong_kha_dung, so_luong_da_dat,
             muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi,
             ngay_tao, ngay_cap_nhat
           )
           VALUES (
-            @id, @san_pham_id, @kho_id, @so_luong_kha_dung, @so_luong_da_dat,
+            @id, @variant_id, @kho_id, @so_luong_kha_dung, @so_luong_da_dat,
             @muc_ton_kho_toi_thieu, @so_luong_nhap_lai, @lan_nhap_hang_cuoi,
             @ngay_tao, @ngay_cap_nhat
           );
           
           SELECT 
             i.*,
-            p.ten_san_pham,
+            pv.ten_hien_thi,
             w.ten_kho
           FROM inventory i
-          LEFT JOIN products p ON i.san_pham_id = p.id
+          LEFT JOIN product_variants pv ON i.variant_id = pv.id
           LEFT JOIN warehouses w ON i.kho_id = w.id
           WHERE i.id = @id;
         `);
@@ -2131,9 +2770,9 @@ class SQLInventoryModel {
       
       let updateFields = [];
       
-      if (inventoryData.san_pham_id !== undefined) {
-        request.input('san_pham_id', sql.UniqueIdentifier, inventoryData.san_pham_id);
-        updateFields.push('san_pham_id = @san_pham_id');
+      if (inventoryData.variant_id !== undefined) {
+        request.input('variant_id', sql.UniqueIdentifier, inventoryData.variant_id);
+        updateFields.push('variant_id = @variant_id');
       }
       
       if (inventoryData.kho_id !== undefined) {
@@ -2177,10 +2816,10 @@ class SQLInventoryModel {
         
         SELECT 
           i.*,
-          p.ten_san_pham,
+          pv.ten_hien_thi,
           w.ten_kho
         FROM inventory i
-        LEFT JOIN products p ON i.san_pham_id = p.id
+        LEFT JOIN product_variants pv ON i.variant_id = pv.id
         LEFT JOIN warehouses w ON i.kho_id = w.id
         WHERE i.id = @id;
       `);
@@ -2220,11 +2859,20 @@ class SQLWarehouseModel {
       const result = await request.query(`
         SELECT 
           w.*,
+          ward.ten_phuong_xa,
+          ward.tinh_thanh_id,
+          p.ten_tinh,
+          p.vung_id as province_vung_id,
+          r.ten_vung,
           COUNT(i.id) as so_luong_san_pham
         FROM warehouses w
         LEFT JOIN inventory i ON w.id = i.kho_id
+        LEFT JOIN wards ward ON w.phuong_xa_id = ward.id
+        LEFT JOIN provinces p ON ward.tinh_thanh_id = p.id
+        LEFT JOIN regions r ON p.vung_id = r.ma_vung
         GROUP BY w.id, w.ten_kho, w.vung_id, w.phuong_xa_id, w.dia_chi_chi_tiet, 
-                 w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat
+                 w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat,
+                 ward.ten_phuong_xa, ward.tinh_thanh_id, p.ten_tinh, p.vung_id, r.ten_vung
         ORDER BY w.ngay_tao DESC
       `);
       
@@ -2243,17 +2891,44 @@ class SQLWarehouseModel {
         .query(`
           SELECT 
             w.*,
+            ward.ten_phuong_xa,
+            ward.tinh_thanh_id,
+            p.ten_tinh,
+            p.vung_id as province_vung_id,
+            r.ten_vung,
             COUNT(i.id) as so_luong_san_pham
           FROM warehouses w
           LEFT JOIN inventory i ON w.id = i.kho_id
+          LEFT JOIN wards ward ON w.phuong_xa_id = ward.id
+          LEFT JOIN provinces p ON ward.tinh_thanh_id = p.id
+          LEFT JOIN regions r ON p.vung_id = r.ma_vung
           WHERE w.id = @id
           GROUP BY w.id, w.ten_kho, w.vung_id, w.phuong_xa_id, w.dia_chi_chi_tiet, 
-                   w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat
+                   w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat,
+                   ward.ten_phuong_xa, ward.tinh_thanh_id, p.ten_tinh, p.vung_id, r.ten_vung
         `);
       
       return result.recordset[0];
     } catch (error) {
       console.error('SQL Warehouse findById Error:', error);
+      throw error;
+    }
+  }
+
+  static async findByRegion(regionId) {
+    try {
+      const request = new sql.Request();
+      const result = await request
+        .input('vung_id', sql.NVarChar(10), regionId)
+        .query(`
+          SELECT * FROM warehouses 
+          WHERE vung_id = @vung_id AND trang_thai = 1
+          ORDER BY ngay_tao ASC
+        `);
+      
+      return result.recordset;
+    } catch (error) {
+      console.error('SQL Warehouse findByRegion Error:', error);
       throw error;
     }
   }
@@ -2377,6 +3052,7 @@ export default {
   SQLBrandModel,
   SQLCategoryModel,
   SQLProductModel,
+  SQLProductVariantModel,
   SQLFlashSaleModel,
   SQLFlashSaleItemModel,
   SQLRegionModel,
@@ -2398,6 +3074,7 @@ export default {
     Brand: SQLBrandModel,
     Category: SQLCategoryModel,
     Product: SQLProductModel,
+    ProductVariant: SQLProductVariantModel,
     FlashSale: SQLFlashSaleModel,
     FlashSaleItem: SQLFlashSaleItemModel,
     Region: SQLRegionModel,

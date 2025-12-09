@@ -83,6 +83,12 @@
                     <option value="1">🟢 Đang bán</option>
                     <option value="0">🔴 Ngừng bán</option>
                 </select>
+                <select class="filter-select" id="regionFilter">
+                    <option value="">🌍 Tất cả vùng</option>
+                    {{#each regions}}
+                    <option value="{{this.ma_vung}}">📍 {{this.ten_vung}}</option>
+                    {{/each}}
+                </select>
                 <select class="filter-select" id="categoryFilter">
                     <option value="">Tất cả danh mục</option>
                     {{#each categories}}
@@ -572,10 +578,10 @@
                             </td>
                             <td class="col-price">
                                 <div class="price-info">
-                                    <div class="current-price">{{formatCurrency this.gia_ban}}</div>
                                     {{#if this.gia_niem_yet}}
                                     <div class="original-price">{{formatCurrency this.gia_niem_yet}}</div>
                                     {{/if}}
+                                    <div class="current-price">{{formatCurrency this.gia_ban}}</div>
                                 </div>
                             </td>
                             <td class="col-category">
@@ -598,18 +604,17 @@
                             </td> --}}
                             <td class="col-actions">
                                 <div class="action-buttons">
-                                    <button class="btn-action btn-edit" data-id="{{this.id}}" title="Chỉnh sửa">
+                                    <button class="btn btn-sm btn-primary btn-action-modern btn-edit" data-id="{{this.id}}" title="Chỉnh sửa sản phẩm">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="btn-action btn-toggle-status" data-id="{{this.id}}"
+                                    <button class="btn btn-sm btn-warning btn-action-modern btn-toggle-status" data-id="{{this.id}}"
                                         data-status="{{this.trang_thai}}" data-name="{{this.ten_san_pham}}"
-                                        title="Chuyển trạng thái">
-                                        <i
-                                            class="fas {{#if (eq this.trang_thai 1)}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+                                        title="{{#if (eq this.trang_thai 1)}}Ngừng bán sản phẩm{{else}}Mở bán sản phẩm{{/if}}">
+                                        <i class="fas {{#if (eq this.trang_thai 1)}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
                                     </button>
-                                    <button class="btn-action btn-delete-product" data-id="{{this.id}}"
-                                        data-name="{{this.ten_san_pham}}" title="Xóa">
-                                        <i class="fas fa-trash"></i>
+                                    <button class="btn btn-sm btn-danger btn-action-modern btn-delete-product" data-id="{{this.id}}"
+                                        data-name="{{this.ten_san_pham}}" title="Xóa sản phẩm">
+                                        <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
                             </td>
@@ -708,32 +713,39 @@
                                 </div>
                             </div>
 
-                            <!-- Pricing -->
+                            <!-- Site Origin & Status -->
                             <div class="form-section">
                                 <h4 class="section-title">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                    Thông tin giá
+                                    <i class="fas fa-cog"></i>
+                                    Thông tin hệ thống
                                 </h4>
                                 <div class="form-grid-2">
                                     <div class="form-group">
-                                        <label for="productPrice" class="form-label">Giá bán *</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="productPrice" required
-                                                placeholder="0" min="0">
-                                            <span class="input-group-text">VNĐ</span>
-                                        </div>
+                                        <label for="productSiteOrigin" class="form-label">
+                                            <i class="fas fa-server"></i>
+                                            Khu vực *
+                                        </label>
+                                        <select class="form-select" id="productSiteOrigin" required>
+                                            <option value="bac">🌍 Miền Bắc</option>
+                                            <option value="trung">🌍 Miền Trung</option>
+                                            <option value="nam">🌍 Miền Nam</option>
+                                        </select>
+                                        <div class="form-text">Khu vực lưu trữ dữ liệu sản phẩm</div>
                                     </div>
                                     <div class="form-group">
-                                        <label for="productOriginalPrice" class="form-label">Giá niêm yết</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" id="productOriginalPrice"
-                                                placeholder="0" min="0">
-                                            <span class="input-group-text">VNĐ</span>
-                                        </div>
+                                        <label for="productStatus" class="form-label">
+                                            <i class="fas fa-toggle-on"></i>
+                                            Trạng thái
+                                        </label>
+                                        <select class="form-select" id="productStatus">
+                                            <option value="1">🟢 Đang bán</option>
+                                            <option value="0">🔴 Ngừng bán</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
 
+                            <!-- Pricing - CHỈ DÙNG CHO VARIANT MẶC ĐỊNH -->
                             <!-- Technical Specifications -->
                             <div class="form-section">
                                 <h4 class="section-title">
@@ -806,13 +818,16 @@
                                             <table class="variant-combinations-table">
                                                 <thead>
                                                     <tr>
-                                                        <th style="width: 5%">#</th>
-                                                        <th style="width: 25%">Biến thể</th>
-                                                        <th style="width: 18%">SKU</th>
-                                                        <th style="width: 20%">Giá bán (₫)</th>
-                                                        <th style="width: 15%">Tồn kho</th>
-                                                        <th style="width: 12%">Trạng thái</th>
-                                                        <th style="width: 5%">Xóa</th>
+                                                        <th style="width: 4%">#</th>
+                                                        <th style="width: 16%">Biến thể</th>
+                                                        <th style="width: 10%">SKU</th>
+                                                        <th style="width: 11%">Giá niêm yết (₫)</th>
+                                                        <th style="width: 11%">Giá bán (₫)</th>
+                                                        <th style="width: 8%">Tồn kho</th>
+                                                        <th style="width: 8%">Vùng</th>
+                                                        <th style="width: 15%">Ảnh đại diện</th>
+                                                        <th style="width: 8%">Trạng thái</th>
+                                                        <th style="width: 4%">Xóa</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="variantCombinationsBody">
@@ -972,13 +987,6 @@
                                 </h4>
                                 <div class="form-grid-2">
                                     <div class="form-group">
-                                        <label for="productStatus" class="form-label">Trạng thái *</label>
-                                        <select class="form-select" id="productStatus" required>
-                                            <option value="1">🟢 Đang bán</option>
-                                            <option value="0">🔴 Ngừng bán</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
                                         <label class="form-label">Tính năng</label>
                                         <div class="checkbox-group">
                                             <label class="checkbox-label">
@@ -1133,9 +1141,10 @@
             }
         }
 
+        // ========== PRODUCT APIs (Bảng products) ==========
         static async createProduct(productData) {
             try {
-                const response = await fetch('/api/sanpham', {
+                const response = await fetch('/api/products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(productData)
@@ -1155,12 +1164,11 @@
 
         static async updateProduct(id, productData) {
             try {
-
                 console.log('🔍 DEBUG UPDATE PRODUCT:');
                 console.log('📤 ID:', id, 'Type:', typeof id);
                 console.log('📦 Data:', JSON.stringify(productData, null, 2));
 
-                const response = await fetch(`/api/sanpham/${id}`, {
+                const response = await fetch(`/api/products/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(productData)
@@ -1180,13 +1188,126 @@
 
         static async deleteProduct(id) {
             try {
-                const response = await fetch(`/api/sanpham/${id}`, {
+                const response = await fetch(`/api/products/${id}`, {
                     method: 'DELETE'
                 });
 
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(errorText || 'Lỗi khi xóa sản phẩm');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // ========== VARIANT APIs (Bảng product_variants) ==========
+        static async createVariant(productId, variantData) {
+            try {
+                const response = await fetch(`/api/products/${productId}/variants`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(variantData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi thêm biến thể');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        static async updateVariant(variantId, variantData) {
+            try {
+                const response = await fetch(`/api/variants/${variantId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(variantData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi cập nhật biến thể');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        static async deleteVariant(variantId) {
+            try {
+                const response = await fetch(`/api/variants/${variantId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi xóa biến thể');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        static async upsertInventory(inventoryData) {
+            try {
+                const response = await fetch('/api/inventory/upsert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(inventoryData)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi cập nhật inventory');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        static async deleteAllProductVariants(productId) {
+            try {
+                const response = await fetch(`/api/products/${productId}/variants`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi xóa tất cả biến thể');
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        static async getProductVariants(productId) {
+            try {
+                const response = await fetch(`/api/products/${productId}/variants`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || 'Lỗi khi lấy danh sách biến thể');
                 }
 
                 return await response.json();
@@ -1277,19 +1398,45 @@
                 });
 
                 const requestBody = {
-                    sql_product_id: sql_product_id,
-                    thong_so_ky_thuat: specsData,
-                    hinh_anh: hinh_anh || [],
-                    videos: videos || [],
-                    variants: variants || [],
-                    video_links: video_links || [],
-                    thong_tin_khac: thong_tin_khac || {},
-                    link_avatar: link_avatar,
-                    mo_ta_chi_tiet: mo_ta_chi_tiet,
-                    trang_thai: trang_thai,
-                    san_pham_noi_bat: san_pham_noi_bat,
-                    slug: slug
+                    sql_product_id: sql_product_id
                 };
+
+                // Chỉ thêm các field có dữ liệu
+                if (specsData && Object.keys(specsData).length > 0) {
+                    requestBody.thong_so_ky_thuat = specsData;
+                }
+                if (hinh_anh && hinh_anh.length > 0) {
+                    requestBody.hinh_anh = hinh_anh;
+                }
+                if (videos && videos.length > 0) {
+                    requestBody.videos = videos;
+                }
+                if (variants && typeof variants === 'object') {
+                    // Gửi variants object chứa cả variant_options và variant_combinations
+                    requestBody.variants = variants;
+                    console.log('📊 Sending variants:', variants);
+                }
+                if (video_links && video_links.length > 0) {
+                    requestBody.video_links = video_links;
+                }
+                if (thong_tin_khac && Object.keys(thong_tin_khac).length > 0) {
+                    requestBody.thong_tin_khac = thong_tin_khac;
+                }
+                if (link_avatar) {
+                    requestBody.link_avatar = link_avatar;
+                }
+                if (mo_ta_chi_tiet && mo_ta_chi_tiet.trim()) {
+                    requestBody.mo_ta_chi_tiet = mo_ta_chi_tiet;
+                }
+                if (slug) {
+                    requestBody.slug = slug;
+                }
+                if (trang_thai !== undefined && trang_thai !== null) {
+                    requestBody.trang_thai = trang_thai;
+                }
+                if (san_pham_noi_bat !== undefined && san_pham_noi_bat !== null) {
+                    requestBody.san_pham_noi_bat = san_pham_noi_bat;
+                }
 
                 console.log('🚀 Sending MongoDB create request:', requestBody);
 
@@ -1328,7 +1475,43 @@
         static async updateProductMongoDetail(mongoId, updateData) {
             try {
                 console.log('🔧 API: Updating MongoDB document with ID:', mongoId);
-                console.log('📤 Update data being sent:', JSON.stringify(updateData, null, 2));
+                console.log('📤 Original update data:', JSON.stringify(updateData, null, 2));
+
+                // Lọc bỏ các field rỗng/không có dữ liệu
+                const filteredData = {};
+                
+                for (const [key, value] of Object.entries(updateData)) {
+                    // Bỏ qua nếu giá trị là undefined hoặc null
+                    if (value === undefined || value === null) {
+                        continue;
+                    }
+                    
+                    // Bỏ qua nếu là string rỗng
+                    if (typeof value === 'string' && value.trim() === '') {
+                        continue;
+                    }
+                    
+                    // Bỏ qua nếu là array rỗng
+                    if (Array.isArray(value) && value.length === 0) {
+                        continue;
+                    }
+                    
+                    // Bỏ qua nếu là object rỗng (trừ sql_product_id)
+                    if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
+                        continue;
+                    }
+                    
+                    // Giữ lại field có dữ liệu
+                    filteredData[key] = value;
+                }
+                
+                console.log('📤 Filtered update data (only fields with data):', JSON.stringify(filteredData, null, 2));
+                
+                // Nếu không có dữ liệu gì để cập nhật, bỏ qua
+                if (Object.keys(filteredData).length === 0) {
+                    console.log('⚠️ No data to update, skipping MongoDB update');
+                    return { success: true, skipped: true, message: 'No data to update' };
+                }
 
                 const response = await fetch(`/api/mongo/sanpham/${mongoId}`, {
                     method: 'PUT',
@@ -1336,7 +1519,7 @@
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify(updateData)
+                    body: JSON.stringify(filteredData)
                 });
 
                 console.log('📨 Response status:', response.status);
@@ -1426,6 +1609,17 @@
                 this.showLoading(true);
                 this.products = await ProductAPIService.getProducts();
                 
+                // Debug: Log trạng thái của 3 sản phẩm đầu
+                console.log('📦 Loaded products sample (trang_thai check):');
+                this.products.slice(0, 3).forEach(p => {
+                    console.log(`  - ${p.ten_san_pham}:`, {
+                        id: p.id,
+                        trang_thai: p.trang_thai,
+                        type: typeof p.trang_thai,
+                        is_truthy: !!p.trang_thai
+                    });
+                });
+                
                 this.showLoading(false);
                 this.renderProductsTable();  // Render table trước
                 this.updateStats();           // Sau đó update stats từ this.products
@@ -1468,27 +1662,88 @@
             paginatedProducts.forEach(product => {
                 const row = document.createElement('tr');
                 row.setAttribute('data-id', product.id);
-                row.setAttribute('data-status', product.trang_thai ? '1' : '0');
+                
+                // Normalize trang_thai: convert về 0 hoặc 1
+                const statusValue = (product.trang_thai === true || product.trang_thai === 1 || product.trang_thai === '1') ? '1' : '0';
+                row.setAttribute('data-status', statusValue);
+                
                 row.setAttribute('data-category', product.danh_muc_id);
                 row.setAttribute('data-brand', product.thuong_hieu_id);
                 row.setAttribute('data-featured', product.san_pham_noi_bat ? 'true' : 'false');
 
+                // Xử lý giá từ bảng products
+                let priceDisplay = '';
+                const productPrice = product.gia_ban || 0;
+                const productOriginalPrice = product.gia_niem_yet || 0;
+                
+                // Debug: Log toàn bộ product data
+                console.log(`💰 Product ID ${product.id}:`, {
+                    gia_ban: product.gia_ban,
+                    gia_niem_yet: product.gia_niem_yet,
+                    gia_ban_min: product.gia_ban_min,
+                    gia_ban_max: product.gia_ban_max,
+                    gia_niem_yet_min: product.gia_niem_yet_min,
+                    so_bien_the: product.so_bien_the,
+                    has_variants: !!(product.variants && product.variants.length > 0)
+                });
+                
+                if (productPrice > 0) {
+                    priceDisplay = Utils.formatCurrency(productPrice);
+                } else {
+                    priceDisplay = '<span class="text-muted">Chưa có giá</span>';
+                }
+
+                // Hiển thị SKU - lấy từ variant đầu tiên hoặc mã sản phẩm
+                let skuDisplay = product.ma_san_pham || 'N/A';
+                
+                // Debug: Kiểm tra region_icons
+                console.log('🔍 Product:', product.ten_san_pham);
+                console.log('   - region_icons:', product.region_icons);
+                console.log('   - regions_available:', product.regions_available);
+                console.log('   - so_bien_the:', product.so_bien_the);
+                console.log('   - variants count:', product.variants?.length);
+                
+                // Hiển thị SKU của variant đầu tiên
+                if (product.variants && product.variants.length > 0) {
+                    skuDisplay = product.variants[0].ma_sku;
+                    if (product.variants.length > 1) {
+                        skuDisplay += ` <small>(+${product.variants.length - 1})</small>`;
+                    }
+                }
+                
+                // Sử dụng region_icons từ backend (đã được tính sẵn)
+                let regionBadges = '';
+                if (product.region_icons && product.region_icons.length > 0) {
+                    const regionLabels = product.region_icons.map(r => r.site_origin.toUpperCase()).join(', ');
+                    regionBadges = ` • <i class="fas fa-map-marker-alt"></i> ${regionLabels}`;
+                    console.log('   ✅ Region badges:', regionBadges);
+                } else {
+                    console.log('   ❌ No region_icons found');
+                }
+
                 row.innerHTML = `
                     <td class="col-image">
                         <div class="product-table-image">
-                            <img src="${product.link_anh}" alt="${product.ten_san_pham}">
+                            <img src="${product.link_anh_dai_dien || '/icon/default-product.png'}" alt="${product.ten_san_pham}">
                         </div>
                     </td>
                     <td class="col-name">
                         <div class="product-name">${Utils.escapeHtml(product.ten_san_pham)}</div>
+                        <div class="product-meta">
+                            <small class="text-muted">
+                                <i class="fas fa-layer-group"></i> ${product.so_bien_the || 0} biến thể
+                                ${regionBadges}
+                                ${product.site_created ? ` • <i class="fas fa-server"></i> Tạo từ: ${product.site_created.toUpperCase()}` : ''}
+                            </small>
+                        </div>
                     </td>
                     <td class="col-sku">
-                        <div class="product-sku">#${product.ma_sku}</div>
+                        <div class="product-sku">#${skuDisplay}</div>
                     </td>
                     <td class="col-price">
                         <div class="price-info">
-                            <div class="current-price">${Utils.formatCurrency(product.gia_ban)}</div>
-                            ${product.gia_niem_yet ? `<div class="original-price">${Utils.formatCurrency(product.gia_niem_yet)}</div>` : ''}
+                            ${productOriginalPrice > 0 ? `<div class="original-price">${Utils.formatCurrency(productOriginalPrice)}</div>` : ''}
+                            <div class="current-price">${priceDisplay}</div>
                         </div>
                     </td>
                     <td class="col-category">
@@ -1498,23 +1753,23 @@
                         <span class="brand-badge">${product.ten_thuong_hieu}</span>
                     </td>
                     <td class="col-status">
-                        <span class="status-badge ${product.trang_thai ? 'active' : 'inactive'}">
-                            ${product.trang_thai ? '🟢 Đang bán' : '🔴 Ngừng bán'}
+                        <span class="status-badge ${statusValue === '1' ? 'active' : 'inactive'}">
+                            ${statusValue === '1' ? '🟢 Đang bán' : '🔴 Ngừng bán'}
                         </span>
                     </td>
                     <td class="col-actions">
                         <div class="action-buttons">
-                            <button class="btn-action btn-edit" data-id="${product.id}" title="Chỉnh sửa">
+                            <button class="btn btn-sm btn-primary btn-action-modern btn-edit" data-id="${product.id}" title="Chỉnh sửa sản phẩm">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn-action btn-toggle-status" data-id="${product.id}"
-                                data-status="${product.trang_thai}" data-name="${product.ten_san_pham}"
-                                title="Chuyển trạng thái">
-                                <i class="fas ${product.trang_thai ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                            <button class="btn btn-sm btn-warning btn-action-modern btn-toggle-status" data-id="${product.id}"
+                                data-status="${statusValue}" data-name="${product.ten_san_pham}"
+                                title="${statusValue === '1' ? 'Ngừng bán sản phẩm' : 'Mở bán sản phẩm'}">
+                                <i class="fas ${statusValue === '1' ? 'fa-eye-slash' : 'fa-eye'}"></i>
                             </button>
-                            <button class="btn-action btn-delete-product" data-id="${product.id}"
-                                data-name="${product.ten_san_pham}" title="Xóa">
-                                <i class="fas fa-trash"></i>
+                            <button class="btn btn-sm btn-danger btn-action-modern btn-delete-product" data-id="${product.id}"
+                                data-name="${product.ten_san_pham}" title="Xóa sản phẩm">
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -1720,7 +1975,7 @@
             
             // Tính tổng doanh số (giá bán × số lượng đã bán)
             const totalRevenue = this.products.reduce((sum, p) => {
-                const soldQuantity = p.so_luong_ban || 0;
+                const soldQuantity = p.luot_ban || 0;
                 const price = p.gia_ban || 0;
                 return sum + (soldQuantity * price);
             }, 0);
@@ -1765,9 +2020,19 @@
                 const matchesCategory = !categoryFilter || category === categoryFilter;
                 const matchesBrand = !brandFilter || brand === brandFilter;
 
-                if (matchesSearch && matchesStatus && matchesCategory && matchesBrand) {
+                // Status filter only affects visual styling, not visibility
+                if (matchesSearch && matchesCategory && matchesBrand) {
                     row.style.display = '';
                     visibleCount++;
+                    
+                    // Apply visual styling based on status filter
+                    if (statusFilter && !matchesStatus) {
+                        row.style.opacity = '0.4';
+                        row.style.backgroundColor = '#f9fafb';
+                    } else {
+                        row.style.opacity = '1';
+                        row.style.backgroundColor = '';
+                    }
                     
                     // Đếm stats cho sản phẩm hiển thị
                     if (status === '1') visibleActive++;
@@ -1776,12 +2041,14 @@
                     // Tính doanh số của sản phẩm này
                     const product = this.products.find(p => p.id == productId);
                     if (product) {
-                        const soldQuantity = product.so_luong_ban || 0;
+                        const soldQuantity = product.luot_ban || 0;
                         const price = product.gia_ban || 0;
                         visibleRevenue += (soldQuantity * price);
                     }
                 } else {
                     row.style.display = 'none';
+                    row.style.opacity = '1';
+                    row.style.backgroundColor = '';
                 }
             });
 
@@ -1945,16 +2212,44 @@
 
             console.log('Filling product form with data:', product);
 
-            document.getElementById('productId').value = product.id || '';
-            document.getElementById('mongoDetailId').value = product.mongo_detail_id || '';
-            document.getElementById('productName').value = product.ten_san_pham || '';
-            document.getElementById('productPrice').value = product.gia_ban || '';
-            document.getElementById('productOriginalPrice').value = product.gia_niem_yet || '';
-            document.getElementById('productCategory').value = product.danh_muc_id || '';
-            document.getElementById('productBrand').value = product.thuong_hieu_id || '';
-            document.getElementById('productStatus').value = product.trang_thai || '1';
-            document.getElementById('productDescription').value = product.mo_ta || '';
-            document.getElementById('productFeatured').checked = product.san_pham_noi_bat || false;
+            const productIdEl = document.getElementById('productId');
+            const mongoDetailIdEl = document.getElementById('mongoDetailId');
+            const productNameEl = document.getElementById('productName');
+            const productSiteOriginEl = document.getElementById('productSiteOrigin');
+            const productCategoryEl = document.getElementById('productCategory');
+            const productBrandEl = document.getElementById('productBrand');
+            const productStatusEl = document.getElementById('productStatus');
+            const productDescriptionEl = document.getElementById('productDescription');
+            const productFeaturedEl = document.getElementById('productFeatured');
+
+            if (productIdEl) productIdEl.value = product.id || '';
+            if (mongoDetailIdEl) mongoDetailIdEl.value = product.mongo_detail_id || '';
+            if (productNameEl) productNameEl.value = product.ten_san_pham || '';
+            
+            // Site created (đã chuyển từ site_origin sang site_created trong product)
+            if (productSiteOriginEl) {
+                productSiteOriginEl.value = product.site_created || 'bac';
+            }
+            if (productCategoryEl) productCategoryEl.value = product.danh_muc_id || '';
+            if (productBrandEl) productBrandEl.value = product.thuong_hieu_id || '';
+            
+            // Normalize trang_thai: convert về '0' hoặc '1'
+            const normalizedStatus = (product.trang_thai === true || product.trang_thai === 1 || product.trang_thai === '1') ? '1' : '0';
+            
+            console.log('🔍 DEBUG fillProductForm - trang_thai:', {
+                original: product.trang_thai,
+                type: typeof product.trang_thai,
+                normalized: normalizedStatus,
+                productName: product.ten_san_pham
+            });
+            
+            if (productStatusEl) {
+                productStatusEl.value = normalizedStatus;
+                console.log('✅ Set productStatus select to:', normalizedStatus, 'Element value now:', productStatusEl.value);
+            }
+            
+            if (productDescriptionEl) productDescriptionEl.value = product.mo_ta || '';
+            if (productFeaturedEl) productFeaturedEl.checked = product.san_pham_noi_bat || false;
 
             console.log ('Đã vào đc: ', product.mongo_detail_id);
             // Load thông tin từ MongoDB nếu có mongo_detail_id
@@ -2005,10 +2300,40 @@
                         }
 
                         // 📦 LOAD VARIANTS NẾU CÓ
+                        // MongoDB variants có cấu trúc: { variants: { variant_options: [...], variant_combinations: [...] } }
+                        
+                        let variantsData = null;
+                        
+                        // Load variants từ MongoDB
                         if (mongoData.variants && typeof mongoData.variants === 'object') {
-                            console.log('📦 Loading existing variants from MongoDB:', mongoData.variants);
-                            if (window.productVariantsManager) {
-                                window.productVariantsManager.loadVariantsData(mongoData.variants);
+                            console.log('📦 Loading variants from MongoDB:', mongoData.variants);
+                            variantsData = mongoData.variants; // variantsData = { variant_options: [...], variant_combinations: [...] }
+                        }
+                        
+                        if (variantsData && window.productVariantsManager) {
+                            window.productVariantsManager.loadVariantsData(variantsData);
+                            
+                            // 🔄 Sync trạng thái từ SQL product_variants
+                            await window.productVariantsManager.syncVariantStatusFromSQL(product.id);
+                        }
+                        
+                        // Thu thập tất cả ảnh từ variants và thêm vào hinh_anh nếu chưa có
+                        if (variantsData?.variant_combinations && window.simpleImageUploadManager) {
+                            const allImages = mongoData.hinh_anh ? [...mongoData.hinh_anh] : [];
+                            
+                            variantsData.variant_combinations.forEach(combo => {
+                                if (combo.image && !allImages.includes(combo.image)) {
+                                    allImages.push(combo.image);
+                                    console.log('✅ Added variant image to preview:', combo.image);
+                                }
+                            });
+                            
+                            // Reload images với tất cả ảnh (bao gồm cả variant images)
+                            if (allImages.length > 0) {
+                                window.simpleImageUploadManager.loadExistingImages({
+                                    hinh_anh: allImages,
+                                    link_avatar: mongoData.link_avatar
+                                });
                             }
                         }
 
@@ -2021,16 +2346,20 @@
                         }
 
                         // 📄 LOAD MÔ TẢ, TRẠNG THÁI, NỔI BẬT
-                        if (mongoData.mo_ta_chi_tiet) {
-                            document.getElementById('productDescription').value = mongoData.mo_ta_chi_tiet;
+                        const productDescEl = document.getElementById('productDescription');
+                        const productStatusEl = document.getElementById('productStatus');
+                        const productFeaturedEl = document.getElementById('productFeatured');
+                        
+                        if (mongoData.mo_ta_chi_tiet && productDescEl) {
+                            productDescEl.value = mongoData.mo_ta_chi_tiet;
                         }
                         
-                        if (mongoData.trang_thai !== undefined) {
-                            document.getElementById('productStatus').value = mongoData.trang_thai;
-                        }
+                        // ❌ KHÔNG load trang_thai từ MongoDB vì SQL là nguồn chính xác
+                        // MongoDB có thể chứa dữ liệu cũ, đã set từ SQL ở trên rồi
+                        console.log('⚠️ Skipping MongoDB trang_thai, using SQL value already set');
                         
-                        if (mongoData.san_pham_noi_bat !== undefined) {
-                            document.getElementById('productFeatured').checked = mongoData.san_pham_noi_bat;
+                        if (mongoData.san_pham_noi_bat !== undefined && productFeaturedEl) {
+                            productFeaturedEl.checked = mongoData.san_pham_noi_bat;
                         }
                     }
                 } catch (error) {
@@ -2090,9 +2419,12 @@
                 window.simpleImageUploadManager.renderProductVideosPreview();
             }
             
-            // Sau đó reset form và specs
-            document.getElementById('productForm').reset();
-            document.getElementById('productStatus').value = '1';
+            // Sử dụng optional chaining cho an toàn
+            const productFormEl = document.getElementById('productForm');
+            const productStatusEl = document.getElementById('productStatus');
+            
+            if (productFormEl) productFormEl.reset();
+            if (productStatusEl) productStatusEl.value = '1';
             
             if (window.productSpecsManager) {
                 window.productSpecsManager.clearSpecs();
@@ -2101,7 +2433,7 @@
             console.log('✅ Product form reset complete');
         }
 
-        // Sửa lại hàm saveProduct trong ProductManager
+        // Sửa lại hàm saveProduct cho SCHEMA MỚI (products + product_variants)
         async saveProduct() {
             if (this.isSaving) {
                 console.log('🛑 Đang trong quá trình lưu, bỏ qua');
@@ -2118,40 +2450,23 @@
                     saveBtn.disabled = true;
                 }
 
-                const formData = this.getProductFormData();
+                // Lấy dữ liệu từ form
+                const productData = this.getProductFormData();  // Dữ liệu bảng products
+                const variantsFormData = this.getVariantsFormData();  // Dữ liệu bảng product_variants (SQL)
+                const variantsManagerData = window.productVariantsManager ? window.productVariantsManager.getVariantsData() : { variant_options: [], variant_combinations: [] };  // Dữ liệu cho MongoDB
                 const specsData = window.productSpecsManager ? window.productSpecsManager.getSpecsData() : {};
-                const variantsData = window.productVariantsManager ? window.productVariantsManager.getVariantsData() : [];
                 const additionalInfoData = window.additionalInfoManager ? window.additionalInfoManager.getInfoData() : {};
                 const videoLinksData = window.videoLinksManager ? window.videoLinksManager.getVideoLinksData() : [];
 
-                console.log('🔍 Checking managers:', {
-                    hasSpecsManager: !!window.productSpecsManager,
-                    hasVariantsManager: !!window.productVariantsManager,
-                    hasAdditionalInfoManager: !!window.additionalInfoManager,
-                    hasVideoLinksManager: !!window.videoLinksManager
-                });
-
-                console.log('📦 Product Data for SQL:', formData);
+                console.log('📦 Product Data (bảng products):', productData);
+                console.log('📦 Variants Data for SQL (product_variants table):', variantsFormData);
+                console.log('📦 Variants Data for MongoDB (variant_options + combinations):', variantsManagerData);
                 console.log('🔧 Technical Specs for MongoDB:', specsData);
-                console.log('📦 Variants for MongoDB:', variantsData);
                 console.log('📋 Additional Info for MongoDB:', additionalInfoData);
                 console.log('🔗 Video Links for MongoDB:', videoLinksData);
 
-                const validSQLFields = [
-                    'id', 'ma_sku', 'ten_san_pham', 'danh_muc_id', 'thuong_hieu_id',
-                    'gia_niem_yet', 'gia_ban', 'mongo_detail_id', 'trang_thai',
-                    'luot_xem', 'so_luong_ban', 'ngay_tao', 'ngay_cap_nhat', 'link_anh'
-                ];
-
-                const sqlData = {};
-                Object.keys(formData).forEach(key => {
-                    if (validSQLFields.includes(key)) {
-                        sqlData[key] = formData[key];
-                    }
-                });
-
-
-                if (!this.validateProductForm(formData)) {
+                // Validate
+                if (!this.validateProductForm(productData)) {
                     if (saveBtn) {
                         saveBtn.innerHTML = originalText;
                         saveBtn.disabled = false;
@@ -2160,194 +2475,439 @@
                     return;
                 }
 
-                let result, productId, mongoDetailId;
+                let productId, mongoDetailId;
 
                 // ============================================
-                // LUỒNG MỚI: SQL → MongoDB → Upload → Update
+                // LUỒNG XỬ LÝ: SQL (products) → Upload Media → Variants → MongoDB
                 // ============================================
 
                 if (this.currentEditId) {
-                    // 🟡 CẬP NHẬT SẢN PHẨM
+                    // ========== CẬP NHẬT SẢN PHẨM ==========
                     productId = this.currentEditId;
-                    mongoDetailId = document.getElementById('mongoDetailId').value;
+                    mongoDetailId = document.getElementById('mongoDetailId')?.value;
                     console.log('🔄 Updating Product ID:', productId, 'MongoDB ID:', mongoDetailId);
                     
-                    // BƯỚC 1: Upload ảnh/video nếu có
-                    let hinhAnhArray = [];
-                    let videoUrls = [];
+                    // Tính giá từ variants
+                    const calculatedPrices = this.calculateProductPriceFromVariants(variantsFormData);
+                    productData.gia_ban = calculatedPrices.gia_ban;
+                    productData.gia_niem_yet = calculatedPrices.gia_niem_yet;
+                    
+                    // BƯỚC 1: Cập nhật thông tin sản phẩm trong SQL (chưa có ảnh)
+                    console.log('📝 Step 1: Updating product in SQL...');
+                    await ProductAPIService.updateProduct(productId, productData);
+                    console.log('✅ Step 1 complete: Product updated in SQL');
 
-                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
-                        try {
-                            console.log('🖼️ Starting image upload...');
-                            const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
-                            
-                            if (uploadResult.mainImageUrl) {
-                                hinhAnhArray.push(uploadResult.mainImageUrl);
-                                console.log('✅ Main image uploaded:', uploadResult.mainImageUrl);
+                    // BƯỚC 1.5: Cập nhật variants trong product_variants bằng sql_variant_id
+                    console.log('📝 Step 1.5: Updating variants in product_variants table...');
+                    
+                    // Duyệt qua từng combination và update vào SQL bằng sql_variant_id
+                    if (variantsManagerData.variant_combinations && variantsManagerData.variant_combinations.length > 0) {
+                        for (const combo of variantsManagerData.variant_combinations) {
+                            if (combo.sql_variant_id) {
+                                // Đã có sql_variant_id → UPDATE chỉ các field có giá trị
+                                try {
+                                    const updateData = {};
+                                    
+                                    // Luôn update tên hiển thị
+                                    if (combo.name !== undefined && combo.name !== null) {
+                                        updateData.ten_hien_thi = combo.name;
+                                    }
+                                    
+                                    // Chỉ update nếu có giá trị
+                                    if (combo.sku !== undefined && combo.sku !== null) {
+                                        updateData.ma_sku = combo.sku;
+                                    }
+                                    
+                                    if (combo.price !== undefined && combo.price !== null) {
+                                        updateData.gia_ban = parseFloat(combo.price);
+                                    }
+                                    
+                                    if (combo.original_price !== undefined && combo.original_price !== null) {
+                                        updateData.gia_niem_yet = parseFloat(combo.original_price);
+                                    }
+                                    
+                                    if (combo.stock !== undefined && combo.stock !== null) {
+                                        updateData.so_luong_ton_kho = parseInt(combo.stock);
+                                    }
+                                    
+                                    if (combo.vung !== undefined && combo.vung !== null) {
+                                        updateData.site_origin = combo.vung;
+                                    }
+                                    
+                                    // Update trạng thái từ combo.active
+                                    if (combo.active !== undefined && combo.active !== null) {
+                                        updateData.trang_thai = combo.active ? 1 : 0;
+                                    }
+                                    
+                                    // Chỉ gọi API nếu có field nào cần update
+                                    if (Object.keys(updateData).length > 0) {
+                                        await ProductAPIService.updateVariant(combo.sql_variant_id, updateData);
+                                        console.log(`✅ Updated variant ${combo.sql_variant_id}:`, combo.sku);
+                                    }
+                                } catch (error) {
+                                    console.error(`❌ Error updating variant ${combo.sql_variant_id}:`, error);
+                                }
+                            } else {
+                                // Chưa có sql_variant_id → CREATE mới
+                                try {
+                                    const variantData = {
+                                        ma_sku: combo.sku || `SKU-${Date.now()}`,
+                                        ten_hien_thi: combo.name || 'N/A',
+                                        gia_ban: parseFloat(combo.price) || 0,
+                                        gia_niem_yet: parseFloat(combo.original_price) || parseFloat(combo.price) || 0,
+                                        so_luong_ton_kho: parseInt(combo.stock) || 0,
+                                        site_origin: combo.vung || 'bac',
+                                        anh_dai_dien: combo.image || null,
+                                        trang_thai: combo.active !== undefined ? (combo.active ? 1 : 0) : 1
+                                    };
+                                    
+                                    const result = await ProductAPIService.createVariant(productId, variantData);
+                                    const sqlVariantId = result.data.id;
+                                    combo.sql_variant_id = sqlVariantId;
+                                    console.log(`✅ Created new variant ${sqlVariantId}:`, combo.sku);
+                                } catch (error) {
+                                    console.error(`❌ Error creating variant ${combo.sku}:`, error);
+                                }
                             }
-                            if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
-                                hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
-                                console.log('✅ Additional images uploaded:', uploadResult.additionalImages.length);
-                            }
-                        } catch (uploadError) {
-                            console.error('❌ Lỗi upload ảnh:', uploadError);
-                            this.showError('Lỗi upload ảnh: ' + uploadError.message);
                         }
                     }
+                    console.log('✅ Step 1.5 complete: Variants updated in SQL');
 
-                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productVideos.length > 0) {
-                        try {
-                            console.log('🎬 Starting video upload...');
-                            videoUrls = await window.simpleImageUploadManager.uploadProductVideos();
-                            console.log('✅ Videos uploaded:', videoUrls);
-                        } catch (uploadError) {
-                            console.error('❌ Lỗi upload video:', uploadError);
-                        }
-                    }
-
-                    // link_avatar là ảnh đầu tiên trong mảng hinh_anh
-                    const link_avatar = hinhAnhArray.length > 0 ? hinhAnhArray[0] : '';
-
-                    // BƯỚC 2: Cập nhật SQL với link_anh
-                    sqlData.link_anh = link_avatar || sqlData.link_anh;
-                    result = await ProductAPIService.updateProduct(productId, sqlData);
-                    console.log('✅ Product updated in SQL');
-
-                    // BƯỚC 3: Chuẩn bị dữ liệu cho MongoDB
+                    // BƯỚC 2: Chuẩn bị dữ liệu MongoDB (chưa có ảnh/video)
+                    console.log('📝 Step 2: Preparing MongoDB data (without media)...');
                     const mongoUpdateData = {
                         sql_product_id: productId,
                         thong_so_ky_thuat: specsData,
-                        variants: variantsData,
                         thong_tin_khac: additionalInfoData,
                         video_links: videoLinksData,
-                        hinh_anh: hinhAnhArray,
-                        videos: videoUrls,
-                        link_avatar: link_avatar,
-                        mo_ta_chi_tiet: document.getElementById('productDescription').value.trim(),
-                        trang_thai: parseInt(document.getElementById('productStatus').value),
-                        san_pham_noi_bat: document.getElementById('productFeatured').checked,
-                        slug: Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku)
+                        mo_ta_chi_tiet: document.getElementById('productDescription')?.value.trim() || '',
+                        trang_thai: parseInt(document.getElementById('productStatus')?.value || 1),
+                        san_pham_noi_bat: document.getElementById('productFeatured')?.checked || false,
+                        slug: Utils.generateSlug(productData.ten_san_pham)
                     };
+                    
+                    // Thêm variants data
+                    if (variantsManagerData.variant_options || variantsManagerData.variant_combinations) {
+                        mongoUpdateData.variants = {
+                            variant_options: variantsManagerData.variant_options || [],
+                            variant_combinations: variantsManagerData.variant_combinations || []
+                        };
+                        console.log('📊 Sending variants object:', mongoUpdateData.variants);
+                    }
 
-                    console.log('📤 MongoDB Update Data:', mongoUpdateData);
-
-                    // BƯỚC 4: Cập nhật hoặc tạo MongoDB
                     if (mongoDetailId) {
                         await ProductAPIService.updateProductMongoDetail(mongoDetailId, mongoUpdateData);
-                        console.log('✅ MongoDB document updated');
+                        console.log('✅ Step 2 complete: MongoDB document updated');
                     } else {
                         const mongoResult = await ProductAPIService.createProductMongoDetail(
                             productId,
                             specsData,
-                            document.getElementById('productDescription').value.trim(),
-                            Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku),
-                            hinhAnhArray,
-                            link_avatar || '',
-                            videoUrls,
-                            variantsData,
+                            mongoUpdateData.mo_ta_chi_tiet,
+                            mongoUpdateData.slug,
+                            [],  // hinh_anh - empty for now
+                            '',  // link_avatar - empty for now
+                            [],  // videos - empty for now
+                            variantsManagerData,  // Gửi cấu trúc variant_options + variant_combinations
                             videoLinksData,
-                            parseInt(document.getElementById('productStatus').value),
-                            document.getElementById('productFeatured').checked,
+                            mongoUpdateData.trang_thai,
+                            mongoUpdateData.san_pham_noi_bat,
                             additionalInfoData
                         );
                         
-                        // Kiểm tra nếu MongoDB document bị skip (không có dữ liệu)
-                        if (mongoResult.skipped) {
-                            console.log('⚠️ MongoDB document creation skipped - no MongoDB data to save');
-                        } else {
+                        if (!mongoResult.skipped) {
                             mongoDetailId = mongoResult.data._id;
-                            console.log('✅ New MongoDB document created');
-
                             await ProductAPIService.updateProduct(productId, {
                                 mongo_detail_id: mongoDetailId
                             });
+                            console.log('✅ Step 2 complete: New MongoDB document created');
                         }
                     }
 
-                } else {
-                    // 🟢 THÊM SẢN PHẨM MỚI - LUỒNG ĐÚNG
-                    
-                    // ============================================
-                    // BƯỚC 1: Tạo sản phẩm trong SQL (KHÔNG CÓ mongo_detail_id và link_anh)
-                    // ============================================
-                    console.log('📝 Step 1: Creating product in SQL (without mongo_detail_id and link_anh)...');
-                    
-                    // Loại bỏ mongo_detail_id và link_anh khỏi sqlData
-                    const sqlCreateData = { ...sqlData };
-                    delete sqlCreateData.mongo_detail_id;
-                    delete sqlCreateData.link_anh;
-                    
-                    console.log('📦 SQL Create Data:', sqlCreateData);
-                    result = await ProductAPIService.createProduct(sqlCreateData);
-                    
-                    if (!result.success || !result.product || !result.product.id) {
-                        throw new Error('Không thể tạo sản phẩm trong SQL');
+                    // BƯỚC 3: Xóa ảnh/video đã đánh dấu
+                    console.log('📝 Step 3: Deleting marked images/videos...');
+                    if (window.simpleImageUploadManager.imagesToDelete && window.simpleImageUploadManager.imagesToDelete.length > 0) {
+                        console.log('🗑️ Deleting marked images from Cloudinary:', window.simpleImageUploadManager.imagesToDelete);
+                        for (const imageUrl of window.simpleImageUploadManager.imagesToDelete) {
+                            try {
+                                await window.simpleImageUploadManager.deleteImageFromCloudinary(imageUrl);
+                                console.log('✅ Deleted image:', imageUrl);
+                            } catch (error) {
+                                console.warn('⚠️ Could not delete image:', imageUrl, error);
+                            }
+                        }
+                        // Reset danh sách
+                        window.simpleImageUploadManager.imagesToDelete = [];
                     }
                     
-                    productId = result.product.id;
-                    // Tạo slug và lưu vào biến toàn cục để dùng cho upload
-                    const slug = Utils.generateSlug(formData.ten_san_pham + '-' + sqlCreateData.ma_sku);
-                    window.currentProductSlug = slug;
-                    console.log('✅ Step 1 complete: Product created in SQL with ID:', productId, 'Slug:', window.currentProductSlug);
-                    
-                    // ============================================
-                    // BƯỚC 2: Upload ảnh và video (sử dụng productId cho folder naming)
-                    // ============================================
-                    console.log('📝 Step 2: Uploading images and videos...');
+                    if (window.simpleImageUploadManager.videosToDelete && window.simpleImageUploadManager.videosToDelete.length > 0) {
+                        console.log('🗑️ Deleting marked videos from Cloudinary:', window.simpleImageUploadManager.videosToDelete);
+                        for (const videoUrl of window.simpleImageUploadManager.videosToDelete) {
+                            try {
+                                await window.simpleImageUploadManager.deleteVideoFromCloudinary(videoUrl);
+                                console.log('✅ Deleted video:', videoUrl);
+                            } catch (error) {
+                                console.warn('⚠️ Could not delete video:', videoUrl, error);
+                            }
+                        }
+                        // Reset danh sách
+                        window.simpleImageUploadManager.videosToDelete = [];
+                    }
+
+                    // BƯỚC 4: Upload ảnh/video (bước cuối cùng)
+                    console.log('📝 Step 4: Uploading media (final step)...');
                     let hinhAnhArray = [];
                     let videoUrls = [];
+                    let updatedVariantsData = null; // Khai báo ở đây để dùng sau
 
+                    // Upload variant images and update SQL + MongoDB
+                    if (window.productVariantsManager && window.productVariantsManager.combinations) {
+                        console.log('🖼️ Step 4a: Uploading variant images FIRST...');
+                        for (const combo of window.productVariantsManager.combinations) {
+                            if (combo.imageFile && combo.sql_variant_id) {
+                                try {
+                                    console.log(`📤 Uploading image for variant ${combo.sku}...`);
+                                    const uploadedUrl = await window.simpleImageUploadManager.uploadSingleImage(combo.imageFile);
+                                    
+                                    // Lưu file cũ để tìm trong preview
+                                    const oldFile = combo.imageFile;
+                                    
+                                    combo.image = uploadedUrl; // Replace data URL with Cloudinary URL
+                                    delete combo.imageFile; // Remove file object
+                                    console.log(`✅ Variant image uploaded: ${uploadedUrl}`);
+                                    
+                                    // Cập nhật preview với Cloudinary URL (thay data URL bằng Cloudinary URL)
+                                    const previewIdx = window.simpleImageUploadManager.productImages.findIndex(
+                                        img => img.file === oldFile
+                                    );
+                                    if (previewIdx !== -1) {
+                                        window.simpleImageUploadManager.productImages[previewIdx] = {
+                                            url: uploadedUrl,
+                                            name: oldFile.name,
+                                            type: 'variant',
+                                            isExisting: true
+                                        };
+                                        console.log('✅ Updated preview with Cloudinary URL for variant image');
+                                    }
+                                    
+                                    // Update anh_dai_dien trong product_variants (SQL) bằng sql_variant_id
+                                    try {
+                                        await ProductAPIService.updateVariant(combo.sql_variant_id, { anh_dai_dien: uploadedUrl });
+                                        console.log(`✅ Updated variant ID ${combo.sql_variant_id} with image in SQL`);
+                                    } catch (error) {
+                                        console.error(`❌ Error updating variant ${combo.sql_variant_id} in SQL:`, error);
+                                    }
+                                } catch (error) {
+                                    console.error(`❌ Error uploading variant image for ${combo.sku}:`, error);
+                                }
+                            }
+                        }
+                        
+                        // Update MongoDB với link_anh và sql_variant_id
+                        updatedVariantsData = window.productVariantsManager.getVariantsData();
+                        if (mongoDetailId && updatedVariantsData) {
+                            try {
+                                await ProductAPIService.updateProductMongoDetail(mongoDetailId, {
+                                    variants: updatedVariantsData
+                                });
+                                console.log('✅ Updated MongoDB with variant image links and SQL IDs');
+                            } catch (error) {
+                                console.error('❌ Error updating MongoDB:', error);
+                            }
+                        }
+                    }
+
+                    // Bây giờ upload product images (ảnh variant đã có Cloudinary URL)
+                    console.log('🖼️ Step 4b: Uploading product images...');
                     if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
                         try {
-                            console.log('🖼️ Uploading images...');
+                            console.log('🖼️ Uploading product images...');
                             const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
                             
-                            if (uploadResult.mainImageUrl) {
+                            if (uploadResult.mainImageUrl && !hinhAnhArray.includes(uploadResult.mainImageUrl)) {
                                 hinhAnhArray.push(uploadResult.mainImageUrl);
-                                console.log('✅ Main image uploaded:', uploadResult.mainImageUrl);
                             }
                             if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
-                                hinhAnhArray = hinhAnhArray.concat(uploadResult.additionalImages);
-                                console.log('✅ Additional images uploaded:', uploadResult.additionalImages.length);
+                                uploadResult.additionalImages.forEach(imgUrl => {
+                                    if (!hinhAnhArray.includes(imgUrl)) {
+                                        hinhAnhArray.push(imgUrl);
+                                    }
+                                });
                             }
                         } catch (uploadError) {
                             console.error('❌ Lỗi upload ảnh:', uploadError);
-                            this.showError('Lỗi upload ảnh: ' + uploadError.message);
                         }
+                    }
+                    
+                    // Thu thập tất cả ảnh từ variants đã upload (kiểm tra duplicate)
+                    if (updatedVariantsData?.variant_combinations) {
+                        updatedVariantsData.variant_combinations.forEach(combo => {
+                            if (combo.image && !hinhAnhArray.includes(combo.image)) {
+                                hinhAnhArray.push(combo.image);
+                                console.log('✅ Added variant image to hinh_anh:', combo.image);
+                            }
+                        });
                     }
 
                     if (window.simpleImageUploadManager && window.simpleImageUploadManager.productVideos.length > 0) {
                         try {
                             console.log('🎬 Uploading videos...');
                             videoUrls = await window.simpleImageUploadManager.uploadProductVideos();
-                            console.log('✅ Videos uploaded:', videoUrls);
                         } catch (uploadError) {
                             console.error('❌ Lỗi upload video:', uploadError);
                         }
                     }
                     
-                    // link_avatar là ảnh đầu tiên trong mảng hinh_anh
-                    const link_avatar = hinhAnhArray.length > 0 ? hinhAnhArray[0] : '';
+                    // Filter data URLs khỏi hinhAnhArray trước khi lưu
+                    const validHinhAnh = hinhAnhArray.filter(url => url && !url.startsWith('data:'));
+                    // link_avatar và link_anh_dai_dien luôn lấy ảnh đầu tiên từ hinh_anh array
+                    const link_anh_dai_dien = validHinhAnh.length > 0 ? validHinhAnh[0] : null;
+                    console.log('✅ Step 4 complete: Media uploaded');
+                    console.log('📊 Valid images (filtered data URLs):', validHinhAnh);
+                    console.log('📸 Main image (link_avatar/link_anh_dai_dien):', link_anh_dai_dien);
+
+                    // BƯỚC 5: Cập nhật MongoDB và SQL với links ảnh/video
+                    console.log('📝 Step 5: Updating database with media links...');
                     
-                    console.log('✅ Step 2 complete: Media uploaded');
+                    // Luôn cập nhật MongoDB với hinh_anh array và link_avatar
+                    const mediaUpdateData = {
+                        hinh_anh: validHinhAnh.length > 0 ? validHinhAnh : [],
+                        link_avatar: link_anh_dai_dien  // Ảnh đầu tiên hoặc null
+                    };
                     
-                    // ============================================
-                    // BƯỚC 3: Tạo document MongoDB với đầy đủ dữ liệu
-                    // ============================================
-                    console.log('📝 Step 3: Creating MongoDB document with all data...');
+                    if (videoUrls.length > 0) {
+                        mediaUpdateData.videos = videoUrls;
+                    }
+                    
+                    // Update variants trong MongoDB với link_anh mới nhất
+                    if (updatedVariantsData) {
+                        mediaUpdateData.variants = updatedVariantsData;
+                    }
+
+                    if (mongoDetailId) {
+                        await ProductAPIService.updateProductMongoDetail(mongoDetailId, mediaUpdateData);
+                        console.log('✅ MongoDB updated - link_avatar:', link_anh_dai_dien);
+                        console.log('✅ MongoDB updated - variants with link_anh');
+                    }
+
+                    // Cập nhật SQL products với link_anh_dai_dien
+                    await ProductAPIService.updateProduct(productId, { 
+                        link_anh_dai_dien: link_anh_dai_dien  // Ảnh đầu tiên hoặc null
+                    });
+                    console.log('✅ SQL products updated - link_anh_dai_dien:', link_anh_dai_dien);
+                    
+                    // Cập nhật anh_dai_dien trong SQL product_variants từ link_anh của variant
+                    if (updatedVariantsData?.variant_combinations) {
+                        console.log('📝 Updating anh_dai_dien in SQL product_variants...');
+                        for (const combo of updatedVariantsData.variant_combinations) {
+                            if (combo.sql_variant_id) {
+                                const anhDaiDien = combo.image || null;
+                                try {
+                                    await ProductAPIService.updateVariant(combo.sql_variant_id, { 
+                                        anh_dai_dien: anhDaiDien 
+                                    });
+                                    console.log(`✅ Updated variant ${combo.sql_variant_id} - anh_dai_dien:`, anhDaiDien);
+                                } catch (error) {
+                                    console.error(`❌ Error updating variant ${combo.sql_variant_id}:`, error);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Cập nhật inventory cho từng variant
+                    if (updatedVariantsData?.variant_combinations) {
+                        console.log('📝 Updating inventory for variants...');
+                        for (const combo of updatedVariantsData.variant_combinations) {
+                            if (combo.sql_variant_id) {
+                                try {
+                                    // Tạo hoặc update inventory record
+                                    const inventoryData = {
+                                        bien_the_san_pham_id: combo.sql_variant_id,
+                                        so_luong_ton_kho: parseInt(combo.stock) || 0,
+                                        so_luong_da_ban: 0, // Giữ nguyên hoặc lấy từ DB nếu đã có
+                                        ngay_cap_nhat: new Date()
+                                    };
+                                    
+                                    await ProductAPIService.upsertInventory(inventoryData);
+                                    console.log(`✅ Updated inventory for variant ${combo.sql_variant_id} - stock: ${combo.stock}`);
+                                } catch (error) {
+                                    console.error(`❌ Error updating inventory for variant ${combo.sql_variant_id}:`, error);
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ Step 5 complete: Database updated with media links');
+
+                } else {
+                    // ========== THÊM SẢN PHẨM MỚI ==========
+                    
+                    // Tính giá từ variants
+                    const calculatedPrices = this.calculateProductPriceFromVariants(variantsFormData);
+                    productData.gia_ban = calculatedPrices.gia_ban;
+                    productData.gia_niem_yet = calculatedPrices.gia_niem_yet;
+                    
+                    // BƯỚC 1: Tạo product trong bảng products (KHÔNG CÓ link_anh_dai_dien và mongo_detail_id)
+                    console.log('📝 Step 1: Creating product in products table...');
+                    const createProductData = { ...productData };
+                    delete createProductData.link_anh_dai_dien;
+                    delete createProductData.mongo_detail_id;
+                    
+                    const result = await ProductAPIService.createProduct(createProductData);
+                    
+                    if (!result.success || !result.data || !result.data.id) {
+                        throw new Error('Không thể tạo sản phẩm trong bảng products');
+                    }
+                    
+                    productId = result.data.id;
+                    console.log('✅ Step 1 complete: Product created with ID:', productId);
+                    
+                    // BƯỚC 2: Tạo variants trong bảng product_variants và lưu sql_variant_id
+                    console.log('📝 Step 2: Creating variants in product_variants table...');
+                    if (variantsFormData.length > 0) {
+                        for (let i = 0; i < variantsFormData.length; i++) {
+                            const variantData = variantsFormData[i];
+                            try {
+                                const result = await ProductAPIService.createVariant(productId, variantData);
+                                const sqlVariantId = result.data.id; // Lấy id từ SQL
+                                console.log('✅ Variant created in SQL:', variantData.ma_sku, 'ID:', sqlVariantId);
+                                
+                                // Lưu sql_variant_id vào combination tương ứng trong productVariantsManager
+                                const combo = window.productVariantsManager.combinations.find(c => 
+                                    c.sku === variantData.ma_sku && c.vung === variantData.site_origin
+                                );
+                                if (combo) {
+                                    combo.sql_variant_id = sqlVariantId;
+                                    console.log('✅ Saved sql_variant_id to combo:', combo.sku, 'ID:', sqlVariantId);
+                                }
+                                
+                                // Cập nhật vào variantsManagerData để lưu vào MongoDB
+                                if (variantsManagerData.variant_combinations) {
+                                    const comboInData = variantsManagerData.variant_combinations.find(c => 
+                                        c.sku === variantData.ma_sku && c.vung === variantData.site_origin
+                                    );
+                                    if (comboInData) {
+                                        comboInData.sql_variant_id = sqlVariantId;
+                                        console.log('✅ Saved sql_variant_id to MongoDB data:', comboInData.sku, 'ID:', sqlVariantId);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('❌ Error creating variant:', error);
+                            }
+                        }
+                    }
+                    console.log('✅ Step 2 complete: Variants created with SQL IDs');
+                    
+                    // BƯỚC 3: Tạo MongoDB document (chưa có ảnh/video)
+                    console.log('📝 Step 3: Creating MongoDB document (without media)...');
                     const mongoData = {
                         sql_product_id: productId,
                         thong_so_ky_thuat: specsData,
-                        variants: variantsData,
                         thong_tin_khac: additionalInfoData,
                         video_links: videoLinksData,
-                        hinh_anh: hinhAnhArray,
-                        videos: videoUrls,
-                        link_avatar: link_avatar,
-                        mo_ta_chi_tiet: document.getElementById('productDescription').value.trim(),
-                        trang_thai: parseInt(document.getElementById('productStatus').value),
-                        san_pham_noi_bat: document.getElementById('productFeatured').checked,
-                        slug: Utils.generateSlug(formData.ten_san_pham + '-' + formData.ma_sku)
+                        mo_ta_chi_tiet: document.getElementById('productDescription')?.value.trim() || '',
+                        trang_thai: parseInt(document.getElementById('productStatus')?.value || 1),
+                        san_pham_noi_bat: document.getElementById('productFeatured')?.checked || false,
+                        slug: Utils.generateSlug(productData.ten_san_pham)
                     };
                     
                     const mongoResult = await ProductAPIService.createProductMongoDetail(
@@ -2355,45 +2915,197 @@
                         specsData,
                         mongoData.mo_ta_chi_tiet,
                         mongoData.slug,
-                        hinhAnhArray,
-                        link_avatar,
-                        videoUrls,
-                        variantsData,
+                        [],  // hinh_anh - empty for now
+                        '',  // link_avatar - empty for now
+                        [],  // videos - empty for now
+                        variantsManagerData,  // Gửi cấu trúc variant_options + variant_combinations
                         videoLinksData,
                         mongoData.trang_thai,
                         mongoData.san_pham_noi_bat,
                         additionalInfoData
                     );
                     
-                    // Kiểm tra nếu MongoDB document bị skip (không có dữ liệu)
-                    if (mongoResult.skipped) {
-                        console.log('⚠️ MongoDB document creation skipped - no MongoDB data to save');
-                        mongoDetailId = null;
-                    } else {
-                        if (!mongoResult.success || !mongoResult.data || !mongoResult.data._id) {
-                            throw new Error('Không thể tạo MongoDB document');
-                        }
+                    if (!mongoResult.skipped) {
                         mongoDetailId = mongoResult.data._id;
                         console.log('✅ Step 3 complete: MongoDB document created with _id:', mongoDetailId);
+                    } else {
+                        mongoDetailId = null;
+                        console.log('⚠️ Step 3: MongoDB document creation skipped');
                     }
                     
-                    // ============================================
-                    // BƯỚC 4: Cập nhật SQL với mongo_detail_id và link_anh (nếu có)
-                    // ============================================
-                    console.log('📝 Step 4: Updating SQL with mongo_detail_id and link_anh...');
-                    const sqlUpdateData = { link_anh: link_avatar };
+                    // BƯỚC 4: Cập nhật product với mongo_detail_id
+                    console.log('📝 Step 4: Updating product with MongoDB reference...');
                     if (mongoDetailId) {
-                        sqlUpdateData.mongo_detail_id = mongoDetailId;
+                        await ProductAPIService.updateProduct(productId, { mongo_detail_id: mongoDetailId });
+                        console.log('✅ Step 4 complete: Product updated with MongoDB reference');
                     }
-                    await ProductAPIService.updateProduct(productId, sqlUpdateData);
-                    console.log('✅ Step 4 complete: SQL updated with MongoDB reference and main image link');
+                    
+                    // BƯỚC 5: Upload ảnh/video (bước cuối cùng)
+                    console.log('📝 Step 5: Uploading media (final step)...');
+                    let hinhAnhArray = [];
+                    let videoUrls = [];
+                    let updatedVariantsData = null; // Khai báo ở đây để dùng sau
+
+                    // Upload variant images and update SQL + MongoDB
+                    if (window.productVariantsManager && window.productVariantsManager.combinations) {
+                        console.log('🖼️ Uploading variant images...');
+                        for (const combo of window.productVariantsManager.combinations) {
+                            if (combo.imageFile && combo.sql_variant_id) {
+                                try {
+                                    console.log(`📤 Uploading image for variant ${combo.sku}...`);
+                                    const uploadedUrl = await window.simpleImageUploadManager.uploadSingleImage(combo.imageFile);
+                                    combo.image = uploadedUrl; // Replace data URL with Cloudinary URL
+                                    delete combo.imageFile; // Remove file object
+                                    console.log(`✅ Variant image uploaded: ${uploadedUrl}`);
+                                    
+                                    // Update anh_dai_dien trong product_variants (SQL) bằng sql_variant_id
+                                    try {
+                                        await ProductAPIService.updateVariant(combo.sql_variant_id, { anh_dai_dien: uploadedUrl });
+                                        console.log(`✅ Updated variant ID ${combo.sql_variant_id} with image in SQL`);
+                                    } catch (error) {
+                                        console.error(`❌ Error updating variant ${combo.sql_variant_id} in SQL:`, error);
+                                    }
+                                } catch (error) {
+                                    console.error(`❌ Error uploading variant image for ${combo.sku}:`, error);
+                                }
+                            }
+                        }
+                        
+                        // Update MongoDB với link_anh và sql_variant_id
+                        updatedVariantsData = window.productVariantsManager.getVariantsData();
+                        if (mongoDetailId && updatedVariantsData) {
+                            try {
+                                await ProductAPIService.updateProductMongoDetail(mongoDetailId, {
+                                    variants: updatedVariantsData
+                                });
+                                console.log('✅ Updated MongoDB with variant image links and SQL IDs');
+                            } catch (error) {
+                                console.error('❌ Error updating MongoDB:', error);
+                            }
+                        }
+                    }
+
+                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productImages.length > 0) {
+                        try {
+                            const uploadResult = await window.simpleImageUploadManager.uploadProductImages();
+                            
+                            if (uploadResult.mainImageUrl && !hinhAnhArray.includes(uploadResult.mainImageUrl)) {
+                                hinhAnhArray.push(uploadResult.mainImageUrl);
+                            }
+                            if (uploadResult.additionalImages && uploadResult.additionalImages.length > 0) {
+                                uploadResult.additionalImages.forEach(imgUrl => {
+                                    if (!hinhAnhArray.includes(imgUrl)) {
+                                        hinhAnhArray.push(imgUrl);
+                                    }
+                                });
+                            }
+                        } catch (uploadError) {
+                            console.error('❌ Lỗi upload ảnh:', uploadError);
+                        }
+                    }
+                    
+                    // Thu thập tất cả ảnh từ variants đã upload (kiểm tra duplicate)
+                    if (updatedVariantsData?.variant_combinations) {
+                        updatedVariantsData.variant_combinations.forEach(combo => {
+                            if (combo.image && !hinhAnhArray.includes(combo.image)) {
+                                hinhAnhArray.push(combo.image);
+                                console.log('✅ Added variant image to hinh_anh:', combo.image);
+                            }
+                        });
+                    }
+
+                    if (window.simpleImageUploadManager && window.simpleImageUploadManager.productVideos.length > 0) {
+                        try {
+                            videoUrls = await window.simpleImageUploadManager.uploadProductVideos();
+                        } catch (uploadError) {
+                            console.error('❌ Lỗi upload video:', uploadError);
+                        }
+                    }
+                    
+                    // Filter data URLs khỏi hinhAnhArray trước khi lưu
+                    const validHinhAnh = hinhAnhArray.filter(url => url && !url.startsWith('data:'));
+                    // link_avatar và link_anh_dai_dien luôn lấy ảnh đầu tiên từ hinh_anh array
+                    const link_anh_dai_dien = validHinhAnh.length > 0 ? validHinhAnh[0] : null;
+                    console.log('✅ Step 5 complete: Media uploaded');
+                    console.log('📊 Valid images (filtered data URLs):', validHinhAnh);
+                    console.log('📸 Main image (link_avatar/link_anh_dai_dien):', link_anh_dai_dien);
+                    
+                    // BƯỚC 6: Cập nhật MongoDB và SQL với links ảnh/video
+                    console.log('📝 Step 6: Updating database with media links...');
+                    
+                    // Luôn cập nhật MongoDB với hinh_anh array và link_avatar
+                    const mediaUpdateData = {
+                        hinh_anh: validHinhAnh.length > 0 ? validHinhAnh : [],
+                        link_avatar: link_anh_dai_dien  // Ảnh đầu tiên hoặc null
+                    };
+                    
+                    if (videoUrls.length > 0) {
+                        mediaUpdateData.videos = videoUrls;
+                    }
+                    
+                    // Update variants trong MongoDB với link_anh mới nhất
+                    if (updatedVariantsData) {
+                        mediaUpdateData.variants = updatedVariantsData;
+                    }
+
+                    if (mongoDetailId) {
+                        await ProductAPIService.updateProductMongoDetail(mongoDetailId, mediaUpdateData);
+                        console.log('✅ MongoDB updated - link_avatar:', link_anh_dai_dien);
+                        console.log('✅ MongoDB updated - variants with link_anh');
+                    }
+
+                    // Cập nhật SQL products với link_anh_dai_dien
+                    await ProductAPIService.updateProduct(productId, { 
+                        link_anh_dai_dien: link_anh_dai_dien  // Ảnh đầu tiên hoặc null
+                    });
+                    console.log('✅ SQL products updated - link_anh_dai_dien:', link_anh_dai_dien);
+                    
+                    // Cập nhật anh_dai_dien trong SQL product_variants từ link_anh của variant
+                    if (updatedVariantsData?.variant_combinations) {
+                        console.log('📝 Updating anh_dai_dien in SQL product_variants...');
+                        for (const combo of updatedVariantsData.variant_combinations) {
+                            if (combo.sql_variant_id) {
+                                const anhDaiDien = combo.image || null;
+                                try {
+                                    await ProductAPIService.updateVariant(combo.sql_variant_id, { 
+                                        anh_dai_dien: anhDaiDien 
+                                    });
+                                    console.log(`✅ Updated variant ${combo.sql_variant_id} - anh_dai_dien:`, anhDaiDien);
+                                } catch (error) {
+                                    console.error(`❌ Error updating variant ${combo.sql_variant_id}:`, error);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Cập nhật inventory cho từng variant (Create flow)
+                    if (updatedVariantsData?.variant_combinations) {
+                        console.log('📝 Updating inventory for variants (Create)...');
+                        for (const combo of updatedVariantsData.variant_combinations) {
+                            if (combo.sql_variant_id) {
+                                try {
+                                    const inventoryData = {
+                                        bien_the_san_pham_id: combo.sql_variant_id,
+                                        so_luong_ton_kho: parseInt(combo.stock) || 0,
+                                        ngay_cap_nhat: new Date()
+                                    };
+                                    
+                                    await ProductAPIService.upsertInventory(inventoryData);
+                                    console.log(`✅ Updated inventory for variant ${combo.sql_variant_id} - stock: ${combo.stock}`);
+                                } catch (error) {
+                                    console.error(`❌ Error updating inventory for variant ${combo.sql_variant_id}:`, error);
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ Step 6 complete: Database updated with media links');
                 }
 
-                // BƯỚC CUỐI: HIỂN THỊ THÔNG BÁO VÀ ĐÓNG MODAL
+                // HIỂN THỊ THÔNG BÁO VÀ ĐÓNG MODAL
                 console.log('🎉 All steps completed successfully!');
                 this.showSuccess(this.currentEditId ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công');
 
-                // Đóng modal và làm mới dữ liệu
                 bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
                 await this.refreshProducts();
 
@@ -2414,25 +3126,39 @@
 
 
         getProductFormData() {
-            const productName = document.getElementById('productName').value.trim();
+            console.log('🔍 DEBUG: Getting product form data...');
             
-            // Tự động tạo SKU
-            let productSKU = 'SP' + Date.now();
+            // Debug: Kiểm tra từng element
+            const productNameEl = document.getElementById('productName');
+            const productCategoryEl = document.getElementById('productCategory');
+            const productBrandEl = document.getElementById('productBrand');
+            const productDescriptionEl = document.getElementById('productDescription');
+            const productStatusEl = document.getElementById('productStatus');
+            const productSiteOriginEl = document.getElementById('productSiteOrigin');
             
-            const giaBan = parseInt(document.getElementById('productPrice').value) || 0;
-            const giaNiemYet = parseInt(document.getElementById('productOriginalPrice').value) || 0;
+            console.log('🔍 Elements check:', {
+                productNameEl: !!productNameEl,
+                productCategoryEl: !!productCategoryEl,
+                productBrandEl: !!productBrandEl,
+                productDescriptionEl: !!productDescriptionEl,
+                productStatusEl: !!productStatusEl,
+                productSiteOriginEl: !!productSiteOriginEl
+            });
+            
+            const productName = productNameEl?.value?.trim() || '';
+            
+            // Tự động tạo mã sản phẩm
+            let ma_san_pham = 'SP' + Date.now();
 
-            // Chỉ lấy các trường cần thiết cho SQL
+            // Chỉ lấy các trường của bảng products (KHÔNG CÓ ma_sku, gia_ban, gia_niem_yet)
             const formData = {
-                ma_sku: productSKU,
+                ma_san_pham: ma_san_pham,
                 ten_san_pham: productName,
-                danh_muc_id: document.getElementById('productCategory').value,
-                thuong_hieu_id: document.getElementById('productBrand').value,
-                gia_niem_yet: giaNiemYet > 0 ? giaNiemYet : null,
-                gia_ban: giaBan,
-                trang_thai: parseInt(document.getElementById('productStatus').value),
-                luot_xem: 0,
-                so_luong_ban: 0
+                danh_muc_id: productCategoryEl?.value || '',
+                thuong_hieu_id: productBrandEl?.value || '',
+                mo_ta_ngan: productDescriptionEl?.value?.trim() || '',
+                trang_thai: parseInt(productStatusEl?.value || '1'),
+                site_created: productSiteOriginEl?.value || 'bac'
             };
 
             // Nếu đang edit, thêm id
@@ -2440,20 +3166,146 @@
                 formData.id = this.currentEditId;
             }
 
-            console.log('📦 SQL Form Data:', formData);
+            console.log('📦 Product Form Data (chỉ dành cho bảng products):', formData);
             return formData;
+        }
+
+        // Hàm mới: Lấy dữ liệu variants để lưu vào product_variants table
+        getVariantsFormData() {
+            const variantsData = [];
+            
+            // Lấy tên sản phẩm
+            const productName = document.getElementById('productName')?.value?.trim() || '';
+            
+            // Lấy dữ liệu từ variant manager nếu có
+            if (window.productVariantsManager) {
+                const variantsManagerData = window.productVariantsManager.getVariantsData();
+                
+                console.log('🔍 DEBUG getVariantsFormData - variantsManagerData:', JSON.stringify(variantsManagerData, null, 2));
+                
+                // variantsManagerData bây giờ có cấu trúc: { variant_options: [...], variant_combinations: [...] }
+                // Cần flatten tất cả combinations thành format cho product_variants table
+                
+                if (variantsManagerData.variant_combinations && Array.isArray(variantsManagerData.variant_combinations)) {
+                    console.log('✅ Found variant_combinations (flat array), processing...');
+                    variantsManagerData.variant_combinations.forEach((combo, index) => {
+                        console.log(`📦 [${index}] Processing combination:`, combo);
+                        // Ưu tiên ảnh đã upload (combo.image) > link_anh từ MongoDB > null
+                        const anhDaiDien = combo.image || combo.link_anh || null;
+                        
+                        // combo.name đã có tên sản phẩm từ getVariantsData()
+                        variantsData.push({
+                            ma_sku: combo.sku || 'SKU' + Date.now(),
+                            ten_hien_thi: combo.name,  // Đã có tên sản phẩm rồi
+                            gia_niem_yet: parseInt(combo.original_price || combo.price || 0),
+                            gia_ban: parseInt(combo.price) || 0,
+                            so_luong_ton_kho: parseInt(combo.stock) || 0,
+                            luot_ban: 0,  // Mặc định 0 khi tạo mới
+                            anh_dai_dien: anhDaiDien,  // Lấy từ image hoặc link_anh
+                            site_origin: combo.vung || 'bac',  // Lấy từ field vung
+                            trang_thai: combo.active !== undefined ? (combo.active ? 1 : 0) : 1,
+                            attributes: combo.attributes || {}
+                        });
+                    });
+                } else if (variantsManagerData.regional_variants && typeof variantsManagerData.regional_variants === 'object') {
+                    console.log('✅ Found regional_variants (old structure), processing...');
+                    // Duyệt qua tất cả các vùng (fallback cho cấu trúc cũ)
+                    Object.keys(variantsManagerData.regional_variants).forEach(region => {
+                        const regionData = variantsManagerData.regional_variants[region];
+                        console.log(`🗺️ Processing region ${region}:`, regionData);
+                        if (regionData.variant_combinations && Array.isArray(regionData.variant_combinations)) {
+                            console.log(`📦 Found ${regionData.variant_combinations.length} combinations in region ${region}`);
+                            regionData.variant_combinations.forEach(combo => {
+                                // Ưu tiên ảnh đã upload (combo.image) > link_anh từ MongoDB > null
+                                const anhDaiDien = combo.image || combo.link_anh || null;
+                                
+                                // combo.name đã có tên sản phẩm từ getVariantsData()
+                                // Nên dùng trực tiếp
+                                variantsData.push({
+                                    ma_sku: combo.sku || 'SKU' + Date.now(),
+                                    ten_hien_thi: combo.name,  // Đã có tên sản phẩm rồi
+                                    gia_niem_yet: parseInt(combo.original_price || combo.price || 0),
+                                    gia_ban: parseInt(combo.price) || 0,
+                                    so_luong_ton_kho: parseInt(combo.stock) || 0,
+                                    luot_ban: 0,  // Mặc định 0 khi tạo mới
+                                    anh_dai_dien: anhDaiDien,  // Lấy từ image hoặc link_anh
+                                    site_origin: region,  // Lấy từ key của regional_variants
+                                    trang_thai: combo.active !== undefined ? (combo.active ? 1 : 0) : 1,
+                                    attributes: combo.attributes || {}
+                                });
+                            });
+                        }
+                    });
+                } else if (variantsManagerData.variant_combinations && Array.isArray(variantsManagerData.variant_combinations)) {
+                    // Fallback: Cấu trúc cũ {variant_options, variant_combinations}
+                    variantsManagerData.variant_combinations.forEach(combo => {
+                        let variantName = combo.name || '';
+                        
+                        // Nếu combo.name đã có tên sản phẩm (từ getVariantsData), lấy lại tên gốc
+                        if (productName && variantName.startsWith(productName)) {
+                            variantName = variantName.substring(productName.length).trim();
+                        }
+                        
+                        // Tạo tên hiển thị đầy đủ
+                        const ten_hien_thi = productName ? `${productName} ${variantName}` : variantName;
+                        
+                        variantsData.push({
+                            ma_sku: combo.sku || 'SKU' + Date.now(),
+                            ten_hien_thi: ten_hien_thi,
+                            gia_niem_yet: parseInt(combo.original_price || combo.price || 0),
+                            gia_ban: parseInt(combo.price) || 0,
+                            so_luong_ton_kho: parseInt(combo.stock) || 0,
+                            luot_ban: 0,  // Mặc định 0 khi tạo mới
+                            anh_dai_dien: combo.link_anh || combo.image || null,  // Ưu tiên link_anh, fallback sang image
+                            site_origin: combo.site_origin || 'bac',
+                            trang_thai: combo.active !== undefined ? (combo.active ? 1 : 0) : 1,
+                            attributes: combo.attributes || {}
+                        });
+                    });
+                } else {
+                    console.warn('⚠️ No variant_combinations found in old structure');
+                }
+            } else {
+                console.warn('⚠️ window.productVariantsManager not found');
+            }
+
+            console.log('📦 Variants Form Data for product_variants table (final):', variantsData);
+            console.log(`📊 Total variants to insert: ${variantsData.length}`);
+            return variantsData;
+        }
+
+        // Tính giá bán và giá niêm yết cho product từ variant có giá bán thấp nhất
+        calculateProductPriceFromVariants(variantsData) {
+            if (!variantsData || variantsData.length === 0) {
+                return { gia_ban: 0, gia_niem_yet: 0 };
+            }
+
+            // Tìm variant có giá bán thấp nhất
+            const minPriceVariant = variantsData.reduce((min, variant) => {
+                const variantPrice = parseInt(variant.gia_ban) || 0;
+                const minPrice = parseInt(min.gia_ban) || 0;
+                return variantPrice < minPrice ? variant : min;
+            });
+
+            const gia_ban = parseInt(minPriceVariant.gia_ban) || 0;
+            const gia_niem_yet = parseInt(minPriceVariant.gia_niem_yet) || gia_ban;
+
+            console.log('💰 Calculated prices from variants:', {
+                gia_ban,
+                gia_niem_yet,
+                from_variant: minPriceVariant.ma_sku
+            });
+
+            return { gia_ban, gia_niem_yet };
         }
         
         
-        // Cập nhật hàm validateProductForm
+        // Cập nhật hàm validateProductForm cho schema mới
         validateProductForm(formData) {
             const errors = [];
 
             if (!formData.ten_san_pham) {
                 errors.push('Vui lòng nhập tên sản phẩm');
-            }
-            if (!formData.gia_ban || formData.gia_ban <= 0) {
-                errors.push('Vui lòng nhập giá bán hợp lệ');
             }
             if (!formData.danh_muc_id) {
                 errors.push('Vui lòng chọn danh mục');
@@ -2462,7 +3314,21 @@
                 errors.push('Vui lòng chọn thương hiệu');
             }
 
-
+            // Kiểm tra variants (nếu có variant manager hoặc form đơn giản có giá)
+            const variantsData = this.getVariantsFormData();
+            if (variantsData.length === 0) {
+                errors.push('Vui lòng thêm ít nhất 1 biến thể sản phẩm (hoặc nhập giá bán)');
+            } else {
+                // Validate từng variant
+                variantsData.forEach((variant, index) => {
+                    if (!variant.gia_ban || variant.gia_ban <= 0) {
+                        errors.push(`Biến thể ${index + 1}: Giá bán không hợp lệ`);
+                    }
+                    if (!variant.ma_sku) {
+                        errors.push(`Biến thể ${index + 1}: Thiếu mã SKU`);
+                    }
+                });
+            }
 
             if (errors.length > 0) {
                 this.showError(errors.join('<br>'));
@@ -5309,20 +6175,85 @@ class SimpleImageUploadManager {
         }
     }
 
+    // Upload ảnh đơn lẻ (cho variant) - tự động thêm vào danh sách ảnh sản phẩm
+    async uploadSingleImage(file) {
+        try {
+            console.log('📤 Uploading single image for variant:', file.name);
+            
+            // Lấy thông tin sản phẩm
+            const productId = window.currentEditId || document.getElementById('productId')?.value || null;
+            const productName = document.getElementById('productName')?.value?.trim() || 'product';
+            // Tạo folder name: ten-san-pham-productId
+            const folderName = productId ? `${productName.toLowerCase().replace(/\s+/g, '-')}-${productId}` : `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+            
+            const formData = new FormData();
+            formData.append('productAdditionalImages', file);
+            formData.append('productId', folderName); // Gửi folder name
+
+            const response = await fetch('/api/upload/product-additional-images', {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('📡 Upload response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Upload error response:', errorText);
+                throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('📦 Upload result:', result);
+            
+            if (result.success && result.data && result.data.length > 0) {
+                const imageUrl = result.data[0].url;
+                console.log('✅ Image uploaded:', imageUrl);
+                
+                // Tự động thêm vào productImages array nếu chưa có
+                const existingImage = this.productImages.find(img => 
+                    (img.url && img.url === imageUrl) || 
+                    (img instanceof File && img.name === file.name)
+                );
+                
+                if (!existingImage && this.productImages.length < 10) {
+                    // Thêm ảnh vào array dưới dạng object với URL
+                    this.productImages.push({ 
+                        url: imageUrl,
+                        name: file.name,
+                        type: 'uploaded'
+                    });
+                    
+                    // Render lại preview để hiển thị ảnh mới
+                    this.renderProductImagesPreview();
+                    console.log(`✅ Added variant image to product images (total: ${this.productImages.length})`);
+                }
+                
+                return imageUrl;
+            } else {
+                throw new Error('No URL returned from upload');
+            }
+        } catch (error) {
+            console.error('❌ Error uploading single image:', error);
+            throw error;
+        }
+    }
+
     async uploadMainImage(file) {
             try {
                 console.log('📤 Uploading main image via API...');
                 
-                // Dùng slug từ biến toàn cục hoặc tạo slug mới nếu là sản phẩm mới
-                const productName = document.getElementById('productName')?.value || '';
-                const productSku = document.getElementById('productId')?.value || `SP${Date.now()}`;
-                const productSlug = window.currentProductSlug || `${productName}-${productSku}`.toLowerCase().replace(/\s+/g, '-');
+                // Lấy thông tin sản phẩm
+                const productId = window.currentEditId || document.getElementById('productId')?.value || null;
+                const productName = document.getElementById('productName')?.value?.trim() || 'product';
+                // Tạo folder name: ten-san-pham-productId
+                const folderName = productId ? `${productName.toLowerCase().replace(/\s+/g, '-')}-${productId}` : `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
                 
-                console.log('📦 Upload main image with slug:', productSlug);
+                console.log('📦 Upload main image to folder:', folderName);
                 
                 const formData = new FormData();
                 formData.append('productMainImage', file);
-                formData.append('productSlug', productSlug);
+                formData.append('productId', folderName); // Gửi folder name
 
                 const response = await fetch('/api/upload/product-main-image', {
                     method: 'POST',
@@ -5354,18 +6285,19 @@ class SimpleImageUploadManager {
             try {
                 console.log(`📤 Uploading ${files.length} additional images via API`);
                 
-                // Dùng slug từ biến toàn cục hoặc tạo slug mới nếu là sản phẩm mới
-                const productName = document.getElementById('productName')?.value || '';
-                const productSku = document.getElementById('productId')?.value || `SP${Date.now()}`;
-                const productSlug = window.currentProductSlug || `${productName}-${productSku}`.toLowerCase().replace(/\s+/g, '-');
+                // Lấy thông tin sản phẩm
+                const productId = window.currentEditId || document.getElementById('productId')?.value || null;
+                const productName = document.getElementById('productName')?.value?.trim() || 'product';
+                // Tạo folder name: ten-san-pham-productId
+                const folderName = productId ? `${productName.toLowerCase().replace(/\s+/g, '-')}-${productId}` : `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
                 
-                console.log('📦 Upload additional images with slug:', productSlug);
-                
+                console.log('📦 Upload additional images to folder:', folderName);
+
                 const formData = new FormData();
                 files.forEach(file => {
                     formData.append('productAdditionalImages', file);
                 });
-                formData.append('productSlug', productSlug);
+                formData.append('productId', folderName); // Gửi folder name
 
                 const response = await fetch('/api/upload/product-additional-images', {
                     method: 'POST',
@@ -6312,9 +7244,7 @@ class SimpleImageUploadManager {
         // Hiển thị confirm
         const result = await Swal.fire({
             title: 'Xác nhận xóa ảnh',
-            text: imageToDelete.isExisting 
-                ? 'Bạn có chắc muốn xóa ảnh này? Ảnh sẽ bị xóa vĩnh viễn khỏi hệ thống.'
-                : 'Bạn có chắc muốn xóa ảnh này?',
+            text: 'Bạn có chắc muốn xóa ảnh này? Ảnh sẽ được xóa khỏi danh sách và xóa vĩnh viễn khi bạn lưu sản phẩm.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Xóa',
@@ -6322,65 +7252,35 @@ class SimpleImageUploadManager {
             customClass: {
                 confirmButton: 'btn btn-danger',
                 cancelButton: 'btn btn-secondary'
-            },
-            showLoaderOnConfirm: true, // Thêm dòng này
-            preConfirm: async () => {  // Thêm hàm xử lý async
-                try {
-                    // Nếu là ảnh hiện có, xoá khỏi Cloudinary và MongoDB
-                    if (imageToDelete.isExisting && imageToDelete.url) {
-                        // Lấy productId từ form (nếu đang edit)
-                        const productId = document.getElementById('productId').value;
-                        
-                        if (productId) {
-                            console.log(`🗑️ Deleting existing image for product ${productId}:`, imageToDelete.url);
-                            
-                            // Xoá khỏi Cloudinary
-                            await this.deleteImageFromCloudinary(imageToDelete.url);
-                            
-                            // Xoá khỏi MongoDB
-                            await this.deleteImageFromMongoDB(productId, imageToDelete.url);
-                            
-                            console.log('✅ Image completely deleted from system');
-                        } else {
-                            console.log('⚠️ No product ID found, only removing from preview');
-                        }
-                    }
-
-                    // Xoá ảnh khỏi mảng hiện tại
-                    this.productImages.splice(index, 1);
-
-                    // Điều chỉnh mainImageIndex nếu cần
-                    if (this.mainImageIndex === index) {
-                        this.mainImageIndex = 0;
-                        console.log('🔄 Main image deleted, setting new main image index to 0');
-                    } else if (index < this.mainImageIndex) {
-                        this.mainImageIndex--;
-                        console.log('🔄 Adjusted main image index to:', this.mainImageIndex);
-                    }
-
-                    // Cập nhật preview
-                    this.renderProductImagesPreview();
-                    
-                    console.log(`🗑️ Deleted image index ${index}, remaining: ${this.productImages.length}`);
-                    
-                    return { success: true };
-                    
-                } catch (error) {
-                    console.error('❌ Error deleting image:', error);
-                    Swal.showValidationMessage(`Lỗi khi xóa ảnh: ${error.message}`);
-                    return { success: false };
-                }
-            },
-            allowOutsideClick: () => !Swal.isLoading() // Không cho click bên ngoài khi đang loading
+            }
         });
 
-        // Xử lý kết quả sau khi preConfirm hoàn thành
         if (result.isConfirmed) {
-            if (result.value && result.value.success) {
-                this.showSuccess('Đã xóa ảnh thành công');
-            } else {
-                this.showError('Không thể xóa ảnh. Vui lòng thử lại.');
+            // Đánh dấu ảnh cần xóa (sẽ xóa khi Save)
+            if (imageToDelete.isExisting && imageToDelete.url) {
+                // Lưu URL để xóa sau khi Save
+                if (!this.imagesToDelete) this.imagesToDelete = [];
+                this.imagesToDelete.push(imageToDelete.url);
+                console.log('📝 Marked image for deletion on save:', imageToDelete.url);
             }
+            
+            // Xoá ảnh khỏi mảng hiện tại
+            this.productImages.splice(index, 1);
+
+            // Điều chỉnh mainImageIndex nếu cần
+            if (this.mainImageIndex === index) {
+                this.mainImageIndex = 0;
+                console.log('🔄 Main image deleted, setting new main image index to 0');
+            } else if (index < this.mainImageIndex) {
+                this.mainImageIndex--;
+                console.log('🔄 Adjusted main image index to:', this.mainImageIndex);
+            }
+
+            // Cập nhật preview
+            this.renderProductImagesPreview();
+            
+            console.log(`🗑️ Deleted image index ${index}, remaining: ${this.productImages.length}`);
+            this.showSuccess('Đã xóa ảnh khỏi danh sách. Nhớ lưu để xóa vĩnh viễn.');
         }
     }
     
@@ -6596,9 +7496,7 @@ class SimpleImageUploadManager {
         // Hiển thị confirm
         const result = await Swal.fire({
             title: 'Xác nhận xóa video',
-            text: videoToDelete.url && !(videoToDelete instanceof File)
-                ? 'Bạn có chắc muốn xóa video này? Video sẽ bị xóa vĩnh viễn khỏi hệ thống.'
-                : 'Bạn có chắc muốn xóa video này?',
+            text: 'Bạn có chắc muốn xóa video này? Video sẽ được xóa khỏi danh sách và xóa vĩnh viễn khi bạn lưu sản phẩm.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Xóa',
@@ -6606,45 +7504,26 @@ class SimpleImageUploadManager {
             customClass: {
                 confirmButton: 'btn btn-danger',
                 cancelButton: 'btn btn-secondary'
-            },
-            showLoaderOnConfirm: true,
-            preConfirm: async () => {
-                try {
-                    // Nếu là video đã upload (có URL Cloudinary), xóa khỏi Cloudinary và MongoDB
-                    if (videoToDelete.url && !(videoToDelete instanceof File)) {
-                        const productId = document.getElementById('productId')?.value;
-                        
-                        if (productId) {
-                            console.log(`🗑️ Deleting existing video for product ${productId}:`, videoToDelete.url);
-                            
-                            // Xóa khỏi Cloudinary và MongoDB
-                            await this.deleteVideoFromSystem(videoToDelete.url, productId);
-                            
-                            console.log('✅ Video completely deleted from system');
-                        } else {
-                            console.log('⚠️ No product ID found, only removing from preview');
-                        }
-                    }
-
-                    // Xóa video khỏi mảng
-                    this.productVideos.splice(index, 1);
-                    
-                    console.log(`🗑️ Deleted video index ${index}, remaining: ${this.productVideos.length}`);
-                    
-                    return true;
-                } catch (error) {
-                    console.error('❌ Error in preConfirm:', error);
-                    Swal.showValidationMessage(`Lỗi: ${error.message}`);
-                    return false;
-                }
-            },
-            allowOutsideClick: () => !Swal.isLoading()
+            }
         });
 
         if (result.isConfirmed) {
+            // Đánh dấu video cần xóa (sẽ xóa khi Save)
+            if (videoToDelete.url && !(videoToDelete instanceof File)) {
+                // Lưu URL để xóa sau khi Save
+                if (!this.videosToDelete) this.videosToDelete = [];
+                this.videosToDelete.push(videoToDelete.url);
+                console.log('📝 Marked video for deletion on save:', videoToDelete.url);
+            }
+            
+            // Xóa video khỏi mảng
+            this.productVideos.splice(index, 1);
+            
+            console.log(`🗑️ Deleted video index ${index}, remaining: ${this.productVideos.length}`);
+            
             // Re-render preview
             this.renderProductVideosPreview();
-            this.showSuccess('Đã xóa video thành công');
+            this.showSuccess('Đã xóa video khỏi danh sách. Nhớ lưu để xóa vĩnh viễn.');
         }
     }
 
@@ -6674,14 +7553,15 @@ class SimpleImageUploadManager {
                 formData.append('productVideos', file);
             });
             
-            // Dùng slug từ biến toàn cục hoặc tạo slug mới nếu là sản phẩm mới
-            const productName = document.getElementById('productName')?.value || '';
-            const productSku = document.getElementById('productId')?.value || `SP${Date.now()}`;
-            const productSlug = window.currentProductSlug || `${productName}-${productSku}`.toLowerCase().replace(/\s+/g, '-');
+            // Lấy thông tin sản phẩm
+            const productId = window.currentEditId || document.getElementById('productId')?.value || null;
+            const productName = document.getElementById('productName')?.value?.trim() || 'product';
+            // Tạo folder name: ten-san-pham-productId
+            const folderName = productId ? `${productName.toLowerCase().replace(/\s+/g, '-')}-${productId}` : `${productName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
             
-            console.log('📹 Upload videos with slug:', productSlug);
+            console.log('🎥 Upload videos to folder:', folderName);
             
-            formData.append('productSlug', productSlug);
+            formData.append('productId', folderName); // Gửi folder name
 
             const response = await fetch('/api/upload/product-videos', {
                 method: 'POST',
@@ -7604,11 +8484,11 @@ class ProductSpecsManager {
         
         // Đổi nút Edit thành Save
         actionsCell.innerHTML = `
-            <button class="btn-spec-action btn-save-spec" title="Lưu">
+            <button class="btn btn-sm btn-success btn-action-modern btn-save-spec" title="Lưu">
                 <i class="fas fa-check"></i>
             </button>
-            <button class="btn-spec-action btn-delete-spec" title="Xóa">
-                <i class="fas fa-trash"></i>
+            <button class="btn btn-sm btn-danger btn-action-modern btn-delete-spec" title="Xóa">
+                <i class="fas fa-trash-alt"></i>
             </button>
         `;
         
@@ -7644,11 +8524,11 @@ class ProductSpecsManager {
         
         // Đổi nút Save thành Edit
         actionsCell.innerHTML = `
-            <button class="btn-spec-action btn-edit-spec" title="Sửa thông số">
+            <button class="btn btn-sm btn-primary btn-action-modern btn-edit-spec" title="Sửa thông số">
                 <i class="fas fa-edit"></i>
             </button>
-            <button class="btn-spec-action btn-delete-spec" title="Xóa">
-                <i class="fas fa-trash"></i>
+            <button class="btn btn-sm btn-danger btn-action-modern btn-delete-spec" title="Xóa">
+                <i class="fas fa-trash-alt"></i>
             </button>
         `;
         
@@ -7738,8 +8618,8 @@ class ProductSpecsManager {
                 </td>
                 <td>
                     <div class="d-flex gap-1 justify-content-center">
-                        <button type="button" class="btn-action btn-delete btn-delete-spec" title="Xóa">
-                            <i class="fas fa-trash"></i>
+                        <button type="button" class="btn btn-sm btn-danger btn-action-modern btn-delete-spec" title="Xóa thông số">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </td>
@@ -7914,8 +8794,15 @@ class ProductVariantsManager {
     updateVariantValue(variantId, valueIndex, newValue) {
         const variant = this.variantTypes.find(v => v.id === variantId);
         if (variant && variant.values[valueIndex] !== undefined) {
+            const oldValue = variant.values[valueIndex];
             variant.values[valueIndex] = newValue.trim();
-            this.autoGenerateCombinations();
+            
+            // Cập nhật tên hiển thị trong combinations mà không regenerate
+            this.updateCombinationNamesAfterValueChange(variantId, oldValue, newValue.trim());
+            
+            // Re-render variant options table để hiển thị giá trị mới
+            this.renderVariantOptionsTable();
+            
             console.log('✏️ Updated value:', variantId, valueIndex, newValue);
         }
     }
@@ -7924,9 +8811,53 @@ class ProductVariantsManager {
         const variant = this.variantTypes.find(v => v.id === variantId);
         if (variant) {
             variant.name = newName.trim();
-            this.autoGenerateCombinations(); // Refresh combinations với tên mới
+            
+            // KHÔNG re-render để tránh mất focus khi đang nhập
+            // Chỉ log để debug
             console.log('✏️ Updated variant name:', variantId, newName);
         }
+    }
+
+    // Helper: Cập nhật tên combinations khi giá trị thay đổi
+    updateCombinationNamesAfterValueChange(variantId, oldValue, newValue) {
+        const variant = this.variantTypes.find(v => v.id === variantId);
+        if (!variant) {
+            console.warn('⚠️ Variant not found:', variantId);
+            return;
+        }
+        
+        console.log('🔄 Updating combinations:', { variantId, oldValue, newValue, variantName: variant.name });
+        
+        let updated = 0;
+        this.combinations.forEach(combo => {
+            // Duyệt qua tất cả attributes để tìm giá trị cũ
+            if (combo.attributes) {
+                Object.keys(combo.attributes).forEach(key => {
+                    if (combo.attributes[key] === oldValue) {
+                        // Tìm thấy giá trị cũ, update sang giá trị mới
+                        combo.attributes[key] = newValue;
+                        updated++;
+                        
+                        // Rebuild name từ attributes
+                        const nameParts = [];
+                        this.variantTypes.forEach(v => {
+                            const vKey = v.name.toLowerCase().replace(/\s+/g, '_');
+                            if (combo.attributes[vKey]) {
+                                nameParts.push(combo.attributes[vKey]);
+                            }
+                        });
+                        combo.name = nameParts.join(' - ');
+                        
+                        console.log('✅ Updated combo:', combo.name);
+                    }
+                });
+            }
+        });
+        
+        console.log(`✅ Updated ${updated} combinations`);
+        
+        // Re-render combinations với tên mới
+        this.renderCombinations();
     }
 
     renderVariantOptionsTable() {
@@ -7998,9 +8929,30 @@ class ProductVariantsManager {
     bindVariantOptionEvents() {
         // Update variant name
         document.querySelectorAll('.variant-name-input').forEach(input => {
+            // Input event - chỉ update data, không re-render
             input.addEventListener('input', (e) => {
                 const variantId = e.target.getAttribute('data-variant-id');
                 this.updateVariantName(variantId, e.target.value);
+            });
+            
+            // Enter key - blur để apply changes
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            });
+            
+            // Blur event - re-render để cập nhật UI
+            input.addEventListener('blur', (e) => {
+                const variantId = e.target.getAttribute('data-variant-id');
+                const variant = this.variantTypes.find(v => v.id === variantId);
+                if (variant && variant.name) {
+                    // Re-render để hiển thị tên mới trong bảng
+                    this.renderVariantOptionsTable();
+                    // Re-render combinations để cập nhật attributes keys
+                    this.autoGenerateCombinations();
+                }
             });
         });
 
@@ -8097,14 +9049,19 @@ class ProductVariantsManager {
         const valueArrays = validVariants.map(v => v.values);
         const allCombinations = cartesian(...valueArrays);
 
-        // Lấy giá gốc từ form
-        const basePrice = parseInt(document.getElementById('productPrice')?.value) || 0;
-
-        // Giữ lại data của các tổ hợp đã tồn tại (nếu có)
-        const existingCombos = {};
+        // Giữ lại data của các tổ hợp đã tồn tại
+        // Ưu tiên match theo sql_variant_id, fallback về attributes
+        const existingCombosByVariantId = {};
+        const existingCombosByAttributes = {};
+        
         this.combinations.forEach(combo => {
-            const key = JSON.stringify(combo.attributes);
-            existingCombos[key] = combo;
+            // Index theo sql_variant_id nếu có
+            if (combo.sql_variant_id) {
+                existingCombosByVariantId[combo.sql_variant_id] = combo;
+            }
+            // Index theo attributes để fallback
+            const attrValues = Object.values(combo.attributes).sort().join('|');
+            existingCombosByAttributes[attrValues] = combo;
         });
 
         // Tạo combinations mới
@@ -8118,19 +9075,20 @@ class ProductVariantsManager {
                 nameParts.push(combo[i]);
             });
 
-            const attrKey = JSON.stringify(attributes);
-            const existing = existingCombos[attrKey];
+            // Tìm combination cũ theo giá trị attributes (không phụ thuộc vào tên key)
+            const attrValues = Object.values(attributes).sort().join('|');
+            const existing = existingCombosByAttributes[attrValues];
 
-            // Nếu tổ hợp đã tồn tại, giữ nguyên SKU, giá, tồn kho
+            // Nếu tổ hợp đã tồn tại, giữ nguyên tất cả data
             if (existing) {
                 return {
                     ...existing,
                     name: nameParts.join(' - '),
-                    attributes: attributes
+                    attributes: attributes  // Update attributes với tên mới
                 };
             }
 
-            // Tổ hợp mới
+            // Tổ hợp mới - giá mặc định là 0, người dùng sẽ nhập
             const sku = 'VAR-' + Date.now() + '-' + (index + 1);
             const name = nameParts.join(' - ');
 
@@ -8138,8 +9096,11 @@ class ProductVariantsManager {
                 id: 'comb_' + Date.now() + '_' + index,
                 sku: sku,
                 name: name,
-                price: basePrice,
+                original_price: 0,  // Giá niêm yết mặc định, người dùng sẽ nhập
+                price: 0,  // Giá bán mặc định, người dùng sẽ nhập
                 stock: 0,
+                site_origin: 'bac',  // Mặc định là vùng Bắc
+                image: '',  // Ảnh đại diện của variant
                 active: true,
                 attributes: attributes
             };
@@ -8158,7 +9119,6 @@ class ProductVariantsManager {
 
         if (this.combinations.length === 0) {
             section.style.display = 'none';
-            this.togglePriceFields(); // Enable price fields when no variants
             return;
         }
 
@@ -8187,9 +9147,19 @@ class ProductVariantsManager {
                 </td>
                 <td>
                     <input type="number" 
+                        class="form-control form-control-sm combo-original-price" 
+                        value="${combo.original_price || 0}"
+                        data-combo-id="${combo.id}"
+                        placeholder="Giá niêm yết"
+                        step="1000"
+                        min="0">
+                </td>
+                <td>
+                    <input type="number" 
                         class="form-control form-control-sm combo-price" 
                         value="${combo.price}"
                         data-combo-id="${combo.id}"
+                        placeholder="Giá bán"
                         step="1000"
                         min="0">
                 </td>
@@ -8199,6 +9169,43 @@ class ProductVariantsManager {
                         value="${combo.stock}"
                         data-combo-id="${combo.id}"
                         min="0">
+                </td>
+                <td>
+                    <select class="form-select form-select-sm combo-site-origin" 
+                        data-combo-id="${combo.id}">
+                        <option value="bac" ${(combo.site_origin || 'bac') === 'bac' ? 'selected' : ''}>Bắc</option>
+                        <option value="trung" ${combo.site_origin === 'trung' ? 'selected' : ''}>Trung</option>
+                        <option value="nam" ${combo.site_origin === 'nam' ? 'selected' : ''}>Nam</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="d-flex gap-2 align-items-center">
+                        ${combo.image ? `
+                            <div class="combo-image-container" style="position: relative; display: inline-block;">
+                                <img src="${combo.image}" class="combo-image-preview" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer;" alt="" title="Click để xem lớn">
+                                <div class="combo-image-actions" style="position: absolute; top: -5px; right: -5px; display: flex; gap: 2px;">
+                                    <button type="button" class="btn-combo-edit-image" data-combo-id="${combo.id}" title="Sửa ảnh" style="width: 20px; height: 20px; padding: 0; border-radius: 50%; background: #007bff; color: white; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn-combo-delete-image" data-combo-id="${combo.id}" title="Xóa ảnh" style="width: 20px; height: 20px; padding: 0; border-radius: 50%; background: #dc3545; color: white; border: none; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="combo-upload-wrapper">
+                                <input type="file" 
+                                    class="combo-image-upload" 
+                                    data-combo-id="${combo.id}"
+                                    accept="image/*"
+                                    id="upload-${combo.id}"
+                                    style="display: none;">
+                                <label for="upload-${combo.id}" class="combo-upload-btn" title="Chọn ảnh">
+                                    <i class="fas fa-camera"></i>
+                                </label>
+                            </div>
+                        `}
+                    </div>
                 </td>
                 <td>
                     <div class="form-check form-switch">
@@ -8221,7 +9228,6 @@ class ProductVariantsManager {
         });
 
         this.bindCombinationEvents();
-        this.togglePriceFields(); // Disable price fields when variants exist
     }
 
     bindCombinationEvents() {
@@ -8236,7 +9242,18 @@ class ProductVariantsManager {
             });
         });
 
-        // Update Price
+        // Update Original Price (Giá niêm yết)
+        document.querySelectorAll('.combo-original-price').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (combo) {
+                    combo.original_price = parseInt(e.target.value) || 0;
+                }
+            });
+        });
+
+        // Update Price (Giá bán)
         document.querySelectorAll('.combo-price').forEach(input => {
             input.addEventListener('change', (e) => {
                 const comboId = e.target.getAttribute('data-combo-id');
@@ -8254,6 +9271,218 @@ class ProductVariantsManager {
                 const combo = this.combinations.find(c => c.id === comboId);
                 if (combo) {
                     combo.stock = parseInt(e.target.value) || 0;
+                }
+            });
+        });
+
+        // Update Site Origin (Vùng)
+        document.querySelectorAll('.combo-site-origin').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (combo) {
+                    combo.site_origin = e.target.value;
+                    console.log(`🗺️ Updated site_origin for ${combo.sku}: ${combo.site_origin}`);
+                }
+            });
+        });
+
+        // Upload Image for variant
+        document.querySelectorAll('.combo-image-upload').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const comboId = e.target.getAttribute('data-combo-id');
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (!combo) return;
+
+                // Validate image file
+                if (!file.type.startsWith('image/')) {
+                    alert('Vui lòng chọn file ảnh!');
+                    return;
+                }
+
+                // Create preview URL from local file
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    combo.image = event.target.result; // Data URL for preview
+                    combo.imageFile = file; // Store file object for later upload
+                    console.log(`📸 Image file selected for ${combo.sku}: ${file.name}`);
+                    
+                    // Add to product images for preview
+                    if (!window.simpleImageUploadManager.productImages.some(img => img.file === file)) {
+                        window.simpleImageUploadManager.productImages.push({ 
+                            url: event.target.result,
+                            file: file,
+                            name: file.name,
+                            type: 'variant'
+                        });
+                        window.simpleImageUploadManager.renderProductImagesPreview();
+                        console.log('✅ Added variant image to preview');
+                    }
+                    
+                    // Re-render to show preview
+                    this.renderCombinations();
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // Click vào preview để xem ảnh lớn
+        document.querySelectorAll('.combo-image-preview').forEach(img => {
+            img.addEventListener('click', (e) => {
+                window.open(e.target.src, '_blank');
+            });
+        });
+
+        // Edit image button
+        document.querySelectorAll('.btn-combo-edit-image').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Lấy combo ID từ button (không phải từ e.target vì có thể click vào icon)
+                const button = e.currentTarget;
+                const comboId = button.getAttribute('data-combo-id');
+                
+                console.log('🗑️ Edit image clicked for combo:', comboId);
+                
+                // Create temporary input
+                const tempInput = document.createElement('input');
+                tempInput.type = 'file';
+                tempInput.accept = 'image/*';
+                tempInput.style.display = 'none';
+                tempInput.addEventListener('change', (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const combo = this.combinations.find(c => c.id === comboId);
+                    if (!combo) return;
+
+                    // Validate image file
+                    if (!file.type.startsWith('image/')) {
+                        alert('Vui lòng chọn file ảnh!');
+                        return;
+                    }
+
+                    // Create preview URL from local file
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        const oldCloudinaryUrl = combo.image && !combo.image.startsWith('data:') ? combo.image : null;
+                        
+                        // Remove old image from product images (both file and URL)
+                        if (combo.imageFile) {
+                            // Remove old file
+                            const fileIdx = window.simpleImageUploadManager.productImages.findIndex(img => img.file === combo.imageFile);
+                            if (fileIdx !== -1) {
+                                window.simpleImageUploadManager.productImages.splice(fileIdx, 1);
+                            }
+                        } else if (combo.image) {
+                            // Remove old Cloudinary URL from preview
+                            const urlIdx = window.simpleImageUploadManager.productImages.findIndex(img => img.url === combo.image);
+                            if (urlIdx !== -1) {
+                                window.simpleImageUploadManager.productImages.splice(urlIdx, 1);
+                            }
+                        }
+
+                        // Đánh dấu ảnh cũ để xóa khi Save (nếu là ảnh từ Cloudinary)
+                        if (oldCloudinaryUrl) {
+                            if (!window.simpleImageUploadManager.imagesToDelete) {
+                                window.simpleImageUploadManager.imagesToDelete = [];
+                            }
+                            if (!window.simpleImageUploadManager.imagesToDelete.includes(oldCloudinaryUrl)) {
+                                window.simpleImageUploadManager.imagesToDelete.push(oldCloudinaryUrl);
+                                console.log('📝 Marked old variant image for deletion on save:', oldCloudinaryUrl);
+                            }
+                        }
+
+                        combo.image = evt.target.result; // Data URL for preview
+                        combo.imageFile = file; // Store file object for later upload
+                        console.log(`📸 Image file updated for ${combo.sku}: ${file.name}`);
+                        
+                        // Add new file to product images
+                        window.simpleImageUploadManager.productImages.push({ 
+                            url: evt.target.result,
+                            file: file,
+                            name: file.name,
+                            type: 'variant'
+                        });
+                        window.simpleImageUploadManager.renderProductImagesPreview();
+                        
+                        this.renderCombinations();
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    tempInput.remove();
+                });
+                document.body.appendChild(tempInput);
+                tempInput.click();
+            });
+        });
+
+        // Delete image button
+        document.querySelectorAll('.btn-combo-delete-image').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Lấy combo ID từ button
+                const button = e.currentTarget;
+                const comboId = button.getAttribute('data-combo-id');
+                
+                const combo = this.combinations.find(c => c.id === comboId);
+                if (!combo) return;
+                
+                const cloudinaryUrl = combo.image && !combo.image.startsWith('data:') ? combo.image : null;
+                
+                // Hiển thị confirm dialog
+                const result = await Swal.fire({
+                    title: 'Xác nhận xóa ảnh',
+                    text: 'Bạn có chắc muốn xóa ảnh này? Ảnh sẽ được xóa khỏi variant và xóa vĩnh viễn khi bạn lưu sản phẩm.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xóa',
+                    cancelButtonText: 'Hủy',
+                    customClass: {
+                        confirmButton: 'btn btn-danger',
+                        cancelButton: 'btn btn-secondary'
+                    }
+                });
+
+                if (result.isConfirmed) {
+                    // Đánh dấu ảnh variant cần xóa (sẽ xóa khi Save)
+                    if (cloudinaryUrl) {
+                        if (!window.simpleImageUploadManager.imagesToDelete) {
+                            window.simpleImageUploadManager.imagesToDelete = [];
+                        }
+                        window.simpleImageUploadManager.imagesToDelete.push(cloudinaryUrl);
+                        console.log('📝 Marked variant image for deletion on save:', cloudinaryUrl);
+                    }
+                    
+                    // Remove from product images preview
+                    if (combo.imageFile) {
+                        const idx = window.simpleImageUploadManager.productImages.findIndex(img => img.file === combo.imageFile);
+                        if (idx !== -1) {
+                            window.simpleImageUploadManager.productImages.splice(idx, 1);
+                            console.log('🗑️ Removed variant file from preview');
+                        }
+                    } else if (combo.image) {
+                        const idx = window.simpleImageUploadManager.productImages.findIndex(img => img.url === combo.image);
+                        if (idx !== -1) {
+                            window.simpleImageUploadManager.productImages.splice(idx, 1);
+                            console.log('🗑️ Removed variant image URL from preview');
+                        }
+                    }
+                    
+                    // Update preview
+                    window.simpleImageUploadManager.renderProductImagesPreview();
+                    
+                    combo.image = '';
+                    combo.imageFile = null;
+                    console.log(`🗑️ Image removed from variant ${combo.sku}`);
+                    this.renderCombinations();
+                    window.simpleImageUploadManager.showSuccess('Đã xóa ảnh khỏi variant. Nhớ lưu để xóa vĩnh viễn.');
                 }
             });
         });
@@ -8279,56 +9508,15 @@ class ProductVariantsManager {
         });
     }
 
-    togglePriceFields() {
-        const priceInput = document.getElementById('productPrice');
-        const originalPriceInput = document.getElementById('productOriginalPrice');
-        
-        if (!priceInput) return;
-        
-        const hasVariants = this.combinations && this.combinations.length > 0;
-        
-        if (hasVariants) {
-            // Disable only productPrice when variants exist
-            priceInput.disabled = true;
-            
-            // Add visual indicator
-            priceInput.placeholder = 'Tự động từ variant rẻ nhất';
-            
-            // Add a class for styling
-            priceInput.classList.add('auto-calculated');
-            
-            // Keep originalPrice enabled
-            if (originalPriceInput) {
-                originalPriceInput.disabled = false;
-                originalPriceInput.placeholder = '0';
-                originalPriceInput.classList.remove('auto-calculated');
-            }
-        } else {
-            // Enable price fields when no variants
-            priceInput.disabled = false;
-            
-            // Reset placeholder
-            priceInput.placeholder = '0';
-            
-            // Remove class
-            priceInput.classList.remove('auto-calculated');
-            
-            if (originalPriceInput) {
-                originalPriceInput.disabled = false;
-                originalPriceInput.placeholder = '0';
-                originalPriceInput.classList.remove('auto-calculated');
-            }
-        }
-        
-        console.log(`💰 Price field ${hasVariants ? 'disabled' : 'enabled'}, Original price always enabled (variants: ${this.combinations.length})`);
-    }
-
     getVariantsData() {
         console.log('📦 Getting variants data...');
         console.log('📊 Current variantTypes:', this.variantTypes);
         console.log('📊 Current combinations:', this.combinations);
         
-        // Trả về cấu trúc mới: variant_options + variant_combinations
+        // Lấy tên sản phẩm từ form
+        const productName = document.getElementById('productName')?.value?.trim() || '';
+        
+        // Trả về cấu trúc mới: variant_options + variant_combinations (flat array với field vung)
         const variantOptions = this.variantTypes
             .filter(v => v.name && v.name.trim() !== '' && v.values.length > 0)
             .map(v => ({
@@ -8336,26 +9524,26 @@ class ProductVariantsManager {
                 values: v.values
             }));
 
+        // Tạo flat array với field vung thay vì nhóm theo regional_variants
         const variantCombinations = this.combinations.map(c => ({
+            sql_variant_id: c.sql_variant_id || null,  // ID từ product_variants table (SQL)
             sku: c.sku,
-            name: c.name,
+            name: productName ? `${productName} ${c.name}` : c.name,  // Thêm tên sản phẩm vào trước
             price: c.price,
+            original_price: c.original_price || 0,
             stock: c.stock,
+            vung: c.site_origin || 'bac',  // Lưu vùng trực tiếp trong mỗi combination
+            link_anh: (c.image && c.image.startsWith('data:')) ? null : (c.image || null),  // Link ảnh Cloudinary
             active: c.active,
             attributes: c.attributes
         }));
 
-        // Auto-clear variant_options if no combinations exist (when saving)
         const result = {
-            variant_options: variantCombinations.length > 0 ? variantOptions : [],
+            variant_options: variantOptions,
             variant_combinations: variantCombinations
         };
         
-        if (variantCombinations.length === 0 && variantOptions.length > 0) {
-            console.log('🧹 Auto-clearing variant_options because no combinations exist (on save)');
-        }
-
-        console.log('✅ Variants data to return:', JSON.stringify(result, null, 2));
+        console.log('✅ Variants data to return (flat array):', JSON.stringify(result, null, 2));
         
         return result;
     }
@@ -8374,6 +9562,122 @@ class ProductVariantsManager {
             return;
         }
 
+        // Ưu tiên load từ cấu trúc mới: flat array với field vung
+        if (variantsData.variant_options && Array.isArray(variantsData.variant_options)) {
+            console.log('📊 Loading from flat array structure with vung field');
+            
+            // Load variant_options
+            console.log(`📋 Loading ${variantsData.variant_options.length} variant options...`);
+            this.variantTypes = [];
+            variantsData.variant_options.forEach((variant, index) => {
+                if (variant.name && variant.values) {
+                    console.log(`➕ [${index}] Adding variant type: "${variant.name}" with values:`, variant.values);
+                    this.addVariantType(variant.name, variant.values);
+                }
+            });
+            
+            // Load variant_combinations từ flat array
+            this.combinations = [];
+            const productName = document.getElementById('productName')?.value?.trim() || '';
+            
+            if (variantsData.variant_combinations && Array.isArray(variantsData.variant_combinations)) {
+                console.log(`🔗 Loading ${variantsData.variant_combinations.length} combinations...`);
+                
+                // Filter out default variants
+                const realVariants = variantsData.variant_combinations.filter(combo => !combo.is_default);
+                
+                realVariants.forEach((combo, index) => {
+                    // Loại bỏ tên sản phẩm khỏi combo.name nếu có
+                    let variantName = combo.name || '';
+                    if (productName && variantName.startsWith(productName)) {
+                        variantName = variantName.substring(productName.length).trim();
+                    }
+                    
+                    const mapped = {
+                        id: 'comb_' + Date.now() + '_' + (combo.vung || 'bac') + '_' + index,
+                        sql_variant_id: combo.sql_variant_id || null,  // Lưu SQL variant ID
+                        sku: combo.sku || '',
+                        name: variantName,
+                        price: combo.price || 0,
+                        original_price: combo.original_price || 0,
+                        stock: combo.stock || 0,
+                        site_origin: combo.vung || 'bac',  // Lấy vùng từ field vung
+                        image: combo.link_anh || combo.image || '',  // Ưu tiên link_anh, fallback sang image
+                        active: combo.active !== undefined ? combo.active : true,
+                        attributes: combo.attributes || {}
+                    };
+                    console.log(`🔗 [${combo.vung || 'bac'}-${index}] Loaded combination:`, mapped);
+                    this.combinations.push(mapped);
+                });
+            }
+            
+            this.renderCombinations();
+            return;
+        }
+        
+        // Fallback: Load từ regional_variants (cấu trúc cũ) nếu có
+        if (variantsData.regional_variants && typeof variantsData.regional_variants === 'object') {
+            console.log('📊 Loading from old regional_variants structure (fallback)');
+            
+            // Load variant_options từ vùng đầu tiên (tất cả vùng có cùng options)
+            const firstRegion = Object.keys(variantsData.regional_variants)[0];
+            if (firstRegion) {
+                const regionData = variantsData.regional_variants[firstRegion];
+                if (regionData.variant_options && Array.isArray(regionData.variant_options)) {
+                    console.log(`📋 Loading ${regionData.variant_options.length} variant options from region ${firstRegion}...`);
+                    this.variantTypes = [];
+                    regionData.variant_options.forEach((variant, index) => {
+                        if (variant.name && variant.values) {
+                            console.log(`➕ [${index}] Adding variant type: "${variant.name}" with values:`, variant.values);
+                            this.addVariantType(variant.name, variant.values);
+                        }
+                    });
+                }
+            }
+            
+            // Load variant_combinations từ tất cả các vùng
+            this.combinations = [];
+            const productName = document.getElementById('productName')?.value?.trim() || '';
+            
+            Object.keys(variantsData.regional_variants).forEach(region => {
+                const regionData = variantsData.regional_variants[region];
+                if (regionData.variant_combinations && Array.isArray(regionData.variant_combinations)) {
+                    console.log(`🔗 Loading ${regionData.variant_combinations.length} combinations from region ${region}...`);
+                    
+                    // Filter out default variants
+                    const realVariants = regionData.variant_combinations.filter(combo => !combo.is_default);
+                    
+                    realVariants.forEach((combo, index) => {
+                        // Loại bỏ tên sản phẩm khỏi combo.name nếu có
+                        let variantName = combo.name || '';
+                        if (productName && variantName.startsWith(productName)) {
+                            variantName = variantName.substring(productName.length).trim();
+                        }
+                        
+                        const mapped = {
+                            id: 'comb_' + Date.now() + '_' + region + '_' + index,
+                            sql_variant_id: combo.sql_variant_id || null,  // Lưu SQL variant ID
+                            sku: combo.sku || '',
+                            name: variantName,
+                            price: combo.price || 0,
+                            original_price: combo.original_price || 0,
+                            stock: combo.stock || 0,
+                            site_origin: region,  // Gán vùng cho combo
+                            image: combo.link_anh || combo.image || '',  // Ưu tiên link_anh, fallback sang image
+                            active: combo.active !== undefined ? combo.active : true,
+                            attributes: combo.attributes || {}
+                        };
+                        console.log(`🔗 [${region}-${index}] Loaded combination:`, mapped);
+                        this.combinations.push(mapped);
+                    });
+                }
+            });
+            
+            this.renderCombinations();
+            return;
+        }
+
+        // Fallback to old structure
         // Load variant options
         if (variantsData.variant_options && Array.isArray(variantsData.variant_options)) {
             console.log(`📋 Loading ${variantsData.variant_options.length} variant options...`);
@@ -8392,17 +9696,30 @@ class ProductVariantsManager {
         if (variantsData.variant_combinations && Array.isArray(variantsData.variant_combinations)) {
             console.log(`🔗 Loading ${variantsData.variant_combinations.length} variant combinations...`);
             
+            // Lấy tên sản phẩm để loại bỏ khỏi combo.name
+            const productName = document.getElementById('productName')?.value?.trim() || '';
+            
             // Filter out default variants (is_default: true)
             const realVariants = variantsData.variant_combinations.filter(combo => !combo.is_default);
             console.log(`🔗 After filtering default variants: ${realVariants.length} real variants`);
             
             this.combinations = realVariants.map((combo, index) => {
+                // Loại bỏ tên sản phẩm khỏi combo.name nếu có
+                let variantName = combo.name || '';
+                if (productName && variantName.startsWith(productName)) {
+                    variantName = variantName.substring(productName.length).trim();
+                }
+                
                 const mapped = {
                     id: 'comb_' + Date.now() + '_' + index,
+                    sql_variant_id: combo.sql_variant_id || null,  // Lưu SQL variant ID
                     sku: combo.sku || '',
-                    name: combo.name || '',
+                    name: variantName,  // Chỉ lưu phần variant (Đen - 128GB)
                     price: combo.price || 0,
+                    original_price: combo.original_price || 0,  // Thêm original_price
                     stock: combo.stock || 0,
+                    site_origin: combo.site_origin || 'bac',  // Thêm site_origin với default
+                    image: combo.link_anh || combo.image || '',  // Ưu tiên link_anh, fallback sang image
                     active: combo.active !== undefined ? combo.active : true,
                     attributes: combo.attributes || {}
                 };
@@ -8418,6 +9735,51 @@ class ProductVariantsManager {
         console.log('✅ Loaded variants data');
         console.log('📊 Final variantTypes:', this.variantTypes);
         console.log('📊 Final combinations:', this.combinations);
+    }
+
+    async syncVariantStatusFromSQL(productId) {
+        try {
+            console.log('🔄 Syncing variant status from SQL for product:', productId);
+            
+            // Fetch all variants from SQL
+            const response = await fetch(`/api/variants?san_pham_id=${productId}`);
+            if (!response.ok) {
+                console.warn('⚠️ Could not fetch variants from SQL');
+                return;
+            }
+            
+            const data = await response.json();
+            const sqlVariants = data.data || [];
+            
+            console.log('📥 Found', sqlVariants.length, 'SQL variants');
+            
+            // Map SQL variants to combinations by sql_variant_id or SKU
+            this.combinations.forEach(combo => {
+                let sqlVariant = null;
+                
+                // Tìm by sql_variant_id trước
+                if (combo.sql_variant_id) {
+                    sqlVariant = sqlVariants.find(v => v.id === combo.sql_variant_id);
+                }
+                
+                // Nếu không tìm thấy, thử tìm by SKU
+                if (!sqlVariant && combo.sku) {
+                    sqlVariant = sqlVariants.find(v => v.ma_sku === combo.sku);
+                }
+                
+                // Update active status from SQL trang_thai
+                if (sqlVariant) {
+                    combo.active = sqlVariant.trang_thai == 1 || sqlVariant.trang_thai === true;
+                    console.log(`✅ Synced combo ${combo.sku}: active=${combo.active} (from SQL trang_thai=${sqlVariant.trang_thai})`);
+                }
+            });
+            
+            // Re-render combinations with updated status
+            this.renderCombinations();
+            
+        } catch (error) {
+            console.error('❌ Error syncing variant status from SQL:', error);
+        }
     }
 
     clearVariants() {
@@ -8828,7 +10190,7 @@ class VideoLinksManager {
                     '<div class="video-link-url" title="' + link.url + '">' + link.url + '</div>' +
                 '</div>' +
                 '<div class="video-link-actions">' +
-                    '<button type="button" class="btn-open-link" onclick="window.open(\'' + link.url + '\', \'_blank\')" title="Mở link">' +
+                    '<button type="button" class="btn-open-link" onclick="window.open(\\\'' + link.url + '\\\', \\\'_blank\\\')" title="Mở link">' +
                         '<i class="fas fa-external-link-alt"></i>' +
                     '</button>' +
                     '<button type="button" class="btn-remove-link" data-id="' + link.id + '" title="Xóa link">' +
@@ -8993,27 +10355,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.videoLinksManager) {
             window.videoLinksManager.clearVideoLinks();
         }
-    };
-    
-    // Cập nhật getProductFormData để bỏ SKU
-    const originalGetProductFormData = ProductManager.prototype.getProductFormData;
-    ProductManager.prototype.getProductFormData = function() {
-        const productName = document.getElementById('productName').value.trim();
-        
-        const formData = {
-            ten_san_pham: productName,
-            gia_ban: parseInt(document.getElementById('productPrice').value) || 0,
-            gia_niem_yet: parseInt(document.getElementById('productOriginalPrice').value) || 0,
-            danh_muc_id: document.getElementById('productCategory').value,
-            thuong_hieu_id: document.getElementById('productBrand').value,
-            trang_thai: parseInt(document.getElementById('productStatus').value),
-            slug: Utils.generateSlug(productName),
-        };
-        
-        // Tự động sinh SKU
-        formData.ma_sku = 'SP' + Date.now();
-        
-        return formData;
     };
 });
 
@@ -9652,10 +10993,134 @@ document.addEventListener('DOMContentLoaded', function() {
 
     .action-buttons {
         display: flex;
-        gap: 6px;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Bootstrap Button Customization */
+    .btn-action-modern {
+        font-weight: 600;
+        font-size: 0.813rem;
+        padding: 0.5rem;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: none;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
         justify-content: center;
     }
 
+    .btn-action-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-action-modern:hover::before {
+        left: 100%;
+    }
+
+    .btn-action-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-action-modern:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-action-modern i {
+        font-size: 1rem;
+    }
+
+    /* Primary Button - Edit */
+    .btn-action-modern.btn-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+    }
+
+    .btn-action-modern.btn-primary:hover {
+        background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+        color: white;
+    }
+
+    /* Warning Button - Toggle */
+    .btn-action-modern.btn-warning {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: #000;
+        font-weight: 700;
+    }
+
+    .btn-action-modern.btn-warning:hover {
+        background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        color: #000;
+    }
+
+    /* Danger Button - Delete */
+    .btn-action-modern.btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+        color: white;
+    }
+
+    .btn-action-modern.btn-danger:hover {
+        background: linear-gradient(135deg, #bb2d3b 0%, #9a2530 100%);
+        color: white;
+    }
+
+    /* Icon Animation on Hover */
+    .btn-edit:hover i {
+        animation: editBounce 0.5s ease;
+    }
+
+    .btn-toggle-status:hover i {
+        animation: toggleFlip 0.4s ease;
+    }
+
+    .btn-delete-product:hover i {
+        animation: deleteShake 0.4s ease;
+    }
+
+    @keyframes editBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+
+    @keyframes toggleFlip {
+        0% { transform: rotateY(0deg); }
+        100% { transform: rotateY(360deg); }
+    }
+
+    @keyframes deleteShake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px) rotate(-5deg); }
+        75% { transform: translateX(2px) rotate(5deg); }
+    }
+
+    /* Responsive - Buttons already icon-only */
+    @media (max-width: 768px) {
+        .btn-action-modern {
+            width: 32px;
+            height: 32px;
+            padding: 0.4rem;
+        }
+        .btn-action-modern i {
+            font-size: 0.875rem;
+        }
+    }
+
+    /* Fallback for old btn-action class (for other sections) */
     .btn-action {
         width: 32px;
         height: 32px;
@@ -9670,31 +11135,22 @@ document.addEventListener('DOMContentLoaded', function() {
         font-size: 0.9rem;
     }
 
-    .btn-edit {
+    .btn-action.btn-edit {
         background: var(--primary);
     }
 
-    .btn-edit:hover {
+    .btn-action.btn-edit:hover {
         background: var(--primary-dark);
-        transform: scale(1.1);
+        transform: scale(1.05);
     }
 
-    .btn-toggle-status {
-        background: var(--warning);
-    }
-
-    .btn-toggle-status:hover {
-        background: #e58e0b;
-        transform: scale(1.1);
-    }
-
-    .btn-delete {
+    .btn-action.btn-delete {
         background: var(--danger);
     }
 
-    .btn-delete:hover {
+    .btn-action.btn-delete:hover {
         background: #dc2626;
-        transform: scale(1.1);
+        transform: scale(1.05);
     }
 
     /* Table Footer */
@@ -12130,29 +13586,74 @@ document.addEventListener('DOMContentLoaded', function() {
     border-color: #cbd5e0;
 }
 
-/* Action buttons in table */
+/* Action buttons in table - Unified Modern Style */
 .btn-action {
-    background: none;
+    font-weight: 600;
+    font-size: 0.813rem;
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     border: none;
-    padding: 0.4rem;
-    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    color: #718096;
-    transition: all 0.2s;
+}
+
+.btn-action::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-action:hover::before {
+    left: 100%;
 }
 
 .btn-action:hover {
-    background-color: #f1f5f9;
-    color: #4a5568;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
-.btn-delete {
-    color: #e53e3e;
+.btn-action:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-.btn-delete:hover {
-    background-color: #fed7d7;
-    color: #c53030;
+.btn-action i {
+    font-size: 1rem;
+}
+
+/* Edit Button - Blue */
+.btn-action.btn-edit {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+}
+
+.btn-action.btn-edit:hover {
+    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+    color: white;
+}
+
+/* Delete Button - Red */
+.btn-action.btn-delete {
+    background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+    color: white;
+}
+
+.btn-action.btn-delete:hover {
+    background: linear-gradient(135deg, #bb2d3b 0%, #9a2530 100%);
+    color: white;
 }
 
 /* Scrollbar styling */
@@ -13302,6 +14803,76 @@ input.auto-calculated {
 input.auto-calculated::placeholder {
     color: #6b7280 !important;
     font-style: italic !important;
+}
+
+/* Product meta info styling */
+.product-meta {
+    margin-top: 4px;
+    font-size: 0.8rem;
+}
+
+.product-meta small {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.product-meta i {
+    font-size: 0.75rem;
+}
+
+/* Variant count badge */
+.variant-count-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Variant image upload styling */
+.combo-upload-wrapper {
+    flex: 0;
+}
+
+.combo-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 1rem;
+    color: white;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    margin: 0;
+}
+
+.combo-upload-btn:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    box-shadow: 0 3px 6px rgba(0, 123, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.combo-upload-btn:active {
+    background: #004085;
+    box-shadow: 0 1px 2px rgba(0, 123, 255, 0.2);
+    transform: translateY(0);
+}
+
+.combo-upload-btn i {
+    margin: 0;
+}
+
+.combo-image-upload {
+    display: none;
 }
 
 </style>

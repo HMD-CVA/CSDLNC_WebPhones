@@ -97,6 +97,52 @@
             
             <!-- Thông tin variant đã chọn -->
             <div class="cps-selected-variant-info" id="selectedVariantInfo">
+              <!-- Flash Sale Info - Hiển thị khi chọn variant flash sale -->
+              <div class="cps-flash-sale-info" id="flashSaleInfo" style="display: none;">
+                <div class="flash-sale-header">
+                  <i class="fas fa-bolt"></i>
+                  <span>ĐANG FLASH SALE</span>
+                </div>
+                <div class="flash-sale-countdown">
+                  <div class="countdown-label">
+                    <i class="fas fa-clock"></i>
+                    Kết thúc sau:
+                  </div>
+                  <div class="countdown-timer" id="flashSaleCountdown">
+                    <div class="time-unit">
+                      <span class="time-value" id="days">0</span>
+                      <span class="time-label">Ngày</span>
+                    </div>
+                    <div class="time-separator">:</div>
+                    <div class="time-unit">
+                      <span class="time-value" id="hours">0</span>
+                      <span class="time-label">Giờ</span>
+                    </div>
+                    <div class="time-separator">:</div>
+                    <div class="time-unit">
+                      <span class="time-value" id="minutes">0</span>
+                      <span class="time-label">Phút</span>
+                    </div>
+                    <div class="time-separator">:</div>
+                    <div class="time-unit">
+                      <span class="time-value" id="seconds">0</span>
+                      <span class="time-label">Giây</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flash-sale-stock">
+                  <div class="stock-progress">
+                    <div class="stock-bar">
+                      <div class="stock-bar-fill" id="flashSaleProgress"></div>
+                    </div>
+                    <div class="stock-text">
+                      <span class="sold-count">Đã bán: <strong id="flashSaleSold">0</strong></span>
+                      <span class="remaining-count">Còn lại: <strong id="flashSaleRemaining">0</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               <div class="cps-variant-price-display">
                 <div class="cps-variant-current-price" id="variantPrice">Vui lòng chọn phiên bản</div>
                 <div class="cps-variant-original-price" id="variantOriginalPrice" style="display: none;"></div>
@@ -846,12 +892,222 @@ body {
   background: #f5f5f5;
 }
 
+/* Flash Sale Variant Styles - Chỉ hiện icon flash nhỏ */
+.cps-variant-option.flash-sale-variant {
+  position: relative;
+}
+
+.flash-sale-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #d70018;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  box-shadow: 0 2px 6px rgba(215, 0, 24, 0.5);
+  z-index: 1;
+}
+
+.flash-sale-badge i {
+  animation: flash-pulse 1.5s infinite;
+}
+
+@keyframes flash-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
 .cps-selected-variant-info {
   margin-top: 20px;
   padding: 16px;
   background: linear-gradient(135deg, #fff5f5, #fff);
   border: 2px solid #ffe0e0;
   border-radius: 12px;
+}
+
+/* Flash Sale Info Styles */
+.cps-flash-sale-info {
+  background: linear-gradient(135deg, #fff0f0 0%, #ffe5e5 50%, #ffd5d5 100%);
+  border: 2px solid #ff6b6b;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(255, 0, 0, 0.15);
+  animation: flash-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes flash-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(255, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 12px 32px rgba(255, 0, 0, 0.25), 0 0 20px rgba(215, 0, 24, 0.2);
+  }
+}
+
+.flash-sale-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #d70018, #ff1744);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(215, 0, 24, 0.4);
+  letter-spacing: 1px;
+}
+
+.flash-sale-header i {
+  font-size: 22px;
+  animation: flash-icon-bounce 1s ease-in-out infinite;
+}
+
+@keyframes flash-icon-bounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(-10deg); }
+}
+
+.flash-sale-countdown {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.countdown-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.countdown-label i {
+  color: #d70018;
+  font-size: 16px;
+}
+
+.countdown-timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.time-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #d70018, #ff1744);
+  padding: 12px 16px;
+  border-radius: 10px;
+  min-width: 70px;
+  box-shadow: 0 4px 12px rgba(215, 0, 24, 0.3);
+}
+
+.time-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+  line-height: 1;
+  font-family: 'Courier New', monospace;
+}
+
+.time-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.time-separator {
+  font-size: 28px;
+  font-weight: bold;
+  color: #d70018;
+  margin: 0 4px;
+}
+
+.flash-sale-stock {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stock-progress {
+  width: 100%;
+}
+
+.stock-bar {
+  width: 100%;
+  height: 24px;
+  background: #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stock-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b 0%, #d70018 100%);
+  border-radius: 12px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stock-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.stock-text {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #666;
+}
+
+.sold-count strong,
+.remaining-count strong {
+  color: #d70018;
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.remaining-count {
+  color: #ff9800;
+}
+
+.remaining-count strong {
+  color: #ff6b00;
 }
 
 .cps-variant-price-display {
@@ -1214,10 +1470,24 @@ document.addEventListener('DOMContentLoaded', function() {
   addToCartBtn?.addEventListener('click', async function() {
     const quantity = parseInt(quantityInput.value);
     const selectedVariant = window.selectedVariant;
-    if (!selectedVariant || !selectedVariant.variant_id) {
+    
+    console.log('🛒 Selected variant for cart:', selectedVariant);
+    
+    if (!selectedVariant) {
       alert('Vui lòng chọn phiên bản sản phẩm');
       return;
     }
+    
+    // Lấy SQL variant ID
+    const variantId = selectedVariant.sql_variant_id || selectedVariant.id;
+    
+    if (!variantId) {
+      alert('Không tìm thấy thông tin phiên bản sản phẩm');
+      console.error('Missing variant ID. Selected variant:', selectedVariant);
+      console.error('Available product variants:', productVariantsData);
+      return;
+    }
+    
     // Lấy userId từ AuthHelper
     const userId = AuthHelper.getUserId();
     if (!userId) {
@@ -1225,15 +1495,18 @@ document.addEventListener('DOMContentLoaded', function() {
       window.location.href = '/login';
       return;
     }
+    
     // Gọi API thêm vào giỏ hàng
     try {
+      console.log('📦 Adding to cart:', { variant_id: variantId, so_luong: quantity, userId });
+      
       const response = await fetch('/api/cart', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          variant_id: selectedVariant.variant_id,
+          variant_id: variantId, // SQL variant ID (UUID)
           so_luong: quantity,
           userId: userId
         })
@@ -1453,6 +1726,26 @@ document.addEventListener('DOMContentLoaded', function() {
     combinations: {{{json product.variants.variant_combinations}}}
   };
   
+  // Store product variants with flash sale info from SQL
+  const productVariantsData = {{{json productVariants}}};
+  console.log('🔥 Product Variants with Flash Sale:', productVariantsData);
+  
+  // Tạo map: MongoDB variant_id -> SQL variant
+  const variantIdMap = new Map();
+  if (productVariantsData && Array.isArray(productVariantsData)) {
+    productVariantsData.forEach(sqlVariant => {
+      // Giả sử SQL variant có thể match với MongoDB variant qua tên hoặc SKU
+      variantIdMap.set(sqlVariant.id, sqlVariant);
+      
+      // Thêm map theo tên variant nếu có
+      if (sqlVariant.ten_hien_thi) {
+        variantIdMap.set(sqlVariant.ten_hien_thi.toLowerCase(), sqlVariant);
+      }
+    });
+  }
+  
+  console.log('🗺️ Variant ID Map:', variantIdMap);
+  
   // Get SQL original price for fallback
   const sqlOriginalPrice = {{#if product.sql_gia_niem_yet}}{{product.sql_gia_niem_yet}}{{else}}null{{/if}};
   
@@ -1460,6 +1753,125 @@ document.addEventListener('DOMContentLoaded', function() {
   const specsData = {{{json product.thong_so_ky_thuat}}};
   
   let selectedOptions = {};
+  
+  // Add flash sale badges to variant options
+  function addFlashSaleBadges() {
+    if (!productVariantsData || !Array.isArray(productVariantsData)) return;
+    
+    // Group variants by flash_sale_id to get unique flash sales
+    const flashSaleMap = new Map();
+    
+    productVariantsData.forEach(v => {
+      if (v.isFlashSale && v.flashSale) {
+        // Store flash sale info by flash_sale_id (from backend)
+        const flashSaleId = v.flashSale.id || v.id;
+        if (!flashSaleMap.has(flashSaleId)) {
+          flashSaleMap.set(flashSaleId, v.flashSale);
+        }
+      }
+    });
+    
+    console.log('🔥 Flash Sale Map:', flashSaleMap);
+    
+    variantOptions.forEach(btn => {
+      const optionValue = btn.getAttribute('data-option-value');
+      
+      // Find matching variant with flash sale
+      const flashSaleVariant = productVariantsData.find(v => {
+        if (!v.isFlashSale) return false;
+        
+        // Check if option value matches variant name or attributes
+        const variantName = v.ten_hien_thi || '';
+        return variantName.includes(optionValue) || optionValue.includes(variantName);
+      });
+      
+      if (flashSaleVariant && flashSaleVariant.isFlashSale) {
+        btn.classList.add('flash-sale-variant');
+        
+        // Chỉ thêm icon tia flash nhỏ
+        const badge = document.createElement('span');
+        badge.className = 'flash-sale-badge';
+        badge.innerHTML = `<i class="fas fa-bolt"></i>`;
+        btn.appendChild(badge);
+        
+        console.log('🔥 Added flash sale badge to variant:', optionValue);
+      }
+    });
+  }
+  
+  // Call after DOM is ready
+  addFlashSaleBadges();
+  
+  // Flash sale countdown timer
+  let flashSaleCountdownInterval = null;
+  
+  function showFlashSaleInfo(flashSale) {
+    const flashSaleInfo = document.getElementById('flashSaleInfo');
+    if (!flashSaleInfo) return;
+    
+    // Hiển thị flash sale info box
+    flashSaleInfo.style.display = 'block';
+    
+    // Cập nhật số lượng
+    const sold = flashSale.da_ban || 0;
+    const remaining = flashSale.con_lai || 0;
+    const total = flashSale.so_luong_ton || 0;
+    
+    document.getElementById('flashSaleSold').textContent = sold;
+    document.getElementById('flashSaleRemaining').textContent = remaining;
+    
+    // Cập nhật progress bar
+    const percentage = total > 0 ? (sold / total) * 100 : 0;
+    document.getElementById('flashSaleProgress').style.width = percentage + '%';
+    
+    // Khởi động countdown timer
+    if (flashSaleCountdownInterval) {
+      clearInterval(flashSaleCountdownInterval);
+    }
+    
+    const endTime = new Date(flashSale.ngay_ket_thuc).getTime();
+    
+    function updateCountdown() {
+      const now = new Date().getTime();
+      const distance = endTime - now;
+      
+      if (distance < 0) {
+        // Hết hạn
+        document.getElementById('days').textContent = '0';
+        document.getElementById('hours').textContent = '0';
+        document.getElementById('minutes').textContent = '0';
+        document.getElementById('seconds').textContent = '0';
+        clearInterval(flashSaleCountdownInterval);
+        return;
+      }
+      
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+      
+      document.getElementById('days').textContent = days.toString().padStart(2, '0');
+      document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+      document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+      document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    updateCountdown();
+    flashSaleCountdownInterval = setInterval(updateCountdown, 1000);
+  }
+  
+  function hideFlashSaleInfo() {
+    const flashSaleInfo = document.getElementById('flashSaleInfo');
+    if (flashSaleInfo) {
+      flashSaleInfo.style.display = 'none';
+    }
+    
+    // Dừng countdown timer
+    if (flashSaleCountdownInterval) {
+      clearInterval(flashSaleCountdownInterval);
+      flashSaleCountdownInterval = null;
+    }
+  }
   
   variantOptions.forEach(btn => {
     btn.addEventListener('click', function() {
@@ -1506,66 +1918,146 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (matchingCombo) {
       console.log('✅ Found matching combination:', matchingCombo);
-      console.log('💰 Price:', matchingCombo.price);
-      console.log('💰 Original Price from combo:', matchingCombo.original_price);
-      console.log('💰 SQL Original Price:', sqlOriginalPrice);
       
-      // Update price
-      if (matchingCombo.price) {
-        variantPriceElem.textContent = new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
-        }).format(matchingCombo.price);
+      // 🔍 Tìm SQL variant tương ứng với MongoDB combo
+      let sqlVariant = null;
+      
+      // Cách 1: Match theo tên variant
+      if (matchingCombo.name) {
+        const variantKey = matchingCombo.name.toLowerCase();
+        sqlVariant = variantIdMap.get(variantKey);
       }
       
-      // Update original price - use combo's original_price or fallback to SQL
-      const originalPriceToUse = matchingCombo.original_price || sqlOriginalPrice;
+      // Cách 2: Match theo SKU
+      if (!sqlVariant && matchingCombo.sku) {
+        sqlVariant = productVariantsData.find(v => v.ma_sku === matchingCombo.sku);
+      }
       
-      if (originalPriceToUse) {
-        // Show original price
+      // Cách 3: Match theo attributes
+      if (!sqlVariant && matchingCombo.attributes) {
+        const comboName = Object.values(matchingCombo.attributes).join(' - ');
+        sqlVariant = productVariantsData.find(v => 
+          v.ten_hien_thi && v.ten_hien_thi.toLowerCase().includes(comboName.toLowerCase())
+        );
+      }
+      
+      console.log('🔍 SQL Variant found:', sqlVariant);
+      
+      // Thêm SQL variant ID vào matchingCombo
+      if (sqlVariant) {
+        matchingCombo.sql_variant_id = sqlVariant.id;
+        matchingCombo.sql_variant = sqlVariant;
+      } else {
+        console.warn('⚠️ Could not find SQL variant for combo:', matchingCombo);
+      }
+      
+      console.log('🔍 Checking flash sale for combo:', matchingCombo);
+      console.log('🔍 Available productVariantsData:', productVariantsData);
+      
+      // 🔥 Kiểm tra xem variant này có flash sale không
+      // Thử nhiều cách matching
+      let flashSaleVariant = null;
+      
+      if (sqlVariant) {
+        // Dùng SQL variant ID để tìm flash sale
+        flashSaleVariant = productVariantsData.find(v => 
+          v.isFlashSale && v.id === sqlVariant.id
+        );
+      }
+      
+      console.log('🔥 Flash sale variant found:', flashSaleVariant);
+      
+      if (flashSaleVariant && flashSaleVariant.flashSale) {
+        // ✅ Hiển thị giá flash sale
+        console.log('🔥 Variant có flash sale:', flashSaleVariant.flashSale);
+        
+        // Hiển thị flash sale info box
+        showFlashSaleInfo(flashSaleVariant.flashSale);
+        
+        variantPriceElem.innerHTML = `<span style="color: #d70018; font-weight: bold;">${new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND'
+        }).format(flashSaleVariant.flashSale.gia_flash_sale)}</span>`;
+        
+        // Hiển thị giá gốc gạch ngang
         const formattedOriginalPrice = new Intl.NumberFormat('vi-VN', {
           style: 'currency',
           currency: 'VND'
-        }).format(originalPriceToUse);
+        }).format(flashSaleVariant.flashSale.gia_goc);
         
         variantOriginalPriceElem.textContent = formattedOriginalPrice;
         variantOriginalPriceElem.style.display = 'inline-block';
         
-        console.log('✅ Showing original price:', formattedOriginalPrice);
+        // Hiển thị % giảm giá flash sale
+        const discountPercent = flashSaleVariant.flashSale.phan_tram_giam;
         
-        // Calculate and show discount percentage if price is lower
-        if (originalPriceToUse > matchingCombo.price) {
-          const discountPercent = Math.round((1 - matchingCombo.price / originalPriceToUse) * 100);
+        if (variantDiscountBadge && variantDiscountPercent) {
+          variantDiscountPercent.textContent = `-${discountPercent}%`;
+          variantDiscountBadge.style.display = 'inline-block';
+          variantDiscountBadge.style.background = '#d70018';
+        }
+        
+        if (discountTag && discountTagText) {
+          discountTagText.textContent = `-${discountPercent}%`;
+          discountTag.style.display = 'block';
+        }
+        
+      } else {
+        // ✅ Variant thường - ẩn flash sale info
+        hideFlashSaleInfo();
+        
+        // ✅ Variant thường - hiển thị giá bình thường
+        console.log('💰 Variant thường - Price:', matchingCombo.price);
+        
+        if (matchingCombo.price) {
+          variantPriceElem.textContent = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+          }).format(matchingCombo.price);
+        }
+        
+        // Update original price - use combo's original_price or fallback to SQL
+        const originalPriceToUse = matchingCombo.original_price || sqlOriginalPrice;
+        
+        if (originalPriceToUse) {
+          // Show original price
+          const formattedOriginalPrice = new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+          }).format(originalPriceToUse);
           
-          // Update discount badge in price section
-          if (variantDiscountBadge && variantDiscountPercent) {
-            variantDiscountPercent.textContent = `-${discountPercent}%`;
-            variantDiscountBadge.style.display = 'inline-block';
+          variantOriginalPriceElem.textContent = formattedOriginalPrice;
+          variantOriginalPriceElem.style.display = 'inline-block';
+          
+          // Calculate and show discount percentage if price is lower
+          if (originalPriceToUse > matchingCombo.price) {
+            const discountPercent = Math.round((1 - matchingCombo.price / originalPriceToUse) * 100);
+            
+            if (variantDiscountBadge && variantDiscountPercent) {
+              variantDiscountPercent.textContent = `-${discountPercent}%`;
+              variantDiscountBadge.style.display = 'inline-block';
+            }
+            
+            if (discountTag && discountTagText) {
+              discountTagText.textContent = `-${discountPercent}%`;
+              discountTag.style.display = 'block';
+            }
+          } else {
+            if (variantDiscountBadge) {
+              variantDiscountBadge.style.display = 'none';
+            }
+            if (discountTag) {
+              discountTag.style.display = 'none';
+            }
           }
-          
-          // Update discount tag on image
-          if (discountTag && discountTagText) {
-            discountTagText.textContent = `-${discountPercent}%`;
-            discountTag.style.display = 'block';
-          }
-          
-          console.log('✅ Showing discount:', discountPercent + '%');
         } else {
+          variantOriginalPriceElem.style.display = 'none';
           if (variantDiscountBadge) {
             variantDiscountBadge.style.display = 'none';
           }
           if (discountTag) {
             discountTag.style.display = 'none';
           }
-        }
-      } else {
-        console.log('⚠️ No original price found');
-        variantOriginalPriceElem.style.display = 'none';
-        if (variantDiscountBadge) {
-          variantDiscountBadge.style.display = 'none';
-        }
-        if (discountTag) {
-          discountTag.style.display = 'none';
         }
       }
       

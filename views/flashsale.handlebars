@@ -58,7 +58,7 @@
                 </div>
                 <div class="stat-info">
                     <h3 id="totalProducts">0</h3>
-                    <p>Tổng sản phẩm</p>
+                    <p>Tổng variants</p>
                 </div>
             </div>
         </div>
@@ -72,9 +72,15 @@
             <div class="filter-controls">
                 <select class="filter-select" id="statusFilter">
                     <option value="">Tất cả trạng thái</option>
-                    <option value="Đang diễn ra">🟢 Đang diễn ra</option>
-                    <option value="Sắp diễn ra">🟡 Sắp diễn ra</option>
-                    <option value="Đã kết thúc">⚫ Đã kết thúc</option>
+                    <option value="cho">🟡 Chờ diễn ra</option>
+                    <option value="dang_dien_ra">🟢 Đang diễn ra</option>
+                    <option value="ket_thuc">⚫ Kết thúc</option>
+                </select>
+                <select class="filter-select" id="regionFilter">
+                    <option value="">Tất cả vùng</option>
+                    <option value="bac">🔵 Miền Bắc</option>
+                    <option value="trung">🟠 Miền Trung</option>
+                    <option value="nam">🟢 Miền Nam</option>
                 </select>
                 <button class="clear-filters" id="clearFilters">
                     <i class="fas fa-times"></i>
@@ -97,10 +103,11 @@
                         <tr>
                             <th style="width: 60px;">STT</th>
                             <th>Tên Flash Sale</th>
+                            <th style="width: 120px;">Vùng</th>
                             <th style="width: 160px;">Ngày bắt đầu</th>
                             <th style="width: 160px;">Ngày kết thúc</th>
                             <th style="width: 140px;">Trạng thái</th>
-                            <th style="width: 100px;">Số SP</th>
+                            <th style="width: 100px;">Số variants</th>
                             <th style="width: 180px;">Thao tác</th>
                         </tr>
                     </thead>
@@ -125,7 +132,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="flashSaleForm">
+                <form id="flashSaleForm" novalidate>
                     <input type="hidden" id="flashSaleId">
 
                     <div class="form-sections">
@@ -142,14 +149,21 @@
                                         placeholder="VD: Flash Sale Tết 2025">
                                 </div>
                                 <div class="form-group">
-                                    <label for="trangThai" class="form-label">Trạng thái *</label>
-                                    <select class="form-select" id="trangThai" required>
-                                        <option value="cho">Sắp diễn ra</option>
-                                        <option value="dang_dien_ra">Đang diễn ra</option>
-                                        <option value="da_ket_thuc">Đã kết thúc</option>
-                                        <option value="huy">Hủy</option>
+                                    <label for="vungId" class="form-label">Vùng áp dụng *</label>
+                                    <select class="form-select" id="vungId" required>
+                                        <option value="">-- Chọn vùng --</option>
+                                        <option value="bac">Miền Bắc</option>
+                                        <option value="trung">Miền Trung</option>
+                                        <option value="nam">Miền Nam</option>
                                     </select>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="moTa" class="form-label">Mô tả</label>
+                                <textarea class="form-control" id="moTa" rows="2" style="white-space: pre-line;" 
+                                    placeholder="Mô tả ngắn về chương trình flash sale..."></textarea>
+                            </div>
+                            <div class="form-grid-2">
                                 <div class="form-group">
                                     <label for="ngayBatDau" class="form-label">Ngày bắt đầu *</label>
                                     <input type="datetime-local" class="form-control" id="ngayBatDau" required>
@@ -158,6 +172,17 @@
                                     <label for="ngayKetThuc" class="form-label">Ngày kết thúc *</label>
                                     <input type="datetime-local" class="form-control" id="ngayKetThuc" required>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="trangThai" class="form-label">Trạng thái *</label>
+                                <select class="form-select" id="trangThai" required>
+                                    <option value="cho">Chờ diễn ra</option>
+                                    <option value="dang_dien_ra">Đang diễn ra</option>
+                                    <option value="ket_thuc">Kết thúc</option>
+                                </select>
+                            </div>
+                        </div>
+                        
                         <!-- Product Selection -->
                         <div class="form-section">
                             <h4 class="section-title">
@@ -1227,6 +1252,13 @@
         outline: none;
     }
 
+    /* Auto-resize textarea */
+    textarea.form-control {
+        overflow: hidden;
+        resize: none;
+        min-height: 50px;
+    }
+
     .input-group {
         display: flex;
         border-radius: 8px;
@@ -1967,6 +1999,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshBtn = document.getElementById('refreshBtn');
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
+    const regionFilter = document.getElementById('regionFilter');
     const clearFiltersBtn = document.getElementById('clearFilters');
     
     const productSearchInput = document.getElementById('productSearchInput');
@@ -1975,6 +2008,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const variantsTableBody = document.getElementById('variantsTableBody');
     const selectAllVariants = document.getElementById('selectAllVariants');
     const addSelectedVariants = document.getElementById('addSelectedVariants');
+    const moTaTextarea = document.getElementById('moTa');
 
     // ==========================================
     // INITIALIZATION
@@ -1985,6 +2019,43 @@ document.addEventListener('DOMContentLoaded', function() {
         loadFlashSalesData();
         loadProducts();
         attachEventListeners();
+        setupAutoResizeTextarea();
+    }
+
+    // ==========================================
+    // AUTO RESIZE TEXTAREA
+    // ==========================================
+    function setupAutoResizeTextarea() {
+        if (!moTaTextarea) return;
+        
+        // Function to auto-resize based on content
+        function autoResize() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        }
+        
+        // Function to auto-resize based on newline count
+        function autoResizeByContent(textarea) {
+            const content = textarea.value || '';
+            const lineCount = (content.match(/\n/g) || []).length + 1; // +1 for the first line
+            const lineHeight = 24; // Approximate line height in pixels
+            const padding = 24; // Top and bottom padding
+            const minHeight = 50; // Minimum height
+            
+            const calculatedHeight = Math.max(minHeight, (lineCount * lineHeight) + padding);
+            textarea.style.height = calculatedHeight + 'px';
+        }
+        
+        // Listen to input event
+        moTaTextarea.addEventListener('input', autoResize);
+        
+        // Also resize on paste
+        moTaTextarea.addEventListener('paste', function() {
+            setTimeout(autoResize.bind(this), 0);
+        });
+        
+        // Initial resize
+        autoResize.call(moTaTextarea);
     }
 
     // ==========================================
@@ -1998,6 +2069,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Search and filters
         searchInput?.addEventListener('input', filterFlashSales);
         statusFilter?.addEventListener('change', filterFlashSales);
+        regionFilter?.addEventListener('change', filterFlashSales);
         clearFiltersBtn?.addEventListener('click', handleClearFilters);
 
         // Product search and selection
@@ -2023,6 +2095,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleClearFilters() {
         if (searchInput) searchInput.value = '';
         if (statusFilter) statusFilter.value = '';
+        if (regionFilter) regionFilter.value = '';
         filterFlashSales();
     }
 
@@ -2044,9 +2117,25 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
-        const productData = JSON.parse(selectedOption.dataset.product || '{}');
-        await loadProductVariants(productData);
+        try {
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const productData = JSON.parse(selectedOption.dataset.product || '{}');
+            
+            console.log('🔍 Selected product:', {
+                id: productId,
+                name: productData.ten_san_pham,
+                data: productData
+            });
+            
+            await loadProductVariants(productData);
+        } catch (error) {
+            console.error('❌ Error handling product select:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Không thể load thông tin sản phẩm'
+            });
+        }
     }
 
     function handleSelectAllVariants(e) {
@@ -2109,180 +2198,126 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             currentProduct = product;
             
-            if (!product.mongo_detail_id) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Thông báo',
-                    text: `Sản phẩm "${product.ten_san_pham}" chưa có thông tin MongoDB`
-                });
-                variantsSection.style.display = 'none';
-                return;
+            // Load variants từ SQL database (product_variants table)
+            const response = await fetch(`/api/product-variants/${product.id}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch product variants');
             }
-
-            const mongoResponse = await fetch(`/api/mongodb-details/${product.mongo_detail_id}`);
-            if (!mongoResponse.ok) throw new Error('Failed to fetch MongoDB details');
             
-            const mongoData = await mongoResponse.json();
+            const data = await response.json();
+            const variants = Array.isArray(data) ? data : (data.data || data.variants || []);
             
-            // Debug: Log toàn bộ response structure
-            console.log('📦 Full MongoDB Response:', mongoData);
-            
-            const mongoDetails = mongoData.data || mongoData;
-            const variantCombinations = mongoData.variant_combinations || mongoDetails.variants?.variant_combinations || [];
-            
-            console.log('📦 Extracted Details:', {
-                hasData: !!mongoData.data,
-                link_avatar: mongoDetails.link_avatar,
-                hinh_anh: mongoDetails.hinh_anh,
-                hinhAnhArray: Array.isArray(mongoData.hinh_anh) ? mongoData.hinh_anh : 'not an array',
-                variants: mongoDetails.variants,
-                variantCount: variantCombinations.length,
-                firstVariant: variantCombinations[0],
-                firstVariantKeys: variantCombinations[0] ? Object.keys(variantCombinations[0]) : []
+            console.log('📦 Product Variants từ SQL:', {
+                productId: product.id,
+                productName: product.ten_san_pham,
+                variantsCount: variants.length,
+                firstVariant: variants[0]
             });
             
-            if (variantCombinations.length === 0) {
+            if (variants.length === 0) {
                 Swal.fire({
                     icon: 'info',
                     title: 'Thông báo',
-                    text: `Sản phẩm "${product.ten_san_pham}" chưa có variant combinations`
+                    text: `Sản phẩm "${product.ten_san_pham}" chưa có variants`
                 });
                 variantsSection.style.display = 'none';
                 return;
             }
 
-            // Get product-level link_avatar as fallback
-            const productAvatar = mongoDetails.link_avatar || mongoDetails.hinh_anh?.[0] || '/image/default-product.png';
-
-            currentProductVariants = variantCombinations.map((v, index) => {
-                // Try multiple fields for variant image
-                const variantAvatar = v.image || v.link_avatar || v.hinh_anh || productAvatar;
-                
-                console.log(`🖼️ Variant ${index} (${v.name}): image=${v.image}, link_avatar=${v.link_avatar}, hinh_anh=${v.hinh_anh}, productAvatar=${productAvatar}, final=${variantAvatar}`);
-                
-                return {
+            // Map variants từ SQL - đảm bảo tất cả field được set
+            currentProductVariants = variants.map((v, index) => {
+                const mappedVariant = {
                     index: index,
-                    variantId: v.variant_id || `${product.id}-${index}`,
+                    variantId: v.id || v.variant_id,  // UUID từ product_variants.id
                     productId: product.id,
                     productName: product.ten_san_pham,
-                    variantName: v.name || `Variant ${index + 1}`,
-                    price: v.price || v.gia || 0,
-                    stock: v.stock || v.ton_kho || 0,
-                    link_avatar: variantAvatar
+                    ma_sku: v.ma_sku || 'N/A',
+                    ten_hien_thi: v.ten_hien_thi || `Variant ${index + 1}`,
+                    variantName: v.ten_hien_thi || `Variant ${index + 1}`,
+                    gia_niem_yet: v.gia_niem_yet || 0,
+                    price: v.gia_ban || 0,
+                    stock: v.so_luong_ton_kho || 0,
+                    site_origin: v.site_origin || '',
+                    link_avatar: v.anh_dai_dien || product.anh_dai_dien || '/image/default-product.png',
+                    trang_thai: v.trang_thai
                 };
+                
+                console.log(`Variant ${index}:`, mappedVariant);
+                return mappedVariant;
             });
 
+            console.log('✅ Đã map', currentProductVariants.length, 'variants');
             renderVariantsTable();
             variantsSection.style.display = 'block';
             
         } catch (error) {
-            console.error('Error loading product variants:', error);
+            console.error('❌ Error loading product variants:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi',
-                text: 'Không thể tải variant của sản phẩm'
+                text: 'Không thể tải variant của sản phẩm: ' + error.message
             });
-        }
-    }
-
-    async function loadFlashSaleData(id) {
-        try {
-            const response = await fetch(`/api/flashsales/${id}`);
-            if (!response.ok) throw new Error('Failed to load flash sale');
-            
-            const data = await response.json();
-            const flashSale = data.data || data;
-
-            document.getElementById('flashSaleId').value = flashSale.id;
-            document.getElementById('tenFlashSale').value = flashSale.ten_flash_sale;
-            document.getElementById('ngayBatDau').value = formatDateTimeLocal(flashSale.ngay_bat_dau);
-            document.getElementById('ngayKetThuc').value = formatDateTimeLocal(flashSale.ngay_ket_thuc);
-            document.getElementById('trangThai').value = flashSale.trang_thai;
-
-            const itemsResponse = await fetch(`/api/flashsales/${id}/items`);
-            if (itemsResponse.ok) {
-                const items = await itemsResponse.json();
-                tempProductList = items.map(item => ({
-                    productId: item.san_pham_id,
-                    productName: item.ten_san_pham,
-                    variantName: item.variant_name || `${item.mau_sac} - ${item.dung_luong}`,
-                    fullName: `${item.ten_san_pham} + ${item.variant_name || item.mau_sac + ' - ' + item.dung_luong}`,
-                    gia_goc: item.gia_goc,
-                    gia_flash_sale: item.gia_flash_sale,
-                    gioi_han_mua: item.gioi_han_mua,
-                    link_avatar: item.link_avatar || '/image/default-product.png'
-                }));
-                renderTempProductList();
-                updateSelectedCount();
-            }
-        } catch (error) {
-            console.error('Error loading flash sale data:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi',
-                text: 'Không thể tải thông tin flash sale'
-            });
-        }
-    }
-
-    // Event Listeners
-    addFlashSaleBtn.addEventListener('click', () => openFlashSaleModal());
-    
-    refreshBtn.addEventListener('click', () => {
-        refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i><span>Đang tải...</span>';
-        loadFlashSalesData().finally(() => {
-            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i><span>Làm mới</span>';
-        });
-    });
-
-    // Search filter for product select
-    productSearchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        const options = productSelect.options;
-        
-        for (let i = 1; i < options.length; i++) {
-            const text = options[i].textContent.toLowerCase();
-            options[i].style.display = text.includes(searchTerm) ? '' : 'none';
-        }
-    });
-
-    // Product select change
-    productSelect.addEventListener('change', async (e) => {
-        const productId = e.target.value;
-        
-        if (!productId) {
             variantsSection.style.display = 'none';
+        }
+    }
+
+    function renderVariantsTable() {
+        if (currentProductVariants.length === 0) {
+            variantsTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Không có variant</td></tr>';
             return;
         }
-        
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
-        const productData = JSON.parse(selectedOption.dataset.product || '{}');
-        await loadProductVariants(productData);
-    });
 
-    // Select all variants checkbox
-    selectAllVariants.addEventListener('change', (e) => {
-        const checkboxes = variantsTableBody.querySelectorAll('.variant-checkbox');
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
-    });
-
-    // Add selected variants button
-    addSelectedVariants.addEventListener('click', addVariantsToList);
-
-    form.addEventListener('submit', saveFlashSale);
-
-    // Functions
-    async function loadFlashSalesData() {
-        try {
-            const response = await fetch('/api/flash-sales');
-            if (!response.ok) throw new Error('Failed to load flash sales');
-            flashSalesData = await response.json();
-            renderFlashSalesTable();
-            updateStatistics();
-        } catch (error) {
-            console.error('Error loading flash sales:', error);
-            Swal.fire('Lỗi', 'Không thể tải dữ liệu flash sales', 'error');
-        }
+        variantsTableBody.innerHTML = currentProductVariants.map((variant) => {
+            const fullName = variant.ten_hien_thi;
+            const formattedPrice = new Intl.NumberFormat('vi-VN').format(variant.price || 0);
+            
+            let siteOriginBadge = '';
+            if (variant.site_origin) {
+                const badgeClass = variant.site_origin === 'bac' ? 'primary' : variant.site_origin === 'trung' ? 'warning' : 'success';
+                siteOriginBadge = `<span class="badge badge-${badgeClass}">${variant.site_origin.toUpperCase()}</span>`;
+            }
+            
+            const existingItem = tempProductList.find(p => p.variantId === variant.variantId);
+            const isChecked = existingItem ? 'checked' : '';
+            const flashPrice = existingItem ? existingItem.gia_flash_sale : Math.round(variant.price * 0.9);
+            const limitQty = existingItem ? existingItem.gioi_han_mua : 1;
+            
+            return `
+                <tr>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input variant-checkbox" 
+                               data-index="${variant.index}" ${isChecked}>
+                    </td>
+                    <td>
+                        <div><strong>${escapeHtml(fullName)}</strong></div>
+                        <small class="text-muted">
+                            ${variant.ma_sku ? `SKU: ${escapeHtml(variant.ma_sku)}` : ''} 
+                            ${siteOriginBadge}
+                        </small>
+                        <div><small>Tồn kho: ${variant.stock || 0}</small></div>
+                    </td>
+                    <td class="text-end fw-bold">${formattedPrice}₫</td>
+                    <td>
+                        <input type="number" 
+                               class="form-control form-control-sm flash-price-input" 
+                               data-index="${variant.index}"
+                               min="0" 
+                               max="${variant.price || 0}"
+                               value="${flashPrice}"
+                               placeholder="Nhập giá">
+                    </td>
+                    <td>
+                        <input type="number" 
+                               class="form-control form-control-sm limit-qty-input" 
+                               data-index="${variant.index}"
+                               min="1" 
+                               max="${variant.stock || 999}"
+                               value="${limitQty}">
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // ==========================================
@@ -2291,11 +2326,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterFlashSales() {
         const searchTerm = searchInput?.value.toLowerCase() || '';
         const statusValue = statusFilter?.value || '';
+        const regionValue = regionFilter?.value || '';
 
         filteredFlashSales = flashSalesData.filter(fs => {
             const matchesSearch = fs.ten_flash_sale.toLowerCase().includes(searchTerm);
             const matchesStatus = !statusValue || fs.trang_thai === statusValue;
-            return matchesSearch && matchesStatus;
+            const matchesRegion = !regionValue || fs.vung_id === regionValue;
+            return matchesSearch && matchesStatus && matchesRegion;
         });
 
         renderFlashSalesTable();
@@ -2328,7 +2365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!dataToRender || dataToRender.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-5">
+                    <td colspan="8" class="text-center py-5">
                         <i class="fas fa-inbox fa-3x text-muted mb-3" style="display: block; opacity: 0.3;"></i>
                         <p class="text-muted">Chưa có flash sale nào</p>
                     </td>
@@ -2340,11 +2377,13 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = dataToRender.map((fs, index) => {
             const statusClass = getStatusClass(fs.trang_thai);
             const statusIcon = getStatusIcon(fs.trang_thai);
+            const regionBadge = getRegionBadge(fs.vung_id);
             
             return `
                 <tr>
                     <td>${index + 1}</td>
-                    <td style="text-align: left; font-weight: 600;">${fs.ten_flash_sale}</td>
+                    <td style="text-align: left; font-weight: 600;">${escapeHtml(fs.ten_flash_sale)}</td>
+                    <td>${regionBadge}</td>
                     <td>${formatDateTime(fs.ngay_bat_dau)}</td>
                     <td>${formatDateTime(fs.ngay_ket_thuc)}</td>
                     <td>
@@ -2353,7 +2392,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${getStatusText(fs.trang_thai)}
                         </span>
                     </td>
-                    <td><strong>${fs.product_count || 0}</strong></td>
+                    <td><strong>${fs.variant_count || 0}</strong></td>
                     <td>
                         <div class="action-buttons" style="gap: 0.375rem;">
                             <button class="btn btn-action btn-info" data-action="view" data-id="${fs.id}" title="Xem chi tiết">
@@ -2371,7 +2410,6 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }).join('');
 
-        // Bind action buttons
         tbody.querySelectorAll('[data-action]').forEach(btn => {
             btn.addEventListener('click', handleAction);
         });
@@ -2396,176 +2434,116 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // ==========================================
+    // MODAL FUNCTIONS
+    // ==========================================
     async function openFlashSaleModal(id = null) {
         currentFlashSaleId = id;
         tempProductList = [];
         currentProductVariants = [];
         currentProduct = null;
 
-        // Reset form
         form.reset();
-        document.getElementById('selectedProductsTable').innerHTML = '<tr class="empty-row"><td colspan="5" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2" style="opacity: 0.3;"></i><p>Chưa có sản phẩm nào được chọn</p></td></tr>';
-        productSearchInput.value = '';
-        productSelect.value = '';
-        Array.from(productSelect.options).forEach(opt => opt.style.display = '');
-        variantsSection.style.display = 'none';
-        variantsTableBody.innerHTML = '';
-        selectAllVariants.checked = false;
+        document.getElementById('selectedProductsTable').innerHTML = `
+            <tr class="empty-row">
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2" style="opacity: 0.3;"></i>
+                    <p>Chưa có variant nào được chọn</p>
+                </td>
+            </tr>`;
+        
+        if (moTaTextarea) moTaTextarea.style.height = 'auto';
+        if (productSearchInput) productSearchInput.value = '';
+        if (productSelect) productSelect.value = '';
+        if (productSelect) Array.from(productSelect.options).forEach(opt => opt.style.display = '');
+        if (variantsSection) variantsSection.style.display = 'none';
+        if (variantsTableBody) variantsTableBody.innerHTML = '';
+        if (selectAllVariants) selectAllVariants.checked = false;
         updateSelectedCount();
 
         if (id) {
-            document.querySelector('#modalTitle').textContent = 'Chỉnh sửa Flash Sale';
+            document.getElementById('modalTitle').textContent = 'Chỉnh sửa Flash Sale';
             await loadFlashSaleData(id);
         } else {
-            document.querySelector('#modalTitle').textContent = 'Tạo Flash Sale Mới';
-            document.getElementById('flashSaleId').value = '';
+            document.getElementById('modalTitle').textContent = 'Tạo Flash Sale Mới';
+            const flashSaleIdInput = document.getElementById('flashSaleId');
+            if (flashSaleIdInput) flashSaleIdInput.value = '';
         }
 
         modal.show();
     }
 
-    // Load all products into select box
-    async function loadProducts() {
+    async function loadFlashSaleData(id) {
         try {
-            const response = await fetch(`/api/sanpham`);
-            if (!response.ok) throw new Error('Failed to load products');
+            const response = await fetch(`/api/flash-sales/${id}`);
+            if (!response.ok) throw new Error('Failed to load flash sale');
             
             const data = await response.json();
-            const products = data.data?.sanphams || data.sanphams || data;
+            const flashSale = data.data || data;
+
+            document.getElementById('flashSaleId').value = flashSale.id;
+            document.getElementById('tenFlashSale').value = flashSale.ten_flash_sale;
+            document.getElementById('moTa').value = flashSale.mo_ta || '';
+            document.getElementById('ngayBatDau').value = formatDateTimeLocal(flashSale.ngay_bat_dau);
+            document.getElementById('ngayKetThuc').value = formatDateTimeLocal(flashSale.ngay_ket_thuc);
+            document.getElementById('vungId').value = flashSale.vung_id || '';
+            document.getElementById('trangThai').value = flashSale.trang_thai;
             
-            // Clear and populate select box
-            productSelect.innerHTML = '<option value="">-- Chọn sản phẩm để xem variants --</option>';
-            
-            products.forEach(product => {
-                const option = document.createElement('option');
-                option.value = product.id;
-                option.textContent = `${product.ten_san_pham} (${product.ma_sku})`;
-                option.dataset.product = JSON.stringify(product);
-                productSelect.appendChild(option);
+            // Auto-resize textarea after loading data based on newline count
+            if (moTaTextarea) {
+                const content = moTaTextarea.value || '';
+                const lineCount = (content.match(/\n/g) || []).length + 1;
+                const lineHeight = 24;
+                const padding = 24;
+                const minHeight = 50;
+                const calculatedHeight = Math.max(minHeight, (lineCount * lineHeight) + padding);
+                
+                moTaTextarea.style.height = 'auto';
+                moTaTextarea.style.height = Math.max(calculatedHeight, moTaTextarea.scrollHeight) + 'px';
+            }
+
+            const itemsResponse = await fetch(`/api/flash-sales/${id}/items`);
+            if (itemsResponse.ok) {
+                const items = await itemsResponse.json();
+                
+                console.log('📦 Loaded flash sale items:', items.length, items);
+                
+                tempProductList = items.map(item => ({
+                    id: item.id, // ID của flash_sale_item - QUAN TRỌNG cho UPDATE
+                    variantId: item.variant_id,
+                    productId: item.san_pham_id,
+                    productName: item.ten_san_pham,
+                    variantName: item.variant_name || item.ten_hien_thi,
+                    ma_sku: item.ma_sku || '',
+                    fullName: item.ten_hien_thi || '',
+                    gia_goc: item.gia_goc,
+                    gia_flash_sale: item.gia_flash_sale,
+                    gioi_han_mua: item.gioi_han_mua,
+                    so_luong_ton: item.so_luong_ton,
+                    da_ban: item.da_ban || 0,
+                    thu_tu: item.thu_tu,
+                    trang_thai: item.trang_thai,
+                    site_origin: item.site_origin || '',
+                    link_avatar: item.link_avatar || item.anh_dai_dien || '/image/default-product.png'
+                }));
+                
+                console.log('✅ Mapped tempProductList:', tempProductList.length, tempProductList);
+                renderTempProductList();
+                updateSelectedCount();
+            }
+        } catch (error) {
+            console.error('Error loading flash sale data:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Không thể tải thông tin flash sale'
             });
-            
-        } catch (error) {
-            console.error('Error loading products:', error);
-            Swal.fire('Lỗi', 'Không thể tải danh sách sản phẩm', 'error');
         }
     }
 
-    // Load variant_combinations from MongoDB
-    async function loadProductVariants(product) {
-        try {
-            currentProduct = product;
-            
-            // Check if product has mongo_detail_id
-            if (!product.mongo_detail_id) {
-                Swal.fire('Thông báo', `Sản phẩm "${product.ten_san_pham}" chưa có thông tin MongoDB`, 'info');
-                variantsSection.style.display = 'none';
-                return;
-            }
-
-            // Fetch MongoDB details using mongo_detail_id
-            const mongoResponse = await fetch(`/api/mongodb-details/${product.mongo_detail_id}`);
-            if (!mongoResponse.ok) throw new Error('Failed to fetch MongoDB details');
-            
-            const mongoDetails = await mongoResponse.json();
-            
-            // Get variant_combinations
-            let variantCombinations = [];
-            if (mongoDetails.variant_combinations && Array.isArray(mongoDetails.variant_combinations)) {
-                variantCombinations = mongoDetails.variant_combinations;
-            }
-            
-            // If no variants, show info (backend should auto-create default variant)
-            if (variantCombinations.length === 0) {
-                Swal.fire('Thông báo', `Sản phẩm "${product.ten_san_pham}" chưa có variant. Hệ thống sẽ tự động tạo variant mặc định khi bạn lưu sản phẩm này.`, 'info');
-                variantsSection.style.display = 'none';
-                return;
-            }
-
-            // Map variants with product info and use variant_id from MongoDB
-            currentProductVariants = variantCombinations.map((v, index) => {
-                // Use variant_id from MongoDB (should already exist after backend processing)
-                const variantId = v.variant_id || product.id; // Fallback to product ID if missing
-                const isDefault = v.is_default === true;
-                const avatarUrl = v.image || v.link_avatar || mongoDetails.link_avatar || '/image/default-product.png';
-                
-                console.log(`🖼️ Variant ${index}: image=${v.image}, link_avatar=${v.link_avatar}, product_avatar=${mongoDetails.link_avatar}, final=${avatarUrl}`);
-                
-                return {
-                    index: index,
-                    variantId: variantId,  // MongoDB variant_id to save in flash_sale_items.san_pham_id
-                    productId: product.id,
-                    productName: product.ten_san_pham,
-                    variantName: v.name || (isDefault ? 'Mặc định' : `Variant ${index + 1}`),
-                    price: v.price || product.gia_ban || 0,
-                    stock: v.stock || product.ton_kho || 0,
-                    isDefault: isDefault,
-                    link_avatar: avatarUrl
-                };
-            }).filter(v => !v.isDefault); // Filter out default variants from display
-            
-            // If no real variants (only default), don't show variants section
-            if (currentProductVariants.length === 0) {
-                Swal.fire('Thông báo', `Sản phẩm "${product.ten_san_pham}" chỉ có variant mặc định. Vui lòng thêm variants để chọn.`, 'info');
-                variantsSection.style.display = 'none';
-                return;
-            }
-
-            renderVariantsTable();
-            variantsSection.style.display = 'block';
-            
-        } catch (error) {
-            console.error('Error loading product variants:', error);
-            Swal.fire('Lỗi', 'Không thể tải variant của sản phẩm', 'error');
-        }
-    }
-
-    // Render variants table with checkboxes
-    function renderVariantsTable() {
-        if (currentProductVariants.length === 0) {
-            variantsTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Không có variant</td></tr>';
-            return;
-        }
-
-        variantsTableBody.innerHTML = currentProductVariants.map((variant) => {
-            const fullName = `${variant.productName} - ${variant.variantName}`;
-            const formattedPrice = new Intl.NumberFormat('vi-VN').format(variant.price);
-            
-            // Check if this variant is already in tempProductList (for edit mode)
-            const existingItem = tempProductList.find(p => p.variantId === variant.variantId);
-            const isChecked = existingItem ? 'checked' : '';
-            const flashPrice = existingItem ? existingItem.gia_flash_sale : '';
-            const limitQty = existingItem ? existingItem.gioi_han_mua : 1;
-            
-            return `
-                <tr>
-                    <td class="text-center">
-                        <input type="checkbox" class="form-check-input variant-checkbox" 
-                               data-index="${variant.index}" ${isChecked}>
-                    </td>
-                    <td>${fullName}</td>
-                    <td class="text-end fw-bold">${formattedPrice}₫</td>
-                    <td>
-                        <input type="number" 
-                               class="form-control form-control-sm flash-price-input" 
-                               data-index="${variant.index}"
-                               min="0" 
-                               max="${variant.price}"
-                               value="${flashPrice}"
-                               placeholder="Nhập giá">
-                    </td>
-                    <td>
-                        <input type="number" 
-                               class="form-control form-control-sm limit-qty-input" 
-                               data-index="${variant.index}"
-                               min="1" 
-                               value="${limitQty}">
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    // Add selected variants to temp list
+    // ==========================================
+    // ADD VARIANTS TO LIST
+    // ==========================================
     function addVariantsToList() {
         const checkedBoxes = variantsTableBody.querySelectorAll('.variant-checkbox:checked');
         
@@ -2582,62 +2560,59 @@ document.addEventListener('DOMContentLoaded', function() {
             const index = parseInt(checkbox.dataset.index);
             const variant = currentProductVariants.find(v => v.index === index);
             
-            if (!variant) return;
+            if (!variant) {
+                console.error(`Variant not found for index ${index}`);
+                return;
+            }
 
             const flashPriceInput = variantsTableBody.querySelector(`.flash-price-input[data-index="${index}"]`);
             const limitQtyInput = variantsTableBody.querySelector(`.limit-qty-input[data-index="${index}"]`);
             
-            const flashPrice = parseFloat(flashPriceInput.value);
-            const limitQty = parseInt(limitQtyInput.value) || 1;
+            const flashPrice = parseFloat(flashPriceInput?.value || 0);
+            const limitQty = parseInt(limitQtyInput?.value || 1);
+            
+            const variantDisplayName = variant.ten_hien_thi || variant.variantName || 'N/A';
 
             // Validation
             if (!flashPrice || flashPrice <= 0) {
-                errors.push(`${variant.variantName}: Chưa nhập giá flash sale`);
+                errors.push(`${variantDisplayName}: Chưa nhập giá flash sale`);
                 return;
             }
 
-            if (flashPrice >= variant.price) {
-                errors.push(`${variant.variantName}: Giá flash sale phải nhỏ hơn giá gốc`);
+            if (flashPrice >= (variant.price || 0)) {
+                errors.push(`${variantDisplayName}: Giá flash sale phải nhỏ hơn giá gốc`);
                 return;
             }
-
-            // Get link_avatar from variant (already loaded from MongoDB in currentProductVariants)
-            const avatarUrl = variant.link_avatar || '/image/default-product.png';
-            
-            console.log(`📸 Adding variant ${variant.variantName}: link_avatar = ${avatarUrl}`);
 
             // Check if already exists in tempProductList
             const existingIndex = tempProductList.findIndex(p => p.variantId === variant.variantId);
 
+            const itemData = {
+                variantId: variant.variantId || '',  // UUID từ product_variants.id
+                productId: variant.productId || '',
+                productName: variant.productName || '',
+                variantName: variantDisplayName,
+                ma_sku: variant.ma_sku || '',
+                site_origin: variant.site_origin || '',
+                fullName: `${variant.productName || ''} - ${variantDisplayName}`,
+                gia_goc: variant.price || 0,
+                gia_flash_sale: flashPrice,
+                gioi_han_mua: limitQty,
+                so_luong_ton: variant.stock || 0,
+                thu_tu: existingIndex !== -1 ? tempProductList[existingIndex].thu_tu : (tempProductList.length + 1),
+                trang_thai: 'dang_ban',
+                link_avatar: variant.link_avatar || '/image/default-product.png'
+            };
+            
+            console.log(`Adding variant to temp list:`, itemData);
+
             if (existingIndex !== -1) {
                 // Update existing item
-                tempProductList[existingIndex] = {
-                    variantId: variant.variantId,
-                    productId: variant.productId,
-                    productName: variant.productName,
-                    variantName: variant.variantName,
-                    fullName: `${variant.productName} + ${variant.variantName}`,
-                    gia_goc: variant.price,
-                    gia_flash_sale: flashPrice,
-                    gioi_han_mua: limitQty,
-                    stock: variant.stock,
-                    link_avatar: avatarUrl
-                };
+                tempProductList[existingIndex] = itemData;
                 updatedCount++;
             } else {
                 // Add new item
-                tempProductList.push({
-                    variantId: variant.variantId,  // MongoDB variant_id (will be saved as san_pham_id)
-                    productId: variant.productId,
-                    productName: variant.productName,
-                    variantName: variant.variantName,
-                    fullName: `${variant.productName} + ${variant.variantName}`,
-                    gia_goc: variant.price,
-                    gia_flash_sale: flashPrice,
-                    gioi_han_mua: limitQty,
-                    stock: variant.stock,
-                    link_avatar: avatarUrl
-                });
+                tempProductList.push(itemData);
                 addedCount++;
             }
         });
@@ -2675,29 +2650,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.getElementById('selectedProductsTable');
         
         if (tempProductList.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="6" class="text-center"><i class="fas fa-inbox fa-3x text-muted mb-3" style="display: block; opacity: 0.3;"></i><p class="text-muted">Chưa có sản phẩm nào được chọn</p></td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="6" class="text-center"><i class="fas fa-inbox fa-3x text-muted mb-3" style="display: block; opacity: 0.3;"></i><p class="text-muted">Chưa có variant nào được chọn</p></td></tr>';
             return;
         }
 
         tbody.innerHTML = tempProductList.map((product, index) => {
-            const formattedOriginal = new Intl.NumberFormat('vi-VN').format(product.gia_goc);
-            const formattedFlash = new Intl.NumberFormat('vi-VN').format(product.gia_flash_sale);
-            const discount = Math.round(((product.gia_goc - product.gia_flash_sale) / product.gia_goc) * 100);
+            const formattedOriginal = new Intl.NumberFormat('vi-VN').format(product.gia_goc || 0);
+            const formattedFlash = new Intl.NumberFormat('vi-VN').format(product.gia_flash_sale || 0);
+            const discount = product.gia_goc > 0 ? Math.round(((product.gia_goc - product.gia_flash_sale) / product.gia_goc) * 100) : 0;
             const imageUrl = product.link_avatar || '/image/default-product.png';
+            const skuText = product.ma_sku ? `SKU: ${product.ma_sku}` : '';
+            const stockText = product.so_luong_ton !== undefined ? `Tồn: ${product.so_luong_ton}` : '';
+            const discountText = discount > 0 ? `Giảm ${discount}%` : '';
             
             return `
                 <tr>
                     <td style="text-align: center;">
-                        <img src="${imageUrl}" alt="${product.productName}" 
+                        <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.productName || '')}" 
                              style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--gray-200);">
                     </td>
                     <td style="text-align: left;">
-                        <strong>${product.fullName}</strong>
-                        <br><small class="text-muted">Giảm ${discount}%</small>
+                        <strong>${escapeHtml(product.fullName || product.variantName || 'N/A')}</strong>
+                        <br><small class="text-muted">
+                            ${[skuText, stockText, discountText].filter(t => t).join(' | ')}
+                        </small>
                     </td>
                     <td style="text-align: right;">${formattedOriginal}₫</td>
                     <td style="text-align: right; color: var(--danger); font-weight: 700;">${formattedFlash}₫</td>
-                    <td style="text-align: center;"><strong>${product.gioi_han_mua}</strong></td>
+                    <td style="text-align: center;"><strong>${product.gioi_han_mua || 1}</strong></td>
                     <td style="text-align: center;">
                         <button type="button" class="btn btn-danger btn-sm" onclick="removeFromTempList(${index})" 
                                 style="padding: 0.375rem 0.75rem;">
@@ -2728,23 +2708,80 @@ document.addEventListener('DOMContentLoaded', function() {
     async function saveFlashSale(e) {
         e.preventDefault();
 
-        const formData = {
-            ten_flash_sale: document.getElementById('tenFlashSale').value,
-            ngay_bat_dau: document.getElementById('ngayBatDau').value,
-            ngay_ket_thuc: document.getElementById('ngayKetThuc').value,
-            trang_thai: document.getElementById('trangThai').value,
-            products: tempProductList
-        };
+        // Manual validation
+        const tenFlashSale = document.getElementById('tenFlashSale').value.trim();
+        const ngayBatDau = document.getElementById('ngayBatDau').value;
+        const ngayKetThuc = document.getElementById('ngayKetThuc').value;
+        const vungId = document.getElementById('vungId').value;
+        const trangThai = document.getElementById('trangThai').value;
 
-        if (tempProductList.length === 0) {
-            Swal.fire('Lỗi', 'Vui lòng thêm ít nhất 1 sản phẩm', 'error');
+        if (!tenFlashSale) {
+            Swal.fire('Lỗi', 'Vui lòng nhập tên flash sale', 'error');
+            document.getElementById('tenFlashSale').focus();
             return;
         }
 
+        if (!vungId) {
+            Swal.fire('Lỗi', 'Vui lòng chọn vùng áp dụng', 'error');
+            document.getElementById('vungId').focus();
+            return;
+        }
+
+        if (!ngayBatDau) {
+            Swal.fire('Lỗi', 'Vui lòng chọn ngày bắt đầu', 'error');
+            document.getElementById('ngayBatDau').focus();
+            return;
+        }
+
+        if (!ngayKetThuc) {
+            Swal.fire('Lỗi', 'Vui lòng chọn ngày kết thúc', 'error');
+            document.getElementById('ngayKetThuc').focus();
+            return;
+        }
+
+        if (!trangThai) {
+            Swal.fire('Lỗi', 'Vui lòng chọn trạng thái', 'error');
+            document.getElementById('trangThai').focus();
+            return;
+        }
+
+        if (new Date(ngayKetThuc) <= new Date(ngayBatDau)) {
+            Swal.fire('Lỗi', 'Ngày kết thúc phải sau ngày bắt đầu', 'error');
+            document.getElementById('ngayKetThuc').focus();
+            return;
+        }
+
+        if (tempProductList.length === 0) {
+            Swal.fire('Lỗi', 'Vui lòng thêm ít nhất 1 variant', 'error');
+            return;
+        }
+
+        const formData = {
+            ten_flash_sale: tenFlashSale,
+            mo_ta: document.getElementById('moTa').value,
+            ngay_bat_dau: ngayBatDau,
+            ngay_ket_thuc: ngayKetThuc,
+            vung_id: vungId,
+            trang_thai: trangThai,
+            variants: tempProductList.map(item => ({
+                id: item.id, // ID của flash_sale_item (undefined nếu là item mới)
+                variantId: item.variantId,
+                gia_goc: item.gia_goc,
+                gia_flash_sale: item.gia_flash_sale,
+                so_luong_ton: item.so_luong_ton,
+                gioi_han_mua: item.gioi_han_mua,
+                thu_tu: item.thu_tu || 0,
+                trang_thai: item.trang_thai || 'dang_ban'
+            }))
+        };
+
+        console.log('Submitting flash sale data:', formData);  
+        console.log('Current flash sale ID:', currentFlashSaleId);
+
         try {
             const url = currentFlashSaleId 
-                ? `/api/flashsales/${currentFlashSaleId}` 
-                : '/api/flashsales';
+                ? `/api/flash-sales/${currentFlashSaleId}` 
+                : '/api/flash-sales';
             
             const method = currentFlashSaleId ? 'PUT' : 'POST';
 
@@ -2754,7 +2791,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(formData)
             });
 
-            if (!response.ok) throw new Error('Failed to save flash sale');
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to save flash sale');
+            }
 
             await Swal.fire({
                 icon: 'success',
@@ -2768,54 +2809,19 @@ document.addEventListener('DOMContentLoaded', function() {
             loadFlashSalesData();
         } catch (error) {
             console.error('Error saving flash sale:', error);
-            Swal.fire('Lỗi', 'Không thể lưu flash sale', 'error');
-        }
-    }
-
-    // Load flash sale data for editing
-    async function loadFlashSaleData(id) {
-        try {
-            const response = await fetch(`/api/flashsales/${id}`);
-            if (!response.ok) throw new Error('Failed to load flash sale');
-            
-            const data = await response.json();
-            const flashSale = data.data || data;
-
-            document.getElementById('flashSaleId').value = flashSale.id;
-            document.getElementById('tenFlashSale').value = flashSale.ten_flash_sale;
-            document.getElementById('ngayBatDau').value = formatDateTimeLocal(flashSale.ngay_bat_dau);
-            document.getElementById('ngayKetThuc').value = formatDateTimeLocal(flashSale.ngay_ket_thuc);
-            document.getElementById('trangThai').value = flashSale.trang_thai;
-
-            // Load products
-            const itemsResponse = await fetch(`/api/flashsales/${id}/items`);
-            if (itemsResponse.ok) {
-                const itemsData = await itemsResponse.json();
-                const items = Array.isArray(itemsData) ? itemsData : (itemsData.data || itemsData.items || []);
-                
-                tempProductList = items.map(item => ({
-                    productId: item.san_pham_id,
-                    productName: item.ten_san_pham,
-                    variantName: `${item.mau_sac || ''} - ${item.dung_luong || ''}`,
-                    fullName: `${item.ten_san_pham} + ${item.mau_sac || ''} - ${item.dung_luong || ''}`,
-                    gia_goc: item.gia_goc,
-                    gia_flash_sale: item.gia_flash_sale,
-                    gioi_han_mua: item.gioi_han_mua,
-                    link_avatar: item.link_avatar || '/image/default-product.png'
-                }));
-                renderTempProductList();
-                updateSelectedCount();
-            }
-        } catch (error) {
-            console.error('Error loading flash sale data:', error);
-            Swal.fire('Lỗi', 'Không thể tải thông tin flash sale', 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                html: `<p>Không thể lưu flash sale</p><p class="text-muted" style="font-size: 0.9em;">${error.message}</p>`,
+                confirmButtonText: 'Đóng'
+            });
         }
     }
 
     // View flash sale products
     async function viewFlashSaleProducts(id) {
         try {
-            const response = await fetch(`/api/flashsales/${id}/items`);
+            const response = await fetch(`/api/flash-sales/${id}/items`);
             
             let items = [];
             if (response.ok) {
@@ -2831,14 +2837,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const tbody = document.getElementById('viewProductsTableBody');
 
             if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5"><i class="fas fa-inbox fa-3x text-muted mb-3" style="display: block; opacity: 0.3;"></i><p class="text-muted mt-3">Chưa có sản phẩm</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5"><i class="fas fa-inbox fa-3x text-muted mb-3" style="display: block; opacity: 0.3;"></i><p class="text-muted mt-3">Chưa có variant nào</p></td></tr>';
             } else {
                 tbody.innerHTML = items.map((item, index) => `
                     <tr>
                         <td>${index + 1}</td>
                         <td style="text-align: left; font-weight: 600;">${escapeHtml(item.ten_san_pham || '')}</td>
-                        <td>${escapeHtml(item.mau_sac || '-')}</td>
-                        <td>${escapeHtml(item.dung_luong || '-')}</td>
+                        <td>${escapeHtml(item.mau_sac || item.variant_name || '-')}</td>
+                        <td>${escapeHtml(item.dung_luong || item.ten_hien_thi || '-')}</td>
                         <td style="text-align: right;">${formatCurrency(item.gia_goc || 0)}</td>
                         <td style="text-align: right; color: var(--danger); font-weight: 700;">${formatCurrency(item.gia_flash_sale || 0)}</td>
                         <td style="text-align: center;">${item.so_luong_ton || 0}</td>
@@ -2853,7 +2859,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading flash sale products:', error);
             // Still show modal with empty message instead of error alert
             const tbody = document.getElementById('viewProductsTableBody');
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5"><i class="fas fa-exclamation-triangle fa-3x text-warning mb-3" style="display: block; opacity: 0.3;"></i><p class="text-muted mt-3">Không thể tải danh sách sản phẩm</p></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5"><i class="fas fa-exclamation-triangle fa-3x text-warning mb-3" style="display: block; opacity: 0.3;"></i><p class="text-muted mt-3">Không thể tải danh sách variants</p></td></tr>';
             viewModal.show();
         }
     }
@@ -2871,11 +2877,16 @@ document.addEventListener('DOMContentLoaded', function() {
         form.reset();
         document.getElementById('selectedProductsTable').innerHTML = `
             <tr class="empty-row">
-                <td colspan="5" class="text-center text-muted py-4">
+                <td colspan="6" class="text-center text-muted py-4">
                     <i class="fas fa-inbox fa-2x mb-2" style="opacity: 0.3;"></i>
-                    <p>Chưa có sản phẩm nào được chọn</p>
+                    <p>Chưa có variant nào được chọn</p>
                 </td>
             </tr>`;
+        
+        // Reset textarea height
+        if (moTaTextarea) {
+            moTaTextarea.style.height = 'auto';
+        }
         
         if (productSearchInput) productSearchInput.value = '';
         if (productSelect) productSelect.value = '';
@@ -2897,108 +2908,6 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.show();
     }
 
-    async function loadFlashSaleData(id) {
-        try {
-            const response = await fetch(`/api/flashsales/${id}`);
-            if (!response.ok) throw new Error('Failed to load flash sale');
-            
-            const data = await response.json();
-            const flashSale = data.data || data;
-
-            const flashSaleIdInput = document.getElementById('flashSaleId');
-            if (flashSaleIdInput) flashSaleIdInput.value = flashSale.id;
-            document.getElementById('tenFlashSale').value = flashSale.ten_flash_sale;
-            document.getElementById('ngayBatDau').value = formatDateTimeLocal(flashSale.ngay_bat_dau);
-            document.getElementById('ngayKetThuc').value = formatDateTimeLocal(flashSale.ngay_ket_thuc);
-            document.getElementById('trangThai').value = flashSale.trang_thai;
-
-            const itemsResponse = await fetch(`/api/flashsales/${id}/items`);
-            if (itemsResponse.ok) {
-                const itemsData = await itemsResponse.json();
-                const items = Array.isArray(itemsData) ? itemsData : (itemsData.data || itemsData.items || []);
-                
-                console.log('📦 Loaded flash sale items:', items);
-                
-                tempProductList = items.map(item => {
-                    return {
-                        variantId: item.variant_id || item.san_pham_id,
-                        productId: item.sql_product_id,
-                        productName: item.ten_san_pham,
-                        variantName: item.variant_name || 'Mặc định',
-                        fullName: `${item.ten_san_pham} - ${item.variant_name || 'Mặc định'}`,
-                        gia_goc: item.gia_goc,
-                        gia_flash_sale: item.gia_flash_sale,
-                        gioi_han_mua: item.gioi_han_mua,
-                        link_avatar: item.link_avatar || '/image/default-product.png'
-                    };
-                });
-                
-                console.log('📝 Mapped to tempProductList:', tempProductList);
-                renderTempProductList();
-                updateSelectedCount();
-            }
-        } catch (error) {
-            console.error('Error loading flash sale data:', error);
-            Swal.fire('Lỗi', 'Không thể tải thông tin flash sale', 'error');
-        }
-    }
-
-    function renderTempProductList() {
-        const tbody = document.getElementById('selectedProductsTable');
-        
-        if (tempProductList.length === 0) {
-            tbody.innerHTML = `
-                <tr class="empty-row">
-                    <td colspan="6" class="text-center text-muted py-4">
-                        <i class="fas fa-inbox fa-2x mb-2" style="opacity: 0.3;"></i>
-                        <p>Chưa có sản phẩm nào được chọn</p>
-                    </td>
-                </tr>`;
-            return;
-        }
-
-        tbody.innerHTML = tempProductList.map((product, index) => {
-            const formattedOriginal = formatCurrency(product.gia_goc);
-            const formattedFlash = formatCurrency(product.gia_flash_sale);
-            const discount = Math.round(((product.gia_goc - product.gia_flash_sale) / product.gia_goc) * 100);
-            const imageUrl = product.link_avatar || '/image/default-product.png';
-            
-            return `
-                <tr>
-                    <td style="text-align: center;">
-                        <img src="${imageUrl}" alt="${escapeHtml(product.productName)}" 
-                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--gray-200);">
-                    </td>
-                    <td style="text-align: left;">
-                        <strong>${escapeHtml(product.fullName)}</strong>
-                        <br><small class="text-muted">Giảm ${discount}%</small>
-                    </td>
-                    <td style="text-align: right;">${formattedOriginal}</td>
-                    <td style="text-align: right; color: var(--danger); font-weight: 700;">${formattedFlash}</td>
-                    <td style="text-align: center;"><strong>${product.gioi_han_mua}</strong></td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="removeFromTempList(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    window.removeFromTempList = function(index) {
-        tempProductList.splice(index, 1);
-        renderTempProductList();
-        updateSelectedCount();
-    };
-
-    function updateSelectedCount() {
-        const countSpan = document.getElementById('selectedCount');
-        if (countSpan) {
-            countSpan.textContent = tempProductList.length;
-        }
-    }
-
     // Delete flash sale
     async function deleteFlashSale(id) {
         const result = await Swal.fire({
@@ -3015,7 +2924,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!result.isConfirmed) return;
 
         try {
-            const response = await fetch(`/api/flashsales/${id}`, {
+            const response = await fetch(`/api/flash-sales/${id}`, {
                 method: 'DELETE'
             });
 
@@ -3075,10 +2984,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getStatusText(status) {
         switch(status) {
-            case 'cho': return 'Sắp diễn ra';
+            case 'cho': return 'Chờ diễn ra';
             case 'dang_dien_ra': return 'Đang diễn ra';
-            case 'da_ket_thuc': return 'Đã kết thúc';
-            case 'huy': return 'Đã hủy';
+            case 'ket_thuc': return 'Kết thúc';
             default: return status;
         }
     }
@@ -3087,8 +2995,7 @@ document.addEventListener('DOMContentLoaded', function() {
         switch(status) {
             case 'dang_dien_ra': return 'success';
             case 'cho': return 'warning';
-            case 'da_ket_thuc': return 'secondary';
-            case 'huy': return 'danger';
+            case 'ket_thuc': return 'secondary';
             default: return 'secondary';
         }
     }
@@ -3097,10 +3004,18 @@ document.addEventListener('DOMContentLoaded', function() {
         switch(status) {
             case 'dang_dien_ra': return 'fas fa-play-circle';
             case 'cho': return 'fas fa-clock';
-            case 'da_ket_thuc': return 'fas fa-check-circle';
-            case 'huy': return 'fas fa-ban';
+            case 'ket_thuc': return 'fas fa-check-circle';
             default: return 'fas fa-circle';
         }
+    }
+
+    function getRegionBadge(vungId) {
+        const badges = {
+            'bac': '<span class="badge" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">🔵 Miền Bắc</span>',
+            'trung': '<span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">🟠 Miền Trung</span>',
+            'nam': '<span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">🟢 Miền Nam</span>'
+        };
+        return badges[vungId] || '<span class="badge">N/A</span>';
     }
 });
 </script>

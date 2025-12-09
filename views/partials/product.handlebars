@@ -5,11 +5,19 @@
         <div class="cps-product-image">
             <img src="{{this.link_anh}}" alt="{{this.ten_san_pham}}" loading="lazy">
             
-            <!-- Nhãn giảm giá -->
+            <!-- Flash Sale Badge - Ưu tiên cao nhất -->
+            {{#if this.has_flash_sale}}
+            <div class="cps-flash-sale-badge">
+                <i class="fas fa-bolt"></i>
+                <span>FLASH SALE</span>
+            </div>
+            {{else}}
+            <!-- Nhãn giảm giá - Chỉ hiển thị khi không có flash sale -->
             {{#if this.is_discount}}
             <div class="cps-discount-badge">
                 Giảm {{this.phan_tram_giam}}%
             </div>
+            {{/if}}
             {{/if}}
         </div>
 
@@ -33,7 +41,7 @@
             </div>
             <div class="cps-sold">
                 <i class="fas fa-box"></i>
-                <span>Đã bán {{this.so_luong_ban}}</span>
+                <span>Đã bán {{this.luot_ban}}</span>
             </div>
         </div>
     </a>
@@ -123,6 +131,44 @@
     }
 
     /* Badges */
+    .cps-flash-sale-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: linear-gradient(135deg, #d70018 0%, #ff1744 100%);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        z-index: 3;
+        box-shadow: 0 4px 12px rgba(215, 0, 24, 0.5);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        animation: flash-badge-pulse 2s ease-in-out infinite;
+    }
+    
+    .cps-flash-sale-badge i {
+        font-size: 12px;
+        animation: flash-icon-shake 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes flash-badge-pulse {
+        0%, 100% {
+            box-shadow: 0 4px 12px rgba(215, 0, 24, 0.5);
+        }
+        50% {
+            box-shadow: 0 6px 20px rgba(215, 0, 24, 0.8), 0 0 10px rgba(255, 23, 68, 0.6);
+        }
+    }
+    
+    @keyframes flash-icon-shake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-10deg); }
+        75% { transform: rotate(10deg); }
+    }
+    
     .cps-discount-badge {
         position: absolute;
         top: 8px;

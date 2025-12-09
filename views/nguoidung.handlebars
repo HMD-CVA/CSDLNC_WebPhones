@@ -112,8 +112,8 @@
                                 <td>{{formatDate this.created_at}}</td>
                                 <td class="col-actions">
                                     <div class="action-buttons">
-                                        <button class="btn-action btn-edit-user" data-id="{{this.id}}" title="Chỉnh sửa">
-                                            <i class="fas fa-edit"></i>
+                                        <button class="btn-action btn-view-user" data-id="{{this.id}}" title="Xem thông tin">
+                                            <i class="fas fa-eye"></i>
                                         </button>
                                         <button class="btn-action btn-toggle-user" data-id="{{this.id}}" data-status="{{this.status}}" title="Chuyển trạng thái">
                                             <i class="fas {{#if (eq this.status true)}}fa-user-slash{{else}}fa-user-check{{/if}}"></i>
@@ -257,7 +257,7 @@
                     </div>
 
                     <!-- Additional Info Section (MongoDB) -->
-                    <div class="additional-info-section mt-3">
+                    <div class="additional-info-section mt-3" id="additionalInfoSection" style="display: none;">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
                                 <i class="fas fa-database text-primary me-2"></i>
@@ -571,10 +571,10 @@ class UsersManager {
         document.getElementById('usersNextPage')?.addEventListener('click', () => this.goToPage(this.currentPage + 1));
 
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-edit-user')) {
-                const id = e.target.closest('.btn-edit-user').getAttribute('data-id');
+            if (e.target.closest('.btn-view-user')) {
+                const id = e.target.closest('.btn-view-user').getAttribute('data-id');
                 const user = this.users.find(u => String(u.id) === String(id));
-                this.openUserModal(user);
+                this.viewUserModal(user);
             }
             if (e.target.closest('.btn-delete-user')) {
                 const id = e.target.closest('.btn-delete-user').getAttribute('data-id');
@@ -583,8 +583,10 @@ class UsersManager {
             if (e.target.closest('.btn-toggle-user')) {
                 const btn = e.target.closest('.btn-toggle-user');
                 const id = btn.getAttribute('data-id');
-                const status = btn.getAttribute('data-status');
-                this.toggleStatus(id, status);
+                const user = this.users.find(u => String(u.id) === String(id));
+                if (user) {
+                    this.toggleStatus(id, user.status);
+                }
             }
             if (e.target.closest('.toggle-password')) {
                 const btn = e.target.closest('.toggle-password');
@@ -604,10 +606,12 @@ class UsersManager {
             }
             if (e.target.closest('#addFieldBtn')) {
                 this.addAdditionalField();
+                this.updateAdditionalInfoVisibility();
             }
             if (e.target.closest('.btn-remove-field')) {
                 const fieldItem = e.target.closest('.additional-field-item');
                 fieldItem.remove();
+                this.updateAdditionalInfoVisibility();
             }
         });
         
@@ -617,6 +621,15 @@ class UsersManager {
                 this.setupAutoResize(e.target);
             }
         });
+    }
+
+    updateAdditionalInfoVisibility() {
+        const section = document.getElementById('additionalInfoSection');
+        const container = document.getElementById('additionalFieldsContainer');
+        if (section && container) {
+            const hasFields = container.querySelectorAll('.additional-field-item').length > 0;
+            section.style.display = hasFields ? 'block' : 'none';
+        }
     }
 
     addAdditionalField(key = '', value = '') {
@@ -755,7 +768,7 @@ class UsersManager {
                 <td>${u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : 'N/A'}</td>
                 <td class="col-actions">
                     <div class="action-buttons">
-                        <button class="btn-action btn-edit-user" data-id="${u.id}" title="Chỉnh sửa"><i class="fas fa-edit"></i></button>
+                        <button class="btn-action btn-view-user" data-id="${u.id}" title="Xem thông tin"><i class="fas fa-eye"></i></button>
                         <button class="btn-action btn-toggle-user" data-id="${u.id}" data-status="${u.status}" title="Chuyển trạng thái"><i class="fas ${String(u.status) === '1' || u.status === true ? 'fa-user-slash' : 'fa-user-check'}"></i></button>
                         <button class="btn-action btn-delete-user" data-id="${u.id}" title="Xóa"><i class="fas fa-trash"></i></button>
                     </div>
@@ -809,6 +822,77 @@ class UsersManager {
         this.filterUsers();
     }
 
+    async viewUserModal(user) {
+        if (!user) return;
+        
+        const el = document.getElementById('userModal');
+        const modal = bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+        
+        // Set view-only mode
+        this.currentEditId = null; // Không cho phép lưu
+        document.getElementById('userModalTitle').textContent = 'Xem thông tin người dùng';
+        
+        const form = document.getElementById('userForm');
+        form?.reset();
+        
+        // Clear additional fields
+        document.getElementById('additionalFieldsContainer').innerHTML = '';
+        
+        // Hide password section completely
+        const passwordSection = document.querySelector('.password-section');
+        if (passwordSection) passwordSection.style.display = 'none';
+        
+        // Hide save button
+        const saveBtn = document.getElementById('saveUserBtn');
+        if (saveBtn) saveBtn.style.display = 'none';
+        
+        // Fill data and disable all inputs
+        document.getElementById('userId').value = user.id || '';
+        document.getElementById('fullName').value = user.name || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('phone').value = user.phone || '';
+        document.getElementById('region').value = user.vung_id || 'bac';
+        document.getElementById('status').value = String(user.status) === '0' || user.status === false ? '0' : '1';
+        
+        // Disable all form inputs
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+            input.disabled = true;
+        });
+        
+        // Load MongoDB additional fields (read-only)
+        if (user.mongo_profile_id) {
+            try {
+                const res = await fetch(`/api/users/${user.id}/profile`);
+                if (res.ok) {
+                    const profile = await res.json();
+                    if (profile && typeof profile === 'object') {
+                        Object.entries(profile).forEach(([key, value]) => {
+                            if (!['_id', 'sql_user_id', '__v', 'created_at', 'updated_at', 'createdAt', 'updatedAt'].includes(key)) {
+                                this.addAdditionalField(key, value);
+                            }
+                        });
+                        
+                        // Disable additional fields
+                        setTimeout(() => {
+                            document.querySelectorAll('.additional-field-item .form-control').forEach(input => {
+                                input.disabled = true;
+                            });
+                            document.querySelectorAll('.btn-remove-field').forEach(btn => {
+                                btn.style.display = 'none';
+                            });
+                            document.getElementById('addFieldBtn').style.display = 'none';
+                            this.updateAdditionalInfoVisibility();
+                        }, 100);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load profile:', err);
+            }
+        }
+        
+        modal.show();
+    }
+
     async openUserModal(user = null) {
         this.currentEditId = user ? user.id : null;
         const el = document.getElementById('userModal');
@@ -823,6 +907,7 @@ class UsersManager {
         
         // Clear additional fields
         document.getElementById('additionalFieldsContainer').innerHTML = '';
+        this.updateAdditionalInfoVisibility();
         
         // Show/hide password requirement based on mode
         const passwordRequired = document.getElementById('passwordRequired');
@@ -862,6 +947,7 @@ class UsersManager {
                                     this.addAdditionalField(key, value);
                                 }
                             });
+                            this.updateAdditionalInfoVisibility();
                         }
                     }
                 } catch (err) {
@@ -871,6 +957,22 @@ class UsersManager {
         }
         
         modal.show();
+        
+        // Reset modal on close
+        el.addEventListener('hidden.bs.modal', () => {
+            const form = document.getElementById('userForm');
+            form?.querySelectorAll('input, select, textarea').forEach(input => {
+                input.disabled = false;
+            });
+            const passwordSection = document.querySelector('.password-section');
+            if (passwordSection) passwordSection.style.display = 'block';
+            const saveBtn = document.getElementById('saveUserBtn');
+            if (saveBtn) saveBtn.style.display = 'inline-flex';
+            document.getElementById('addFieldBtn').style.display = 'inline-flex';
+            document.querySelectorAll('.btn-remove-field').forEach(btn => {
+                btn.style.display = 'flex';
+            });
+        }, { once: true });
         
         // Đảm bảo auto-resize sau khi modal đã hiển thị
         setTimeout(() => {
@@ -1471,12 +1573,12 @@ document.addEventListener('DOMContentLoaded', function () {
         font-size: 0.9rem;
     }
 
-    .btn-edit-user {
-        background: var(--primary);
+    .btn-view-user {
+        background: #3b82f6;
     }
 
-    .btn-edit-user:hover {
-        background: var(--primary-dark);
+    .btn-view-user:hover {
+        background: #2563eb;
         transform: scale(1.1);
     }
 
