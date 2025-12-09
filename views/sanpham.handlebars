@@ -127,8 +127,14 @@
                                     <div class="form-section-container">
                                         <div class="form-section">
                                             <h4 class="section-title">
-                                                <i class="fas fa-edit"></i>
-                                                <span id="brandFormTitle">Thêm thương hiệu mới</span>
+                                                <div>
+                                                    <i class="fas fa-edit"></i>
+                                                    <span id="brandFormTitle">Thêm thương hiệu mới</span>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" id="resetBrandForm" title="Xóa toàn bộ form và bắt đầu lại">
+                                                    <i class="fas fa-redo-alt"></i>
+                                                    Làm mới
+                                                </button>
                                             </h4>
 
                                             <form id="brandForm" class="brand-form">
@@ -143,7 +149,7 @@
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="brandName" required
                                                             placeholder="Nhập tên thương hiệu (tối đa 100 ký tự)">
-                                                        <div class="form-text">Tên thương hiệu là bắt buộc và duy nhất</div>
+                                                        <div class="form-text">Tên thương hiệu phải là duy nhất</div>
                                                     </div>
 
                                                     <div class="form-group">
@@ -164,16 +170,17 @@
                                                         <i class="fas fa-image"></i>
                                                         Logo thương hiệu
                                                     </label>
-                                                    <div class="file-upload-container brand-file-upload">
+                                                    <div class="file-upload-container">
                                                         <input type="file" class="form-control" id="brandLogoInput" accept="image/*" style="display: none;">
                                                         <div class="file-upload-area" id="brandLogoUploadArea">
                                                             <div class="upload-placeholder">
-                                                                    <button type="button" class="btn btn-secondary" id="chooseBrandLogoBtn">
-                                                                        <i class="fas fa-upload"></i>
-                                                                        &nbsp;Chọn logo
-                                                                    </button>
-                                                                    <div class="form-text mt-2">Định dạng: JPG, PNG, GIF (Tối đa 5MB)</div>
-                                                                </div>
+                                                                <button type="button" class="btn btn-secondary" id="chooseBrandLogoBtn">
+                                                                    <i class="fas fa-upload"></i>
+                                                                    &nbsp;Chọn logo
+                                                                </button>
+                                                                <div class="form-text mt-2">Định dạng: JPG, PNG, GIF (Tối đa 5MB)</div>
+                                                            </div>
+
                                                             <div class="upload-preview" id="brandLogoPreview" style="display: none;">
                                                                 <img id="brandLogoPreviewImg" src="" alt="Preview">
                                                                 <button type="button" class="btn-change-image" id="changeBrandLogoBtn">
@@ -184,7 +191,7 @@
 
                                                         <!-- Logo preview container (shows existing logo in edit mode) -->
                                                         <div class="logo-preview-container">
-                                                            <div class="logo-preview" id="logoPreview">
+                                                            <div class="logo-preview" id="brandLogoPreviewContainer">
                                                                 <div class="preview-placeholder">
                                                                     <i class="fas fa-image fa-2x"></i>
                                                                     <span>Logo sẽ hiển thị tại đây</span>
@@ -192,7 +199,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-
                                                     <input type="hidden" id="brandLogo" name="brandLogo">
                                                 </div>
 
@@ -211,19 +217,6 @@
                                                     </div>
                                                 </div>
                                             </form>
-                                        </div>
-
-                                        <!-- Action Buttons (Giữ nguyên) -->
-                                        <div class="form-actions mt-4">
-                                            <button type="button" class="btn btn-secondary btn-lg me-2"
-                                                id="resetBrandForm">
-                                                <i class="fas fa-undo"></i>
-                                                Làm mới form
-                                            </button>
-                                            <button type="button" class="btn btn-primary btn-lg" id="saveBrandBtn">
-                                                <i class="fas fa-save"></i>
-                                                <span id="saveBrandText">Thêm thương hiệu</span>
-                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -273,11 +266,11 @@
                                                 Hiển thị <span id="brandsCurrentCount">0</span> trong tổng số <span
                                                     id="brandsTotalCount">0</span> thương hiệu
                                             </div>
-                                            <div class="table-pagination">
+                                            <div class="table-pagination" id="brandPagination">
                                                 <button class="pagination-btn" id="brandsPrevPage" disabled>
                                                     <i class="fas fa-chevron-left"></i>
                                                 </button>
-                                                <span class="pagination-info">Trang 1/1</span>
+                                                <div class="pagination-numbers" id="brandPaginationNumbers"></div>
                                                 <button class="pagination-btn" id="brandsNextPage" disabled>
                                                     <i class="fas fa-chevron-right"></i>
                                                 </button>
@@ -301,6 +294,10 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times"></i>
                             Đóng
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" id="saveBrandBtn">
+                            <i class="fas fa-save"></i>
+                            <span id="saveBrandText">Thêm thương hiệu</span>
                         </button>
                     </div>
                 </div>
@@ -326,8 +323,14 @@
                                     <div class="form-section-container">
                                         <div class="form-section">
                                             <h4 class="section-title">
-                                                <i class="fas fa-edit"></i>
-                                                <span id="categoryFormTitle">Thêm danh mục mới</span>
+                                                <div>
+                                                    <i class="fas fa-edit"></i>
+                                                    <span id="categoryFormTitle">Thêm danh mục mới</span>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" id="resetCategoryForm" title="Xóa toàn bộ form và bắt đầu lại">
+                                                    <i class="fas fa-redo-alt"></i>
+                                                    Làm mới
+                                                </button>
                                             </h4>
 
                                             <form id="categoryForm" class="category-form">
@@ -342,7 +345,7 @@
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="categoryName" required
                                                             placeholder="Nhập tên danh mục (tối đa 100 ký tự)">
-                                                        <div class="form-text">Tên danh mục là bắt buộc và duy nhất</div>
+                                                        <div class="form-text">Tên danh mục phải là duy nhất</div>
                                                     </div>
 
                                                     <div class="form-group">
@@ -432,19 +435,6 @@
                                                 </div>
                                             </form>
                                         </div>
-
-                                        <!-- Action Buttons (Giữ nguyên) -->
-                                        <div class="form-actions mt-4">
-                                            <button type="button" class="btn btn-secondary btn-lg me-2"
-                                                id="resetCategoryForm">
-                                                <i class="fas fa-undo"></i>
-                                                Làm mới form
-                                            </button>
-                                            <button type="button" class="btn btn-primary btn-lg" id="saveCategoryBtn">
-                                                <i class="fas fa-save"></i>
-                                                <span id="saveCategoryText"></span>
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -494,11 +484,11 @@
                                                 Hiển thị <span id="categoriesCurrentCount">0</span> trong tổng số <span
                                                     id="categoriesTotalCount">0</span> danh mục
                                             </div>
-                                            <div class="table-pagination">
+                                            <div class="table-pagination" id="categoryPagination">
                                                 <button class="pagination-btn" id="categoriesPrevPage" disabled>
                                                     <i class="fas fa-chevron-left"></i>
                                                 </button>
-                                                <span class="pagination-info">Trang 1/1</span>
+                                                <div class="pagination-numbers" id="categoryPaginationNumbers"></div>
                                                 <button class="pagination-btn" id="categoriesNextPage" disabled>
                                                     <i class="fas fa-chevron-right"></i>
                                                 </button>
@@ -522,6 +512,10 @@
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                             <i class="fas fa-times"></i>
                             Đóng
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" id="saveCategoryBtn">
+                            <i class="fas fa-save"></i>
+                            <span id="saveCategoryText"></span>
                         </button>
                     </div>
                 </div>
@@ -630,11 +624,11 @@
                     Hiển thị <span id="currentCount">{{sanphams.length}}</span> trong tổng số <span
                         id="totalCount">{{sanphams.length}}</span> sản phẩm
                 </div>
-                <div class="table-pagination">
+                <div class="table-pagination" id="productPagination">
                     <button class="pagination-btn" id="prevPage" disabled>
                         <i class="fas fa-chevron-left"></i>
                     </button>
-                    <span class="pagination-info">Trang 1/1</span>
+                    <div class="pagination-numbers" id="productPaginationNumbers"></div>
                     <button class="pagination-btn" id="nextPage" disabled>
                         <i class="fas fa-chevron-right"></i>
                     </button>
@@ -1787,18 +1781,64 @@
         renderPagination() {
             const prevBtn = document.getElementById('prevPage');
             const nextBtn = document.getElementById('nextPage');
-            const paginationContainer = prevBtn?.closest('.table-pagination');
-            const paginationInfo = paginationContainer?.querySelector('.pagination-info');
+            const numbersContainer = document.getElementById('productPaginationNumbers');
 
-            if (!paginationInfo || !prevBtn || !nextBtn) return;
+            if (!prevBtn || !nextBtn || !numbersContainer) return;
 
-            // Cập nhật thông tin trang (scope đúng block sản phẩm)
-            const displayTotalPages = this.totalPages === 0 ? 1 : this.totalPages;
-            paginationInfo.textContent = `Trang ${this.currentPage}/${displayTotalPages}`;
-
-            // Cập nhật trạng thái nút
+            // Cập nhật trạng thái nút prev/next
             prevBtn.disabled = this.currentPage === 1;
             nextBtn.disabled = this.currentPage === this.totalPages || this.totalPages === 0;
+
+            // Tạo các số trang
+            numbersContainer.innerHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            // Nút trang đầu và dấu ...
+            if (startPage > 1) {
+                const firstBtn = this.createPageButton(1);
+                numbersContainer.appendChild(firstBtn);
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'pagination-dots';
+                    dots.textContent = '...';
+                    numbersContainer.appendChild(dots);
+                }
+            }
+
+            // Các trang ở giữa
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = this.createPageButton(i);
+                numbersContainer.appendChild(pageBtn);
+            }
+
+            // Dấu ... và trang cuối
+            if (endPage < this.totalPages) {
+                if (endPage < this.totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'pagination-dots';
+                    dots.textContent = '...';
+                    numbersContainer.appendChild(dots);
+                }
+                const lastBtn = this.createPageButton(this.totalPages);
+                numbersContainer.appendChild(lastBtn);
+            }
+        }
+
+        createPageButton(pageNumber) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-number-btn';
+            if (pageNumber === this.currentPage) {
+                btn.classList.add('active');
+            }
+            btn.textContent = pageNumber;
+            btn.onclick = () => this.goToPage(pageNumber);
+            return btn;
         }
 
         goToPage(page) {
@@ -3650,7 +3690,7 @@
             // Logo preview
             const logoInput = document.getElementById('brandLogo');
             const previewBtn = document.getElementById('previewLogoBtn');
-            const logoPreview = document.getElementById('logoPreview');
+            const logoPreview = document.getElementById('brandLogoPreviewContainer');
 
             if (logoInput && previewBtn && logoPreview) {
                 logoInput.addEventListener('input', Utils.debounce(() => {
@@ -3669,7 +3709,7 @@
         }
 
         updateLogoPreview(logoUrl) {
-            const previewElement = document.getElementById('logoPreview');
+            const previewElement = document.getElementById('brandLogoPreviewContainer');
             if (!previewElement) return;
 
             previewElement.innerHTML = '';
@@ -3933,23 +3973,64 @@
         updatePaginationControls() {
             const prevPageBtn = document.getElementById('brandsPrevPage');
             const nextPageBtn = document.getElementById('brandsNextPage');
-            const paginationInfo = document.querySelector('#brandModal .table-pagination .pagination-info');
+            const numbersContainer = document.getElementById('brandPaginationNumbers');
 
-            // Cập nhật trạng thái nút Previous
-            if (prevPageBtn) {
-                prevPageBtn.disabled = this.currentPage === 1;
+            if (!prevPageBtn || !nextPageBtn || !numbersContainer) return;
+
+            // Cập nhật trạng thái nút prev/next
+            prevPageBtn.disabled = this.currentPage === 1;
+            nextPageBtn.disabled = this.currentPage === this.totalPages || this.totalPages === 0;
+
+            // Tạo các số trang
+            numbersContainer.innerHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
             }
 
-            // Cập nhật trạng thái nút Next
-            if (nextPageBtn) {
-                nextPageBtn.disabled = this.currentPage === this.totalPages || this.totalPages === 0;
+            // Nút trang đầu và dấu ...
+            if (startPage > 1) {
+                const firstBtn = this.createBrandPageButton(1);
+                numbersContainer.appendChild(firstBtn);
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'pagination-dots';
+                    dots.textContent = '...';
+                    numbersContainer.appendChild(dots);
+                }
             }
 
-            // Cập nhật thông tin trang
-            if (paginationInfo) {
-                const displayTotalPages = this.totalPages === 0 ? 1 : this.totalPages;
-                paginationInfo.textContent = `Trang ${this.currentPage}/${displayTotalPages}`;
+            // Các trang ở giữa
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = this.createBrandPageButton(i);
+                numbersContainer.appendChild(pageBtn);
             }
+
+            // Dấu ... và trang cuối
+            if (endPage < this.totalPages) {
+                if (endPage < this.totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'pagination-dots';
+                    dots.textContent = '...';
+                    numbersContainer.appendChild(dots);
+                }
+                const lastBtn = this.createBrandPageButton(this.totalPages);
+                numbersContainer.appendChild(lastBtn);
+            }
+        }
+
+        createBrandPageButton(pageNumber) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-number-btn';
+            if (pageNumber === this.currentPage) {
+                btn.classList.add('active');
+            }
+            btn.textContent = pageNumber;
+            btn.onclick = () => this.goToPage(pageNumber);
+            return btn;
         }
 
         // Phương thức chuyển trang
@@ -4964,20 +5045,64 @@
         updatePaginationControls() {
             const prevPageBtn = document.getElementById('categoriesPrevPage');
             const nextPageBtn = document.getElementById('categoriesNextPage');
-            const paginationInfo = document.querySelector('#categoryModal .table-pagination .pagination-info');
+            const numbersContainer = document.getElementById('categoryPaginationNumbers');
 
-            if (prevPageBtn) {
-                prevPageBtn.disabled = this.currentPage === 1;
+            if (!prevPageBtn || !nextPageBtn || !numbersContainer) return;
+
+            // Cập nhật trạng thái nút prev/next
+            prevPageBtn.disabled = this.currentPage === 1;
+            nextPageBtn.disabled = this.currentPage === this.totalPages || this.totalPages === 0;
+
+            // Tạo các số trang
+            numbersContainer.innerHTML = '';
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
             }
 
-            if (nextPageBtn) {
-                nextPageBtn.disabled = this.currentPage === this.totalPages || this.totalPages === 0;
+            // Nút trang đầu và dấu ...
+            if (startPage > 1) {
+                const firstBtn = this.createCategoryPageButton(1);
+                numbersContainer.appendChild(firstBtn);
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'pagination-dots';
+                    dots.textContent = '...';
+                    numbersContainer.appendChild(dots);
+                }
             }
 
-            if (paginationInfo) {
-                const displayTotalPages = this.totalPages === 0 ? 1 : this.totalPages;
-                paginationInfo.textContent = `Trang ${this.currentPage}/${displayTotalPages}`;
+            // Các trang ở giữa
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = this.createCategoryPageButton(i);
+                numbersContainer.appendChild(pageBtn);
             }
+
+            // Dấu ... và trang cuối
+            if (endPage < this.totalPages) {
+                if (endPage < this.totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'pagination-dots';
+                    dots.textContent = '...';
+                    numbersContainer.appendChild(dots);
+                }
+                const lastBtn = this.createCategoryPageButton(this.totalPages);
+                numbersContainer.appendChild(lastBtn);
+            }
+        }
+
+        createCategoryPageButton(pageNumber) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-number-btn';
+            if (pageNumber === this.currentPage) {
+                btn.classList.add('active');
+            }
+            btn.textContent = pageNumber;
+            btn.onclick = () => this.goToPage(pageNumber);
+            return btn;
         }
 
         goToPage(page) {
@@ -6767,7 +6892,7 @@ class SimpleImageUploadManager {
     }
 
     updateBrandLogoPreview(imageUrl) {
-        const logoPreview = document.getElementById('logoPreview');
+        const logoPreview = document.getElementById('brandLogoPreviewContainer');
         if (logoPreview) {
             console.log('✅ Updating brand logo preview container');
             logoPreview.innerHTML = '';
@@ -7060,14 +7185,14 @@ class SimpleImageUploadManager {
         const previewArea = document.getElementById('brandLogoUploadArea');
         const placeholder = previewArea?.querySelector('.upload-placeholder');
         const preview = document.getElementById('brandLogoPreview');
-        const logoPreview = document.getElementById('logoPreview');
+        const logoPreview = document.getElementById('brandLogoPreviewContainer');
 
         if (preview) preview.style.display = 'none';
         if (placeholder) placeholder.style.display = 'block';
         if (logoPreview) {
             logoPreview.innerHTML = `
                 <div class="preview-placeholder">
-                    <i class="fas fa-image fa-3x"></i>
+                    <i class="fas fa-image fa-2x"></i>
                     <span>Logo sẽ hiển thị tại đây</span>
                 </div>
             `;
@@ -11171,7 +11296,7 @@ document.addEventListener('DOMContentLoaded', function() {
     .table-pagination {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
     }
 
     .pagination-btn {
@@ -11196,6 +11321,54 @@ document.addEventListener('DOMContentLoaded', function() {
     .pagination-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    .pagination-numbers {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .pagination-number-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        border: 1px solid var(--gray-300);
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .pagination-number-btn:hover {
+        background: var(--gray-100);
+        border-color: var(--gray-400);
+        color: var(--gray-900);
+    }
+
+    .pagination-number-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    }
+
+    .pagination-number-btn.active:hover {
+        background: linear-gradient(135deg, #5a67d8 0%, #6a3f8f 100%);
+    }
+
+    .pagination-dots {
+        color: var(--gray-400);
+        font-weight: 600;
+        padding: 0 4px;
+        user-select: none;
     }
 
     .pagination-info {
@@ -11315,11 +11488,18 @@ document.addEventListener('DOMContentLoaded', function() {
     .section-title {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 8px;
         margin-bottom: 16px;
         color: var(--gray-700);
         font-size: 1.1rem;
         font-weight: 600;
+    }
+
+    .section-title > div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .section-title i {
