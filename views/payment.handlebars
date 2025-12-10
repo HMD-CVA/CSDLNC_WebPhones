@@ -1525,19 +1525,53 @@ document.addEventListener('DOMContentLoaded', async function() {
       return;
     }
 
+    // Check if address has vung_id
+    if (!selectedAddress.vung_id) {
+      console.error('❌ Address missing vung_id:', selectedAddress);
+      const container = document.getElementById('shippingMethodsList');
+      container.innerHTML = `
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>Địa chỉ chưa có thông tin vùng. Vui lòng cập nhật địa chỉ.</p>
+        </div>
+      `;
+      return;
+    }
+
     try {
       const container = document.getElementById('shippingMethodsList');
       container.innerHTML = `
         <div class="loading">
-          <i class="fas fa-spinner fa-spin"></i> Đang tải phương thức vận chuyển...
+          <i class="fas fa-spinner fa-spin"></i> Đang tải phương thức vận chuyển cho ${selectedAddress.ten_vung}...
         </div>
       `;
 
-      const response = await fetch(`/api/shipping-methods/by-address/${selectedAddress.id}`);
+      console.log('🚚 Loading shipping methods for region:', selectedAddress.vung_id, '-', selectedAddress.ten_vung);
+
+      // Fetch shipping methods by region
+      const response = await fetch(`/api/shipping-method-regions?regionId=${selectedAddress.vung_id}`);
       const result = await response.json();
       
+      console.log('📦 Shipping methods API response:', result);
+      
       if (result.success && result.data && result.data.length > 0) {
-        shippingMethods = result.data;
+        // Transform data to match expected format
+        shippingMethods = result.data.map(item => ({
+          shipping_method_id: item.phuong_thuc_van_chuyen_id,
+          shipping_method_region_id: item.id,
+          ten_phuong_thuc: item.ten_phuong_thuc,
+          chi_phi_van_chuyen: item.gia_van_chuyen,
+          thoi_gian_giao_du_kien: item.thoi_gian_du_kien,
+          tong_phi: item.gia_van_chuyen,
+          ma_vung: selectedAddress.vung_id,
+          ten_vung: selectedAddress.ten_vung,
+          chi_phi_formatted: new Intl.NumberFormat('vi-VN').format(item.gia_van_chuyen) + 'đ',
+          thoi_gian_text: item.thoi_gian_du_kien 
+            ? `${item.thoi_gian_du_kien} ngày` 
+            : 'Liên hệ'
+        }));
+        
+        console.log('✅ Loaded', shippingMethods.length, 'shipping methods');
         
         // Auto select first shipping method if none selected
         if (!selectedShippingMethod && shippingMethods.length > 0) {
@@ -1550,12 +1584,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         container.innerHTML = `
           <div class="no-shipping">
             <i class="fas fa-exclamation-triangle"></i>
-            <p>Không có phương thức vận chuyển cho vùng này</p>
+            <p>Không có phương thức vận chuyển cho vùng ${selectedAddress.ten_vung}</p>
+            <small style="color: #999; margin-top: 8px; display: block;">Vui lòng liên hệ bộ phận hỗ trợ</small>
           </div>
         `;
       }
     } catch (error) {
-      console.error('Error loading shipping methods:', error);
+      console.error('❌ Error loading shipping methods:', error);
       const container = document.getElementById('shippingMethodsList');
       container.innerHTML = `
         <div class="error-message">
@@ -1747,6 +1782,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     selectedAddress = userAddresses.find(addr => addr.id === addressId);
     displaySelectedAddress();
     hideAddressModal();
+    
+    // Reload shipping methods for the new address region
+    loadShippingMethods();
+    
     Utils.showToast('Đã chọn địa chỉ', 'success');
   }
 
@@ -1973,22 +2012,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   async function loadWardsByProvince(provinceId, wardSelectId = 'formWard') {
     try {
+      console.log('🔍 Loading wards for province:', provinceId);
       const response = await fetch(`/api/wards?tinh_thanh_id=${provinceId}&trang_thai=1`);
       const result = await response.json();
+      
+      console.log('📍 Wards API response:', result);
       
       if (result.success) {
         const wardSelect = document.getElementById(wardSelectId);
         wardSelect.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
         
-        result.data.forEach(ward => {
-          const option = document.createElement('option');
-          option.value = ward.id;
-          option.textContent = ward.ten_phuong_xa;
-          wardSelect.appendChild(option);
-        });
+        if (result.data && result.data.length > 0) {
+          result.data.forEach(ward => {
+            const option = document.createElement('option');
+            option.value = ward.id;
+            option.textContent = ward.ten_phuong_xa;
+            wardSelect.appendChild(option);
+          });
+          console.log(`✅ Loaded ${result.data.length} wards into ${wardSelectId}`);
+        } else {
+          console.warn('⚠️ No wards found for province:', provinceId);
+        }
+      } else {
+        console.error('❌ API returned error:', result.message);
       }
     } catch (error) {
-      console.error('Error loading wards:', error);
+      console.error('❌ Error loading wards:', error);
+      Utils.showToast('Không thể tải danh sách phường/xã', 'error');
     }
   }
 
@@ -2004,6 +2054,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Province change in form
     document.getElementById('formProvince').addEventListener('change', function() {
+      console.log('🏙️ Province changed to:', this.value);
       if (this.value) {
         loadWardsByProvince(this.value, 'formWard');
       } else {

@@ -755,6 +755,16 @@ app.get('/admin', (req, res) => {
     }
 });
 
+// Trang quản lý vận chuyển
+app.get('/vanchuyen', (req, res) => {
+    try {
+        res.render('vanchuyen', { layout: 'AdminMain', vanChuyenPage: true });
+    } catch (err) {
+        console.error('Error rendering vanchuyen:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
 // Trang giỏ hàng
 app.get('/cart', async (req, res) => {
     try {
@@ -6782,12 +6792,12 @@ app.get('/api/shipping-methods', async (req, res) => {
             SELECT 
                 sm.id,
                 sm.ten_phuong_thuc,
+                sm.mo_ta,
                 sm.chi_phi_co_ban,
                 sm.mongo_config_id,
                 sm.trang_thai,
                 sm.ngay_tao
             FROM shipping_methods sm
-            WHERE sm.trang_thai = 1
             ORDER BY sm.chi_phi_co_ban ASC
         `;
         
@@ -9879,6 +9889,482 @@ app.get('/api/shipping-methods/by-region/:regionId', async (req, res) => {
             success: false,
             message: 'Lỗi khi lấy phương thức vận chuyển: ' + error.message
         });
+    }
+});
+
+// ==================== SHIPPING METHODS API ====================
+
+// Get all regions
+app.get('/api/regions', async (req, res) => {
+    try {
+        const result = await new sql.Request().query(`
+            SELECT ma_vung, ten_vung, mo_ta, trang_thai
+            FROM regions
+            WHERE trang_thai = 1
+            ORDER BY 
+                CASE ma_vung 
+                    WHEN 'bac' THEN 1 
+                    WHEN 'trung' THEN 2 
+                    WHEN 'nam' THEN 3 
+                END
+        `);
+        
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Get Regions Error:', error);
+        res.status(500).json({ message: 'Lỗi khi lấy danh sách vùng: ' + error.message });
+    }
+});
+
+// Get all shipping methods
+app.get('/api/shipping-methods', async (req, res) => {
+    try {
+        const result = await new sql.Request().query(`
+            SELECT 
+                id,
+                ten_phuong_thuc,
+                mo_ta,
+                chi_phi_co_ban,
+                mongo_config_id,
+                trang_thai,
+                ngay_tao
+            FROM shipping_methods
+            ORDER BY ngay_tao DESC
+        `);
+        
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Get Shipping Methods Error:', error);
+        res.status(500).json({ message: 'Lỗi khi lấy danh sách phương thức vận chuyển: ' + error.message });
+    }
+});
+
+// Get shipping method by ID
+app.get('/api/shipping-methods/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                SELECT 
+                    id,
+                    ten_phuong_thuc,
+                    mo_ta,
+                    chi_phi_co_ban,
+                    mongo_config_id,
+                    trang_thai,
+                    ngay_tao
+                FROM shipping_methods
+                WHERE id = @id
+            `);
+        
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy phương thức vận chuyển' });
+        }
+        
+        res.json(result.recordset[0]);
+    } catch (error) {
+        console.error('Get Shipping Method Error:', error);
+        res.status(500).json({ message: 'Lỗi khi lấy thông tin phương thức vận chuyển: ' + error.message });
+    }
+});
+
+// Create new shipping method
+app.post('/api/shipping-methods', async (req, res) => {
+    try {
+        const { ten_phuong_thuc, mo_ta, chi_phi_co_ban, trang_thai } = req.body;
+        
+        // Validation
+        if (!ten_phuong_thuc || chi_phi_co_ban === undefined) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Thiếu thông tin bắt buộc' 
+            });
+        }
+        
+        if (chi_phi_co_ban < 0) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Chi phí cơ bản phải >= 0' 
+            });
+        }
+        
+        // Convert text status to bit
+        let trangThaiBit = 1;
+        if (trang_thai === 'Tạm ngưng' || trang_thai === false || trang_thai === 0) {
+            trangThaiBit = 0;
+        }
+        
+        const result = await new sql.Request()
+            .input('ten_phuong_thuc', sql.NVarChar(100), ten_phuong_thuc)
+            .input('mo_ta', sql.NVarChar(500), mo_ta || null)
+            .input('chi_phi_co_ban', sql.Decimal(15, 2), chi_phi_co_ban)
+            .input('trang_thai', sql.Bit, trangThaiBit)
+            .query(`
+                INSERT INTO shipping_methods (ten_phuong_thuc, mo_ta, chi_phi_co_ban, trang_thai)
+                OUTPUT INSERTED.*
+                VALUES (@ten_phuong_thuc, @mo_ta, @chi_phi_co_ban, @trang_thai)
+            `);
+        
+        res.status(201).json({
+            success: true,
+            data: result.recordset[0]
+        });
+    } catch (error) {
+        console.error('Create Shipping Method Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Lỗi khi tạo phương thức vận chuyển: ' + error.message 
+        });
+    }
+});
+
+// Update shipping method
+app.put('/api/shipping-methods/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ten_phuong_thuc, mo_ta, chi_phi_co_ban, trang_thai } = req.body;
+        
+        // Validation
+        if (!ten_phuong_thuc || chi_phi_co_ban === undefined) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Thiếu thông tin bắt buộc' 
+            });
+        }
+        
+        if (chi_phi_co_ban < 0) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Chi phí cơ bản phải >= 0' 
+            });
+        }
+        
+        // Convert text status to bit
+        let trangThaiBit = 1;
+        if (trang_thai === 'Tạm ngưng' || trang_thai === false || trang_thai === 0) {
+            trangThaiBit = 0;
+        }
+        
+        const result = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .input('ten_phuong_thuc', sql.NVarChar(100), ten_phuong_thuc)
+            .input('mo_ta', sql.NVarChar(500), mo_ta || null)
+            .input('chi_phi_co_ban', sql.Decimal(15, 2), chi_phi_co_ban)
+            .input('trang_thai', sql.Bit, trangThaiBit)
+            .query(`
+                UPDATE shipping_methods
+                SET 
+                    ten_phuong_thuc = @ten_phuong_thuc,
+                    mo_ta = @mo_ta,
+                    chi_phi_co_ban = @chi_phi_co_ban,
+                    trang_thai = @trang_thai
+                OUTPUT INSERTED.*
+                WHERE id = @id
+            `);
+        
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Không tìm thấy phương thức vận chuyển' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.recordset[0]
+        });
+    } catch (error) {
+        console.error('Update Shipping Method Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Lỗi khi cập nhật phương thức vận chuyển: ' + error.message 
+        });
+    }
+});
+
+// Delete shipping method
+app.delete('/api/shipping-methods/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Check if method is being used in orders
+        const checkResult = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                SELECT COUNT(*) as count
+                FROM orders o
+                JOIN shipping_method_regions smr ON o.shipping_method_region_id = smr.id
+                WHERE smr.shipping_method_id = @id
+            `);
+        
+        if (checkResult.recordset[0].count > 0) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Không thể xóa phương thức vận chuyển đang được sử dụng trong đơn hàng' 
+            });
+        }
+        
+        const result = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                DELETE FROM shipping_methods
+                WHERE id = @id
+            `);
+        
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Không tìm thấy phương thức vận chuyển' 
+            });
+        }
+        
+        res.json({ 
+            success: true,
+            message: 'Đã xóa phương thức vận chuyển' 
+        });
+    } catch (error) {
+        console.error('Delete Shipping Method Error:', error);
+        res.status(500).json({ message: 'Lỗi khi xóa phương thức vận chuyển: ' + error.message });
+    }
+});
+
+// Get regional pricing for a shipping method
+app.get('/api/shipping-methods/:id/regions', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                SELECT 
+                    smr.id,
+                    smr.shipping_method_id,
+                    smr.region_id,
+                    smr.chi_phi_van_chuyen,
+                    smr.thoi_gian_giao_du_kien,
+                    smr.mongo_region_config_id,
+                    smr.trang_thai,
+                    smr.ngay_tao,
+                    r.ten_vung
+                FROM shipping_method_regions smr
+                JOIN regions r ON smr.region_id = r.ma_vung
+                WHERE smr.shipping_method_id = @id
+                ORDER BY 
+                    CASE smr.region_id 
+                        WHEN 'bac' THEN 1 
+                        WHEN 'trung' THEN 2 
+                        WHEN 'nam' THEN 3 
+                    END
+            `);
+        
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Get Regional Pricing Error:', error);
+        res.status(500).json({ message: 'Lỗi khi lấy giá theo vùng: ' + error.message });
+    }
+});
+
+// Get all shipping method regions
+app.get('/api/shipping-method-regions', async (req, res) => {
+    try {
+        const { regionId, methodId } = req.query;
+        
+        let query = `
+            SELECT 
+                smr.id,
+                smr.shipping_method_id as phuong_thuc_van_chuyen_id,
+                smr.region_id as vung_id,
+                smr.chi_phi_van_chuyen as gia_van_chuyen,
+                smr.thoi_gian_giao_du_kien as thoi_gian_du_kien,
+                smr.mongo_region_config_id,
+                smr.trang_thai,
+                smr.ngay_tao,
+                sm.ten_phuong_thuc,
+                r.ten_vung
+            FROM shipping_method_regions smr
+            JOIN shipping_methods sm ON smr.shipping_method_id = sm.id
+            JOIN regions r ON smr.region_id = r.ma_vung
+            WHERE 1=1
+        `;
+        
+        const request = new sql.Request();
+        
+        if (regionId) {
+            query += ` AND smr.region_id = @regionId`;
+            request.input('regionId', sql.NVarChar(10), regionId);
+        }
+        
+        if (methodId) {
+            query += ` AND smr.shipping_method_id = @methodId`;
+            request.input('methodId', sql.UniqueIdentifier, methodId);
+        }
+        
+        query += ` ORDER BY sm.ten_phuong_thuc, smr.region_id`;
+        
+        const result = await request.query(query);
+        
+        res.json({
+            success: true,
+            data: result.recordset
+        });
+    } catch (error) {
+        console.error('Get Shipping Method Regions Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Lỗi khi lấy danh sách giá vùng: ' + error.message 
+        });
+    }
+});
+
+// Create shipping method region
+app.post('/api/shipping-method-regions', async (req, res) => {
+    try {
+        const { shipping_method_id, region_id, chi_phi_van_chuyen, thoi_gian_giao_du_kien, trang_thai } = req.body;
+        
+        // Validation
+        if (!shipping_method_id || !region_id || chi_phi_van_chuyen === undefined) {
+            return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+        }
+        
+        if (chi_phi_van_chuyen < 0) {
+            return res.status(400).json({ message: 'Chi phí vận chuyển phải >= 0' });
+        }
+        
+        if (thoi_gian_giao_du_kien !== null && thoi_gian_giao_du_kien !== undefined && thoi_gian_giao_du_kien <= 0) {
+            return res.status(400).json({ message: 'Thời gian giao dự kiến phải > 0' });
+        }
+        
+        // Check if combination already exists
+        const checkResult = await new sql.Request()
+            .input('shipping_method_id', sql.UniqueIdentifier, shipping_method_id)
+            .input('region_id', sql.NVarChar(10), region_id)
+            .query(`
+                SELECT id FROM shipping_method_regions
+                WHERE shipping_method_id = @shipping_method_id AND region_id = @region_id
+            `);
+        
+        if (checkResult.recordset.length > 0) {
+            return res.status(400).json({ message: 'Giá cho vùng này đã tồn tại' });
+        }
+        
+        const result = await new sql.Request()
+            .input('shipping_method_id', sql.UniqueIdentifier, shipping_method_id)
+            .input('region_id', sql.NVarChar(10), region_id)
+            .input('chi_phi_van_chuyen', sql.Decimal(15, 2), chi_phi_van_chuyen)
+            .input('thoi_gian_giao_du_kien', sql.Int, thoi_gian_giao_du_kien || null)
+            .input('trang_thai', sql.Bit, trang_thai !== undefined ? trang_thai : true)
+            .query(`
+                INSERT INTO shipping_method_regions 
+                    (shipping_method_id, region_id, chi_phi_van_chuyen, thoi_gian_giao_du_kien, trang_thai)
+                OUTPUT INSERTED.*
+                VALUES 
+                    (@shipping_method_id, @region_id, @chi_phi_van_chuyen, @thoi_gian_giao_du_kien, @trang_thai)
+            `);
+        
+        res.status(201).json(result.recordset[0]);
+    } catch (error) {
+        console.error('Create Shipping Method Region Error:', error);
+        res.status(500).json({ message: 'Lỗi khi tạo giá vùng: ' + error.message });
+    }
+});
+
+// Update shipping method region
+app.put('/api/shipping-method-regions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { gia_van_chuyen, chi_phi_van_chuyen, thoi_gian_du_kien, thoi_gian_giao_du_kien, trang_thai } = req.body;
+        
+        // Accept both old and new field names
+        const giaCuoi = gia_van_chuyen || chi_phi_van_chuyen;
+        const thoiGian = thoi_gian_du_kien || thoi_gian_giao_du_kien;
+        
+        // Validation
+        if (giaCuoi === undefined) {
+            return res.status(400).json({ message: 'Thiếu thông tin bắt buộc' });
+        }
+        
+        if (giaCuoi < 0) {
+            return res.status(400).json({ message: 'Chi phí vận chuyển phải >= 0' });
+        }
+        
+        // Convert text status to bit
+        let trangThaiBit = 1;
+        if (trang_thai === 'Tạm ngưng' || trang_thai === false || trang_thai === 0) {
+            trangThaiBit = 0;
+        }
+        
+        const result = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .input('chi_phi_van_chuyen', sql.Decimal(15, 2), giaCuoi)
+            .input('thoi_gian_giao_du_kien', sql.NVarChar(100), thoiGian || null)
+            .input('trang_thai', sql.Bit, trangThaiBit)
+            .query(`
+                UPDATE shipping_method_regions
+                SET 
+                    chi_phi_van_chuyen = @chi_phi_van_chuyen,
+                    thoi_gian_giao_du_kien = @thoi_gian_giao_du_kien,
+                    trang_thai = @trang_thai
+                OUTPUT INSERTED.*
+                WHERE id = @id
+            `);
+        
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Không tìm thấy giá vùng' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: result.recordset[0]
+        });
+    } catch (error) {
+        console.error('Update Shipping Method Region Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Lỗi khi cập nhật giá vùng: ' + error.message 
+        });
+    }
+});
+
+// Delete shipping method region
+app.delete('/api/shipping-method-regions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Check if being used in orders
+        const checkResult = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                SELECT COUNT(*) as count
+                FROM orders
+                WHERE shipping_method_region_id = @id
+            `);
+        
+        if (checkResult.recordset[0].count > 0) {
+            return res.status(400).json({ 
+                message: 'Không thể xóa giá vùng đang được sử dụng trong đơn hàng' 
+            });
+        }
+        
+        const result = await new sql.Request()
+            .input('id', sql.UniqueIdentifier, id)
+            .query(`
+                DELETE FROM shipping_method_regions
+                WHERE id = @id
+            `);
+        
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy giá vùng' });
+        }
+        
+        res.json({ message: 'Đã xóa giá vùng' });
+    } catch (error) {
+        console.error('Delete Shipping Method Region Error:', error);
+        res.status(500).json({ message: 'Lỗi khi xóa giá vùng: ' + error.message });
     }
 });
 

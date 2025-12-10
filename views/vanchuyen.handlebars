@@ -1,0 +1,1250 @@
+<div class="main-content">
+    <div class="admin-dashboard">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div class="header-title">
+                    <div class="title-icon">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <div>
+                        <h1>QUẢN LÝ VẬN CHUYỂN</h1>
+                        <p>Quản lý phương thức và giá vận chuyển theo vùng</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shippingMethodModal">
+                        <i class="fas fa-plus"></i>
+                        Thêm phương thức
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-icon total">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalMethods">0</h3>
+                    <p>Tổng phương thức</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon available">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="activeMethods">0</h3>
+                    <p>Đang hoạt động</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon busy">
+                    <i class="fas fa-pause-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="inactiveMethods">0</h3>
+                    <p>Tạm ngưng</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Region Tabs -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3><i class="fas fa-map-marked-alt"></i> Phương thức vận chuyển theo vùng</h3>
+            </div>
+            
+            <!-- Region Tabs Navigation -->
+            <ul class="nav nav-tabs region-tabs" id="regionTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-content" type="button" role="tab">
+                        <i class="fas fa-globe"></i> Tất cả vùng
+                    </button>
+                </li>
+                <!-- Dynamic region tabs will be inserted here -->
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="regionTabContent">
+                <!-- All Regions Tab -->
+                <div class="tab-pane fade show active" id="all-content" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên phương thức</th>
+                                    <th>Mô tả</th>
+                                    <th>Chi phí cơ bản</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allMethodsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        <div class="loading-state">
+                                            <div class="loading-spinner"></div>
+                                            <p>Đang tải dữ liệu...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Dynamic region tab contents will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Shipping Method Modal -->
+<div class="modal fade modal-premium" id="shippingMethodModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shipping-fast"></i>
+                    <span id="methodModalTitle">Thêm phương thức vận chuyển</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="shippingMethodForm">
+                    <input type="hidden" id="methodId">
+                    <div class="form-group">
+                        <label class="form-label">Tên phương thức</label>
+                        <input type="text" class="form-control" id="methodName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="methodDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chi phí cơ bản</label>
+                        <input type="number" class="form-control" id="methodBaseCost" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trạng thái</label>
+                        <select class="form-select" id="methodStatus">
+                            <option value="Hoạt động">Hoạt động</option>
+                            <option value="Tạm ngưng">Tạm ngưng</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="shippingManager.saveMethod()">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Regional Price Modal -->
+<div class="modal fade modal-premium" id="regionalPriceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i>
+                    Chỉnh sửa giá vận chuyển
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="regionalPriceForm">
+                    <input type="hidden" id="regionalPriceId">
+                    <input type="hidden" id="regionalMethodId">
+                    <input type="hidden" id="regionalRegionId">
+                    <div class="form-group">
+                        <label class="form-label">Vùng</label>
+                        <input type="text" class="form-control" id="regionalRegionName" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Giá vận chuyển</label>
+                        <input type="number" class="form-control" id="regionalPrice" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Thời gian dự kiến</label>
+                        <input type="text" class="form-control" id="regionalEstimatedTime" placeholder="VD: 2-3 ngày">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trạng thái</label>
+                        <select class="form-select" id="regionalStatus">
+                            <option value="Hoạt động">Hoạt động</option>
+                            <option value="Tạm ngưng">Tạm ngưng</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="shippingManager.saveRegionalPrice()">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+class ShippingMethodManager {
+    constructor() {
+        this.shippingMethods = [];
+        this.regions = [];
+        this.currentMethodId = null;
+        this.currentRegionId = null;
+    }
+
+    async init() {
+        await this.loadRegions();
+        await this.loadShippingMethods();
+        this.renderRegionTabs();
+        this.setupEventListeners();
+    }
+
+    updateStats() {
+        document.getElementById('totalMethods').textContent = this.shippingMethods.length;
+        document.getElementById('activeMethods').textContent = this.shippingMethods.filter(m => m.trang_thai === true).length;
+        document.getElementById('inactiveMethods').textContent = this.shippingMethods.filter(m => m.trang_thai === false).length;
+    }
+
+    async loadRegions() {
+        try {
+            const response = await fetch('/api/regions');
+            const data = await response.json();
+            this.regions = Array.isArray(data) ? data : (data.data || []);
+            console.log('📍 Regions loaded:', this.regions);
+        } catch (error) {
+            console.error('Error loading regions:', error);
+            this.regions = [];
+        }
+    }
+
+    renderRegionTabs() {
+        const tabsContainer = document.getElementById('regionTabs');
+        const tabContentContainer = document.getElementById('regionTabContent');
+        
+        // Clear existing dynamic tabs (keep "All" tab)
+        const dynamicTabs = tabsContainer.querySelectorAll('li:not(:first-child)');
+        dynamicTabs.forEach(tab => tab.remove());
+        
+        const dynamicContents = tabContentContainer.querySelectorAll('.tab-pane:not(:first-child)');
+        dynamicContents.forEach(content => content.remove());
+        
+        // Add tabs for each region
+        this.regions.forEach((region, index) => {
+            const regionId = region.ma_vung || region.id;
+            const tabId = `region-${regionId}`;
+            
+            // Create tab
+            const tabLi = document.createElement('li');
+            tabLi.className = 'nav-item';
+            tabLi.setAttribute('role', 'presentation');
+            tabLi.innerHTML = `
+                <button class="nav-link" id="${tabId}-tab" data-bs-toggle="tab" 
+                        data-bs-target="#${tabId}-content" type="button" role="tab"
+                        data-region-id="${regionId}">
+                    <i class="fas fa-map-marker-alt"></i> ${region.ten_vung}
+                </button>
+            `;
+            tabsContainer.appendChild(tabLi);
+            
+            // Create tab content
+            const tabContent = document.createElement('div');
+            tabContent.className = 'tab-pane fade';
+            tabContent.id = `${tabId}-content`;
+            tabContent.setAttribute('role', 'tabpanel');
+            tabContent.innerHTML = `
+                <div class="table-responsive">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Tên phương thức</th>
+                                <th>Mô tả</th>
+                                <th>Giá vận chuyển</th>
+                                <th>Thời gian dự kiến</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="region-${regionId}-tbody">
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="loading-state">
+                                        <div class="loading-spinner"></div>
+                                        <p>Đang tải dữ liệu...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            tabContentContainer.appendChild(tabContent);
+        });
+        
+        // Add event listeners for tab switches
+        const tabs = tabsContainer.querySelectorAll('button[data-bs-toggle="tab"]');
+        tabs.forEach(tab => {
+            tab.addEventListener('shown.bs.tab', (event) => {
+                const regionId = event.target.getAttribute('data-region-id');
+                if (regionId) {
+                    this.loadRegionalShippingMethods(regionId);
+                }
+            });
+        });
+    }
+
+    async loadShippingMethods() {
+        try {
+            console.log('🚀 Fetching all shipping methods...');
+            const response = await fetch('/api/shipping-methods');
+            const data = await response.json();
+            
+            const methods = data.data || data;
+            this.shippingMethods = Array.isArray(methods) ? methods : [];
+            console.log('🎯 Shipping methods loaded:', this.shippingMethods.length);
+            
+            this.updateStats();
+            this.renderAllShippingMethods();
+        } catch (error) {
+            console.error('❌ Error loading shipping methods:', error);
+            document.getElementById('allMethodsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="empty-content">
+                                <h3>Lỗi tải dữ liệu</h3>
+                                <p>${error.message}</p>
+                                <button class="btn btn-primary" onclick="shippingManager.loadShippingMethods()">
+                                    <i class="fas fa-redo"></i> Thử lại
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    renderAllShippingMethods() {
+        const tbody = document.getElementById('allMethodsTableBody');
+        
+        if (!this.shippingMethods || this.shippingMethods.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-shipping-fast"></i>
+                            </div>
+                            <div class="empty-content">
+                                <h3>Chưa có phương thức vận chuyển</h3>
+                                <p>Bấm "Thêm phương thức" để tạo phương thức vận chuyển mới</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = this.shippingMethods.map(method => {
+            const isActive = method.trang_thai === true;
+            const statusText = isActive ? 'Hoạt động' : 'Tạm ngưng';
+            const statusClass = isActive ? 'active' : 'inactive';
+            
+            return `
+            <tr>
+                <td>${method.ten_phuong_thuc}</td>
+                <td>${method.mo_ta || 'N/A'}</td>
+                <td>${this.formatCurrency(method.chi_phi_co_ban)}</td>
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        ${statusText}
+                    </span>
+                </td>
+                <td>${new Date(method.ngay_tao).toLocaleDateString('vi-VN')}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-action-modern btn-primary btn-sm" onclick="shippingManager.editMethod('${method.id}')" title="Sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action-modern btn-danger btn-sm" onclick="shippingManager.deleteMethod('${method.id}')" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    async loadRegionalShippingMethods(regionId) {
+        try {
+            console.log(`🌍 Loading shipping methods for region ${regionId}...`);
+            const tbody = document.getElementById(`region-${regionId}-tbody`);
+            
+            // Show loading state
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <p>Đang tải dữ liệu...</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            // Fetch regional pricing for all methods in this region
+            const response = await fetch(`/api/shipping-method-regions?regionId=${regionId}`);
+            const data = await response.json();
+            const regionalPricing = data.data || data;
+            
+            console.log(`📦 Regional pricing for region ${regionId}:`, regionalPricing);
+            
+            if (!Array.isArray(regionalPricing) || regionalPricing.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-shipping-fast"></i>
+                                </div>
+                                <div class="empty-content">
+                                    <h3>Chưa có phương thức vận chuyển cho vùng này</h3>
+                                    <p>Vui lòng cấu hình giá vận chuyển cho vùng này</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Render regional shipping methods
+            tbody.innerHTML = regionalPricing.map(pricing => {
+                const method = this.shippingMethods.find(m => m.id === pricing.phuong_thuc_van_chuyen_id);
+                if (!method) return '';
+                
+                const region = this.regions.find(r => (r.ma_vung || r.id) == pricing.vung_id);
+                const regionName = (region ? region.ten_vung : 'N/A').replace(/"/g, '&quot;');
+                const estimatedTime = (pricing.thoi_gian_du_kien || '').toString().replace(/"/g, '&quot;');
+                
+                // Handle boolean status
+                const isActive = pricing.trang_thai === true;
+                const statusText = isActive ? 'Hoạt động' : 'Tạm ngưng';
+                const statusClass = isActive ? 'active' : 'inactive';
+                
+                // Format estimated time as "X ngày" from INT
+                let timeDisplay = 'Chưa cập nhật';
+                if (pricing.thoi_gian_du_kien != null) {
+                    const days = parseInt(pricing.thoi_gian_du_kien);
+                    if (!isNaN(days) && days > 0) {
+                        timeDisplay = `${days} ngày`;
+                    }
+                }
+                
+                return `
+                    <tr>
+                        <td>${method.ten_phuong_thuc}</td>
+                        <td>${method.mo_ta || 'N/A'}</td>
+                        <td>${this.formatCurrency(pricing.gia_van_chuyen)}</td>
+                        <td>${timeDisplay}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action-modern btn-primary btn-sm" 
+                                        onclick="shippingManager.editRegionalPrice('${pricing.id}', '${pricing.phuong_thuc_van_chuyen_id}', '${pricing.vung_id}', ${pricing.gia_van_chuyen}, ${pricing.thoi_gian_du_kien || 'null'}, ${isActive}, '${method.ten_phuong_thuc.replace(/'/g, "\\'") }', '${regionName}')" 
+                                        title="Sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-action-modern btn-danger btn-sm" 
+                                        onclick="shippingManager.deleteRegionalPrice('${pricing.id}')" 
+                                        title="Xóa">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error(`❌ Error loading regional shipping methods for region ${regionId}:`, error);
+            const tbody = document.getElementById(`region-${regionId}-tbody`);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="empty-content">
+                                <h3>Lỗi tải dữ liệu</h3>
+                                <p>${error.message}</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    setupEventListeners() {
+        document.querySelector('[data-bs-target="#shippingMethodModal"]').addEventListener('click', () => {
+            this.resetMethodForm();
+            document.getElementById('methodModalTitle').textContent = 'Thêm phương thức vận chuyển';
+        });
+    }
+
+    resetMethodForm() {
+        document.getElementById('methodId').value = '';
+        document.getElementById('methodName').value = '';
+        document.getElementById('methodDescription').value = '';
+        document.getElementById('methodBaseCost').value = '';
+        document.getElementById('methodStatus').value = 'Hoạt động';
+    }
+
+    async editMethod(methodId) {
+        const method = this.shippingMethods.find(m => m.id === methodId);
+        if (!method) return;
+
+        document.getElementById('methodId').value = method.id;
+        document.getElementById('methodName').value = method.ten_phuong_thuc;
+        document.getElementById('methodDescription').value = method.mo_ta || '';
+        document.getElementById('methodBaseCost').value = method.chi_phi_co_ban;
+        document.getElementById('methodStatus').value = method.trang_thai === true ? '1' : '0';
+        document.getElementById('methodModalTitle').textContent = 'Chỉnh sửa phương thức vận chuyển';
+
+        const modal = new bootstrap.Modal(document.getElementById('shippingMethodModal'));
+        modal.show();
+    }
+
+    async saveMethod() {
+        const id = document.getElementById('methodId').value;
+        const data = {
+            ten_phuong_thuc: document.getElementById('methodName').value,
+            mo_ta: document.getElementById('methodDescription').value,
+            chi_phi_co_ban: parseFloat(document.getElementById('methodBaseCost').value),
+            trang_thai: parseInt(document.getElementById('methodStatus').value) // Convert '1'/'0' to 1/0
+        };
+
+        try {
+            const url = id ? `/api/shipping-methods/${id}` : '/api/shipping-methods';
+            const method = id ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                Swal.fire('Thành công', id ? 'Cập nhật phương thức thành công' : 'Thêm phương thức thành công', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('shippingMethodModal')).hide();
+                await this.loadShippingMethods();
+            } else {
+                throw new Error('Lỗi khi lưu phương thức');
+            }
+        } catch (error) {
+            Swal.fire('Lỗi', error.message, 'error');
+        }
+    }
+
+    async deleteMethod(methodId) {
+        const result = await Swal.fire({
+            title: 'Xác nhận xóa',
+            text: 'Bạn có chắc chắn muốn xóa phương thức này?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/api/shipping-methods/${methodId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    Swal.fire('Thành công', 'Xóa phương thức thành công', 'success');
+                    await this.loadShippingMethods();
+                } else {
+                    throw new Error('Lỗi khi xóa phương thức');
+                }
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            }
+        }
+    }
+
+    editRegionalPrice(id, methodId, regionId, price, estimatedTime, status, methodName, regionName) {
+        document.getElementById('regionalPriceModalTitle').textContent = 'Chỉnh sửa cấu hình vận chuyển';
+        document.getElementById('regionalPriceId').value = id;
+        document.getElementById('regionalMethodId').value = methodId;
+        document.getElementById('regionalRegionId').value = regionId;
+        document.getElementById('regionalMethodName').value = methodName;
+        document.getElementById('regionalRegionName').value = regionName;
+        document.getElementById('regionalPrice').value = price;
+        
+        // Handle INT estimated time (nullable)
+        if (estimatedTime != null && estimatedTime !== 'null') {
+            document.getElementById('regionalEstimatedTime').value = estimatedTime;
+        } else {
+            document.getElementById('regionalEstimatedTime').value = '';
+        }
+        
+        // Convert boolean to '1'/'0' for select
+        document.getElementById('regionalStatus').value = status === true ? '1' : '0';
+
+        const modal = new bootstrap.Modal(document.getElementById('regionalPriceModal'));
+        modal.show();
+    }
+
+    async saveRegionalPrice() {
+        const id = document.getElementById('regionalPriceId').value;
+        const estimatedTimeValue = document.getElementById('regionalEstimatedTime').value.trim();
+        
+        // Handle nullable INT for estimated time
+        let estimatedTime = null;
+        if (estimatedTimeValue !== '') {
+            estimatedTime = parseInt(estimatedTimeValue);
+            if (isNaN(estimatedTime)) {
+                estimatedTime = null;
+            }
+        }
+        
+        const data = {
+            phuong_thuc_van_chuyen_id: document.getElementById('regionalMethodId').value,
+            vung_id: document.getElementById('regionalRegionId').value,
+            gia_van_chuyen: parseFloat(document.getElementById('regionalPrice').value),
+            thoi_gian_du_kien: estimatedTime,
+            trang_thai: parseInt(document.getElementById('regionalStatus').value) // Convert '1'/'0' to 1/0
+        };
+
+        try {
+            const response = await fetch(`/api/shipping-method-regions/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                Swal.fire('Thành công', 'Cập nhật giá vận chuyển thành công', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('regionalPriceModal')).hide();
+                
+                // Reload the current region tab
+                const regionId = data.vung_id;
+                await this.loadRegionalShippingMethods(regionId);
+            } else {
+                throw new Error('Lỗi khi cập nhật giá');
+            }
+        } catch (error) {
+            Swal.fire('Lỗi', error.message, 'error');
+        }
+    }
+
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+}
+
+const shippingManager = new ShippingMethodManager();
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    shippingManager.init();
+});
+</script>
+
+<style>
+    /* Modern CSS Reset and Base Styles */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    :root {
+        --primary: #667eea;
+        --primary-dark: #5a6fd8;
+        --secondary: #764ba2;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --dark: #1f2937;
+        --light: #f8fafc;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --border-radius: 12px;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --transition: all 0.3s ease;
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background: var(--light);
+        color: var(--gray-800);
+        line-height: 1.6;
+    }
+
+    .main-content {
+        min-height: 100vh;
+        padding: 24px;
+        max-width: 100%;
+    }
+
+    /* Header Styles */
+    .dashboard-header {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 28px 32px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .header-title {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .title-icon {
+        font-size: 2.75rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .header-title h1 {
+        margin: 0;
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--gray-800);
+    }
+
+    .header-title p {
+        margin: 4px 0 0 0;
+        color: var(--gray-500);
+        font-size: 1rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* Button Styles */
+    .btn-primary, .btn.btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: var(--transition);
+        box-shadow: var(--shadow);
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-primary::before, .btn.btn-primary::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn-primary:hover, .btn.btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary, .btn.btn-secondary {
+        background: white;
+        color: var(--gray-700);
+        border: 2px solid var(--gray-300);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .btn-secondary:hover, .btn.btn-secondary:hover {
+        background: var(--gray-100);
+        border-color: var(--gray-400);
+        transform: translateY(-1px);
+    }
+
+/* Stats Overview */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.stat-icon.total {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+}
+
+.stat-icon.available {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-icon.busy {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stat-info h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0;
+}
+
+.stat-info p {
+    color: var(--gray-600);
+    margin: 4px 0 0 0;
+}
+
+/* Region Tabs Styling */
+.region-tabs {
+    border-bottom: 2px solid #e5e7eb;
+    padding: 0 20px;
+    background: white;
+    margin-bottom: 0;
+    display: flex;
+    gap: 4px;
+}
+
+.region-tabs .nav-item {
+    margin: 0;
+}
+
+.region-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6b7280;
+    font-weight: 500;
+    padding: 15px 25px;
+    margin-bottom: -2px;
+    transition: all 0.3s ease;
+    background: transparent;
+    border-radius: 0;
+}
+
+.region-tabs .nav-link:hover {
+    color: var(--primary-color);
+    border-bottom-color: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.region-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.region-tabs .nav-link i {
+    margin-right: 8px;
+}
+
+.tab-content {
+    background: white;
+    padding: 0;
+}
+
+.tab-pane {
+    padding: 0;
+}
+
+/* Table Styles */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.products-table th {
+    background: var(--gray-50);
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-200);
+    white-space: nowrap;
+}
+
+.products-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.products-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.products-table tbody tr:hover {
+    background: var(--gray-50);
+}
+
+.products-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.status-badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-action-modern {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-action-modern::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.btn-action-modern:hover::before {
+    width: 100px;
+    height: 100px;
+}
+
+.btn-action-modern.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-action-modern.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+.btn-action-modern.btn-warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.btn-action-modern.btn-warning:hover {
+    background: #d97706;
+    transform: translateY(-2px);
+}
+
+.btn-action-modern.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-action-modern.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+/* Loading State */
+.loading-state {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.loading-spinner {
+    border: 4px solid var(--gray-200);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty State */
+.empty-state {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: var(--gray-300);
+    margin-bottom: 16px;
+}
+
+.empty-content h3 {
+    font-size: 1.25rem;
+    color: var(--gray-700);
+    margin-bottom: 8px;
+}
+
+.empty-content p {
+    color: var(--gray-600);
+}
+
+/* Modal Styles */
+.modal-premium .modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-premium .modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 20px 24px;
+}
+
+.modal-premium .modal-title {
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modal-premium .modal-body {
+    padding: 24px;
+}
+
+.modal-premium .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.form-control,
+.form-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .stats-overview {
+        grid-template-columns: 1fr;
+    }
+
+    .region-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .region-tabs .nav-link {
+        white-space: nowrap;
+    }
+
+    .products-table {
+        font-size: 0.875rem;
+    }
+
+    .products-table th,
+    .products-table td {
+        padding: 12px 8px;
+    }
+}
+</style>
