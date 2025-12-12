@@ -1250,8 +1250,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Get selected cart IDs
         const cartIds = Array.from(checkedItems).map(cb => cb.getAttribute('data-cart-id'));
         
-        // Navigate to payment page
-        window.location.href = '/payment?items=' + cartIds.join(',');
+        // Navigate to dathang page
+        window.location.href = '/dathang?items=' + cartIds.join(',');
       });
     }
   }

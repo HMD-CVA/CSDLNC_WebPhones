@@ -157,24 +157,24 @@ GO
 -- 8. Dữ liệu người dùng
 INSERT INTO users (email, mat_khau, ho_ten, so_dien_thoai, vai_tro, vung_id, site_registered, mongo_profile_id, trang_thai) VALUES
 -- Super Admin (quản lý cả 3 sites)
-(N'superadmin@webphones.vn', N'$2a$10$superAdminHashedPassword', N'Super Admin', N'0900000000', N'super_admin', N'bac', N'bac', NULL, 1),
+(N'superadmin@webphones.vn', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92d', N'Super Admin', N'0900000000', N'super_admin', N'bac', N'bac', NULL, 1),
 -- Admin Miền Bắc
-(N'admin.bac@webphones.vn', N'$2a$10$adminHashedPassword', N'Quản Trị Miền Bắc', N'0901234567', N'admin', N'bac', N'bac', NULL, 1),
+(N'admin.bac@webphones.vn', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Quản Trị Miền Bắc', N'0901234567', N'admin', N'bac', N'bac', NULL, 1),
 -- Customer Miền Bắc
-(N'nguyen.vana@gmail.com', N'$2a$10$userHashedPassword1', N'Nguyễn Văn A', N'0912345678', N'customer', N'bac', N'bac', NULL, 1),
-(N'tran.thib@gmail.com', N'$2a$10$userHashedPassword2', N'Trần Thị B', N'0923456789', N'customer', N'bac', N'bac', NULL, 1),
-(N'le.vanc@gmail.com', N'$2a$10$userHashedPassword3', N'Lê Văn C', N'0934567890', N'customer', N'bac', N'bac', NULL, 1),
+(N'nguyen.vana@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Nguyễn Văn A', N'0912345678', N'customer', N'bac', N'bac', NULL, 1),
+(N'tran.thib@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Trần Thị B', N'0923456789', N'customer', N'bac', N'bac', NULL, 1),
+(N'le.vanc@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Lê Văn C', N'0934567890', N'customer', N'bac', N'bac', NULL, 1),
 -- Admin Miền Trung
-(N'admin.trung@webphones.vn', N'$2a$10$adminHashedPassword', N'Quản Trị Miền Trung', N'0905678901', N'admin', N'trung', N'trung', NULL, 1),
+(N'admin.trung@webphones.vn', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Quản Trị Miền Trung', N'0905678901', N'admin', N'trung', N'trung', NULL, 1),
 -- Customer Miền Trung
-(N'pham.thid@gmail.com', N'$2a$10$userHashedPassword4', N'Phạm Thị D', N'0945678901', N'customer', N'trung', N'trung', NULL, 1),
-(N'hoang.vane@gmail.com', N'$2a$10$userHashedPassword5', N'Hoàng Văn E', N'0956789012', N'customer', N'trung', N'trung', NULL, 1),
+(N'pham.thid@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Phạm Thị D', N'0945678901', N'customer', N'trung', N'trung', NULL, 1),
+(N'hoang.vane@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Hoàng Văn E', N'0956789012', N'customer', N'trung', N'trung', NULL, 1),
 -- Admin Miền Nam
-(N'admin.nam@webphones.vn', N'$2a$10$adminHashedPassword', N'Quản Trị Miền Nam', N'0909876543', N'admin', N'nam', N'nam', NULL, 1),
+(N'admin.nam@webphones.vn', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Quản Trị Miền Nam', N'0909876543', N'admin', N'nam', N'nam', NULL, 1),
 -- Customer Miền Nam
-(N'vu.thif@gmail.com', N'$2a$10$userHashedPassword6', N'Vũ Thị F', N'0967890123', N'customer', N'nam', N'nam', NULL, 1),
-(N'do.vang@gmail.com', N'$2a$10$userHashedPassword7', N'Đỗ Văn G', N'0978901234', N'customer', N'nam', N'nam', NULL, 1),
-(N'bui.thih@gmail.com', N'$2a$10$userHashedPassword8', N'Bùi Thị H', N'0989012345', N'customer', N'nam', N'nam', NULL, 1);
+(N'vu.thif@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Vũ Thị F', N'0967890123', N'customer', N'nam', N'nam', NULL, 1),
+(N'do.vang@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Đỗ Văn G', N'0978901234', N'customer', N'nam', N'nam', NULL, 1),
+(N'bui.thih@gmail.com', N'8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', N'Bùi Thị H', N'0989012345', N'customer', N'nam', N'nam', NULL, 1);
 GO
 
 -- 9. Dữ liệu địa chỉ người dùng
@@ -206,6 +206,12 @@ INSERT INTO user_addresses (user_id, loai_dia_chi, is_default, ten_nguoi_nhan, s
 -- =============================================
 
 -- 10. Dữ liệu kho hàng (dùng lại biến @ward)
+DECLARE @ward_hnhk UNIQUEIDENTIFIER = (SELECT id FROM wards WHERE ma_phuong_xa = N'HN-HK');
+DECLARE @ward_hnbd UNIQUEIDENTIFIER = (SELECT id FROM wards WHERE ma_phuong_xa = N'HN-BD');
+DECLARE @ward_dnhc UNIQUEIDENTIFIER = (SELECT id FROM wards WHERE ma_phuong_xa = N'DN-HC');
+DECLARE @ward_sgq1 UNIQUEIDENTIFIER = (SELECT id FROM wards WHERE ma_phuong_xa = N'SG-Q1');
+DECLARE @ward_sgq3 UNIQUEIDENTIFIER = (SELECT id FROM wards WHERE ma_phuong_xa = N'SG-Q3');
+
 INSERT INTO warehouses (ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet, so_dien_thoai, trang_thai) VALUES
 (N'Kho Miền Bắc', N'bac', @ward_hnhk, N'Khu công nghiệp Thăng Long, Hà Nội', N'0241234567', 1),
 (N'Kho Miền Trung', N'trung', @ward_dnhc, N'Khu công nghiệp Hòa Khánh, Đà Nẵng', N'0236234567', 1),

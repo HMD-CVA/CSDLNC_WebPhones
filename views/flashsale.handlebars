@@ -89,26 +89,30 @@
             </div>
         </div>
 
-        <!-- Products Table -->
-        <div class="content-card">
+        <!-- Flash Sale Table -->
+        <div class="table-container">
             <div class="table-header">
-                <h2>Danh sách Flash Sale</h2>
-                <div class="table-info">
-                    <span class="total-count">Tổng: <strong id="displayCount">0</strong></span>
+                <h3><i class="fas fa-bolt"></i> Danh sách Flash Sale</h3>
+                <div class="table-actions">
+                    <div class="search-box-inline">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="tableSearchInput" placeholder="Tìm trong bảng...">
+                    </div>
                 </div>
             </div>
-            <div class="table-container">
-                <table class="data-table">
+
+            <div class="table-responsive">
+                <table class="products-table">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">STT</th>
-                            <th>Tên Flash Sale</th>
-                            <th style="width: 120px;">Vùng</th>
-                            <th style="width: 160px;">Ngày bắt đầu</th>
-                            <th style="width: 160px;">Ngày kết thúc</th>
-                            <th style="width: 140px;">Trạng thái</th>
-                            <th style="width: 100px;">Số variants</th>
-                            <th style="width: 180px;">Thao tác</th>
+                            <th style="width: 5%">STT</th>
+                            <th style="width: 20%">TÊN FLASH SALE</th>
+                            <th style="width: 10%">VÙNG</th>
+                            <th style="width: 15%">NGÀY BẮT ĐẦU</th>
+                            <th style="width: 15%">NGÀY KẾT THÚC</th>
+                            <th style="width: 12%">TRẠNG THÁI</th>
+                            <th style="width: 8%">VARIANTS</th>
+                            <th style="width: 15%">THAO TÁC</th>
                         </tr>
                     </thead>
                     <tbody id="flashSaleTableBody">
@@ -795,42 +799,117 @@
         border-bottom: none;
     }
 
-    /* Legacy table support */
-    .data-table {
+    /* ===== TABLE CONTAINER ===== */
+    .table-container {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--gray-200);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-800);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    /* ===== SEARCH BOX INLINE ===== */
+    .search-box-inline {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .search-box-inline i {
+        position: absolute;
+        left: 14px;
+        color: var(--gray-400);
+        font-size: 0.95rem;
+        pointer-events: none;
+    }
+
+    .search-box-inline input {
+        padding: 10px 16px 10px 42px;
+        border: 1.5px solid var(--gray-300);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        width: 280px;
+        transition: var(--transition);
+        background: white;
+    }
+
+    .search-box-inline input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-box-inline input::placeholder {
+        color: var(--gray-400);
+    }
+
+    /* ===== TABLE ===== */
+    .table-responsive {
+        overflow-x: auto;
+        margin: 20px 0;
+    }
+
+    .products-table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 0.95rem;
     }
 
-    .data-table thead {
-        background: var(--gray-50);
+    .products-table thead {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
     }
 
-    .data-table th {
-        padding: 16px 12px;
-        text-align: left;
+    .products-table th {
+        padding: 14px 16px;
+        text-align: center;
         font-weight: 600;
-        color: var(--gray-700);
-        border-bottom: 2px solid var(--gray-200);
         font-size: 0.9rem;
         white-space: nowrap;
     }
 
-    .data-table td {
-        padding: 16px 12px;
+    .products-table tbody tr {
         border-bottom: 1px solid var(--gray-200);
-        vertical-align: middle;
-    }
-
-    .data-table tbody tr {
         transition: var(--transition);
     }
 
-    .data-table tbody tr:hover {
-        background: var(--gray-50);
+    .products-table tbody tr:hover {
+        background: var(--gray-100);
     }
 
-    .data-table tbody tr:last-child td {
-        border-bottom: none;
+    .products-table td {
+        padding: 14px 16px;
+        color: var(--gray-700);
+    }
+
+    .text-center {
+        text-align: center;
     }
 
     /* Table Column Styles */

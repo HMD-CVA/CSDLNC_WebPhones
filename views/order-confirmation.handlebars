@@ -1,0 +1,630 @@
+<div class="order-detail-container">
+    <div class="container">
+        <div class="order-header">
+            <h1><i class="fas fa-receipt"></i> Chi tiết đơn hàng</h1>
+            <a href="/donhang" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách đơn hàng
+            </a>
+        </div>
+
+        <div class="order-content">
+            <!-- Order Status Card -->
+            <div class="status-card">
+                <div class="status-header">
+                    <h3>Trạng thái đơn hàng</h3>
+                    <span class="order-code" id="orderCode">Đang tải...</span>
+                </div>
+                <div class="status-timeline" id="statusTimeline">
+                    <div class="timeline-item active">
+                        <div class="timeline-icon"><i class="fas fa-check"></i></div>
+                        <div class="timeline-content">
+                            <h4>Chờ xác nhận</h4>
+                            <p id="createdDate">--/--/----</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-box"></i></div>
+                        <div class="timeline-content">
+                            <h4>Đang xử lý</h4>
+                            <p>Chờ xử lý</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-truck"></i></div>
+                        <div class="timeline-content">
+                            <h4>Đang giao</h4>
+                            <p>Chờ giao hàng</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="timeline-content">
+                            <h4>Hoàn thành</h4>
+                            <p>Chưa hoàn thành</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Info Card -->
+            <div class="info-card">
+                <h3><i class="fas fa-info-circle"></i> Thông tin đơn hàng</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Mã đơn hàng:</span>
+                        <span class="value" id="orderCodeInfo">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Ngày đặt:</span>
+                        <span class="value" id="orderDate">--/--/----</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Phương thức thanh toán:</span>
+                        <span class="value" id="paymentMethod">--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Phương thức vận chuyển:</span>
+                        <span class="value" id="shippingMethod">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Address Card -->
+            <div class="info-card">
+                <h3><i class="fas fa-map-marker-alt"></i> Địa chỉ giao hàng</h3>
+                <div class="address-content" id="deliveryAddress">
+                    <p class="recipient-name">--</p>
+                    <p class="recipient-phone">--</p>
+                    <p class="recipient-address">--</p>
+                </div>
+            </div>
+
+            <!-- Order Items Card -->
+            <div class="items-card">
+                <h3><i class="fas fa-shopping-bag"></i> Sản phẩm đã đặt</h3>
+                <div class="items-list" id="orderItems">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
+
+            <!-- Order Summary Card -->
+            <div class="summary-card">
+                <h3><i class="fas fa-calculator"></i> Tổng thanh toán</h3>
+                <div class="summary-content">
+                    <div class="summary-row">
+                        <span>Tổng tiền hàng:</span>
+                        <span id="subtotal">0 ₫</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Phí vận chuyển:</span>
+                        <span id="shippingFee">0 ₫</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Giảm giá (Voucher):</span>
+                        <span class="discount" id="discount">-0 ₫</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Tổng cộng:</span>
+                        <span id="total">0 ₫</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note if any -->
+            <div class="note-card" id="noteCard" style="display: none;">
+                <h3><i class="fas fa-sticky-note"></i> Ghi chú</h3>
+                <p id="orderNote">--</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .order-detail-container {
+        min-height: 100vh;
+        background: #f3f4f6;
+        padding: 30px 0;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .order-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .order-header h1 i {
+        color: #667eea;
+    }
+
+    .btn-back {
+        padding: 10px 20px;
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-back:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .order-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .status-card, .info-card, .items-card, .summary-card, .note-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .status-card h3, .info-card h3, .items-card h3, .summary-card h3, .note-card h3 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .status-card h3 i, .info-card h3 i, .items-card h3 i, .summary-card h3 i, .note-card h3 i {
+        color: #667eea;
+    }
+
+    /* Status Timeline */
+    .status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .order-code {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    .status-timeline {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        padding: 0 10px;
+    }
+
+    .status-timeline::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 10px;
+        right: 10px;
+        height: 2px;
+        background: #e5e7eb;
+        z-index: 0;
+    }
+
+    .timeline-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .timeline-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e5e7eb;
+        color: #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .timeline-item.active .timeline-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .timeline-content h4 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 5px;
+    }
+
+    .timeline-content p {
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    .timeline-item.active .timeline-content h4 {
+        color: #667eea;
+        font-weight: 700;
+    }
+
+    .timeline-item.active .timeline-content p {
+        color: #6b7280;
+    }
+
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .info-item .label {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .info-item .value {
+        font-size: 16px;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    /* Address */
+    .address-content {
+        color: #4b5563;
+        line-height: 1.8;
+    }
+
+    .recipient-name {
+        font-weight: 700;
+        color: #1f2937;
+        font-size: 16px;
+    }
+
+    .recipient-phone {
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    /* Order Items */
+    .items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .order-item {
+        display: flex;
+        gap: 15px;
+        padding: 15px;
+        background: #f9fafb;
+        border-radius: 8px;
+        align-items: center;
+    }
+
+    .item-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        background: #e5e7eb;
+    }
+
+    .item-info {
+        flex: 1;
+    }
+
+    .item-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 5px;
+    }
+
+    .item-variant {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 5px;
+    }
+
+    .item-quantity {
+        font-size: 14px;
+        color: #9ca3af;
+    }
+
+    .item-price {
+        text-align: right;
+    }
+
+    .item-unit-price {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 5px;
+    }
+
+    .item-total-price {
+        font-size: 16px;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    /* Summary */
+    .summary-content {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-row span:first-child {
+        color: #6b7280;
+        font-size: 15px;
+    }
+
+    .summary-row span:last-child {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 16px;
+    }
+
+    .summary-row.total {
+        padding-top: 15px;
+        border-top: 2px solid #667eea;
+        margin-top: 10px;
+    }
+
+    .summary-row.total span {
+        font-size: 20px;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .discount {
+        color: #ef4444 !important;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #9ca3af;
+    }
+
+    @media (max-width: 768px) {
+        .order-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .order-header h1 {
+            font-size: 22px;
+        }
+
+        .status-timeline {
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .timeline-item {
+            flex: 0 0 45%;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .order-item {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .item-price {
+            text-align: center;
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+        const orderCode = urlParams.get('orderCode');
+        const isNewOrder = urlParams.get('new') === 'true';
+
+        // Show success notification for new orders
+        if (isNewOrder && orderCode) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Đặt hàng thành công!',
+                html: `
+                    <p>Mã đơn hàng: <strong>${orderCode}</strong></p>
+                    <p>Cảm ơn bạn đã đặt hàng tại WebPhones</p>
+                `,
+                confirmButtonText: 'Xem chi tiết',
+                confirmButtonColor: '#667eea',
+                timer: 5000,
+                timerProgressBar: true
+            });
+        }
+
+        if (orderId) {
+            fetchOrderDetails(orderId);
+        } else if (orderCode) {
+            // Try to find order by code
+            document.getElementById('orderCode').textContent = orderCode;
+            document.getElementById('orderCodeInfo').textContent = orderCode;
+        }
+    });
+
+    async function fetchOrderDetails(orderId) {
+        try {
+            const response = await fetch(`/api/orders/${orderId}`);
+            const data = await response.json();
+
+            if (data.success && data.order) {
+                displayOrderDetails(data.order, data.items || []);
+            } else {
+                throw new Error(data.message || 'Không thể tải thông tin đơn hàng');
+            }
+        } catch (error) {
+            console.error('Error fetching order details:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Không thể tải thông tin đơn hàng. Vui lòng thử lại sau.',
+                confirmButtonColor: '#667eea'
+            });
+        }
+    }
+
+    function displayOrderDetails(order, items) {
+        // Order code
+        document.getElementById('orderCode').textContent = order.ma_don_hang;
+        document.getElementById('orderCodeInfo').textContent = order.ma_don_hang;
+
+        // Dates
+        const createdDate = new Date(order.ngay_tao);
+        document.getElementById('orderDate').textContent = formatDate(createdDate);
+        document.getElementById('createdDate').textContent = formatDate(createdDate);
+
+        // Payment and shipping
+        document.getElementById('paymentMethod').textContent = 
+            order.payment_method === 'cod' ? 'Thanh toán khi nhận hàng (COD)' : order.payment_method;
+        document.getElementById('shippingMethod').textContent = order.ten_phuong_thuc || '--';
+
+        // Address
+        const addressHTML = `
+            <p class="recipient-name">${order.ten_nguoi_nhan || '--'}</p>
+            <p class="recipient-phone">${order.sdt_nguoi_nhan || '--'}</p>
+            <p class="recipient-address">${order.dia_chi_cu_the || '--'}, ${order.ten_phuong_xa || '--'}, ${order.ten_tinh_thanh || '--'}</p>
+        `;
+        document.getElementById('deliveryAddress').innerHTML = addressHTML;
+
+        // Status timeline
+        updateStatusTimeline(order.trang_thai);
+
+        // Items
+        displayOrderItems(items);
+
+        // Summary
+        document.getElementById('subtotal').textContent = formatCurrency(order.tong_tien_hang);
+        document.getElementById('shippingFee').textContent = formatCurrency(order.phi_van_chuyen);
+        document.getElementById('discount').textContent = '-' + formatCurrency(order.gia_tri_giam_voucher);
+        document.getElementById('total').textContent = formatCurrency(order.tong_thanh_toan);
+
+        // Note
+        if (order.ghi_chu_order) {
+            document.getElementById('noteCard').style.display = 'block';
+            document.getElementById('orderNote').textContent = order.ghi_chu_order;
+        }
+    }
+
+    function updateStatusTimeline(status) {
+        const timelineItems = document.querySelectorAll('.timeline-item');
+        const statusMap = {
+            'cho_xac_nhan': 0,
+            'dang_xu_ly': 1,
+            'dang_giao': 2,
+            'hoan_thanh': 3
+        };
+
+        const activeIndex = statusMap[status] || 0;
+        timelineItems.forEach((item, index) => {
+            if (index <= activeIndex) {
+                item.classList.add('active');
+            }
+        });
+    }
+
+    function displayOrderItems(items) {
+        const itemsContainer = document.getElementById('orderItems');
+        
+        if (!items || items.length === 0) {
+            itemsContainer.innerHTML = '<div class="loading">Không có sản phẩm</div>';
+            return;
+        }
+
+        itemsContainer.innerHTML = items.map(item => `
+            <div class="order-item">
+                <img src="${item.hinh_anh || '/image/placeholder.png'}" alt="${item.ten_san_pham}" class="item-image">
+                <div class="item-info">
+                    <div class="item-name">${item.ten_san_pham || '--'}</div>
+                    <div class="item-variant">${item.ten_bien_the || ''}</div>
+                    <div class="item-quantity">Số lượng: ${item.so_luong || 1}</div>
+                </div>
+                <div class="item-price">
+                    <div class="item-unit-price">${formatCurrency(item.don_gia)}</div>
+                    <div class="item-total-price">${formatCurrency(item.thanh_tien)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function formatDate(date) {
+        return new Intl.DateTimeFormat('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date);
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(amount || 0);
+    }
+</script>

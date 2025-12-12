@@ -256,15 +256,18 @@ CREATE TABLE warehouses (
     dia_chi_chi_tiet NVARCHAR(255) NOT NULL,
     so_dien_thoai NVARCHAR(20),
     trang_thai BIT DEFAULT 1,
+    priority_levels INT DEFAULT 0,
+    is_primary BIT DEFAULT 0,
     ngay_tao DATETIME2 DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
     FOREIGN KEY (phuong_xa_id) REFERENCES wards(id),
-    FOREIGN KEY (vung_id) REFERENCES regions(ma_vung),
-    CONSTRAINT UQ_warehouses_vung UNIQUE (vung_id)
+    FOREIGN KEY (vung_id) REFERENCES regions(ma_vung)
 );
 GO
 
--- Index không cần thiết vì UNIQUE(vung_id) đã tạo index tự động
+-- Index cho priority
+CREATE INDEX IDX_warehouses_priority ON warehouses(vung_id, priority_levels DESC, is_primary DESC) 
+    WHERE trang_thai = 1;
 GO
 
 -- 11. Bảng tồn kho (Số lượng sản phẩm trong từng kho)
@@ -278,6 +281,7 @@ CREATE TABLE inventory (
     muc_ton_kho_toi_thieu INT DEFAULT 10,
     so_luong_nhap_lai INT DEFAULT 50,
     lan_nhap_hang_cuoi DATETIME2 NULL,
+    trang_thai BIT DEFAULT 1,
     ngay_tao DATETIME2 DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
     FOREIGN KEY (variant_id) REFERENCES product_variants(id),
@@ -293,8 +297,9 @@ GO
 -- Index tối ưu cho inventory
 CREATE INDEX IDX_inventory_variant ON inventory(variant_id);
 CREATE INDEX IDX_inventory_kho ON inventory(kho_id);
-CREATE INDEX IDX_inventory_low_stock ON inventory(kho_id, so_luong_kha_dung, muc_ton_kho_toi_thieu) 
-    WHERE so_luong_kha_dung <= muc_ton_kho_toi_thieu; -- Low stock alerts
+-- CREATE INDEX IDX_inventory_low_stock 
+--     ON inventory(kho_id, so_luong_kha_dung, muc_ton_kho_toi_thieu) 
+--     WHERE so_luong_kha_dung <= muc_ton_kho_toi_thieu; -- Low stock alerts
 GO
 
 -- =============================================
@@ -472,13 +477,16 @@ CREATE TABLE orders (
     site_processed NVARCHAR(10) NOT NULL CHECK (site_processed IN (N'bac', N'trung', N'nam')),
     shipping_method_region_id UNIQUEIDENTIFIER NOT NULL,
     dia_chi_giao_hang_id UNIQUEIDENTIFIER NOT NULL,
+    is_split_order BIT DEFAULT 0,
     kho_giao_hang UNIQUEIDENTIFIER NOT NULL,
     voucher_id UNIQUEIDENTIFIER NULL,
     tong_tien_hang DECIMAL(15,2) NOT NULL,
     phi_van_chuyen DECIMAL(15,2) DEFAULT 0,
+    chi_phi_noi_bo DECIMAL(15,2) DEFAULT 0,
     gia_tri_giam_voucher DECIMAL(15,2) DEFAULT 0,
     tong_thanh_toan DECIMAL(15,2) NOT NULL,
-    mongo_order_detail_id NVARCHAR(50) NULL,
+    payment_method NVARCHAR(50),
+    ghi_chu_order NVARCHAR(MAX),
     trang_thai NVARCHAR(20) DEFAULT N'cho_xac_nhan' CHECK (trang_thai IN (N'cho_xac_nhan', N'dang_xu_ly', N'dang_giao', N'hoan_thanh', N'huy')),
     ngay_tao DATETIME2 DEFAULT GETDATE(),
     ngay_cap_nhat DATETIME2 DEFAULT GETDATE(),
@@ -492,7 +500,6 @@ CREATE TABLE orders (
     CHECK (phi_van_chuyen >= 0),
     CHECK (gia_tri_giam_voucher >= 0),
     CHECK (tong_thanh_toan >= 0),
-    CHECK (tong_thanh_toan = tong_tien_hang + phi_van_chuyen - gia_tri_giam_voucher)
 );
 GO
 
@@ -508,6 +515,8 @@ CREATE TABLE order_details (
     id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWSEQUENTIALID(),
     don_hang_id UNIQUEIDENTIFIER NOT NULL,
     variant_id UNIQUEIDENTIFIER NOT NULL,
+    warehouse_id UNIQUEIDENTIFIER NOT NULL,
+    warehouse_region NVARCHAR(10) NOT NULL,
     flash_sale_item_id UNIQUEIDENTIFIER NULL,
     so_luong INT NOT NULL,
     don_gia DECIMAL(15,2) NOT NULL,
@@ -526,6 +535,8 @@ GO
 CREATE INDEX IDX_order_details_don_hang ON order_details(don_hang_id);
 CREATE INDEX IDX_order_details_variant ON order_details(variant_id, ngay_tao DESC); -- Variant sales analytics
 CREATE INDEX IDX_order_details_flash_sale ON order_details(flash_sale_item_id) WHERE flash_sale_item_id IS NOT NULL; -- Flash sale orders
+CREATE INDEX IDX_order_details_warehouse ON order_details(warehouse_id);
+CREATE INDEX IDX_order_details_warehouse_region ON order_details(warehouse_region);
 GO
 
 -- 22. Bảng thanh toán
@@ -713,7 +724,18 @@ GO
 
 -- Index cho otp_codes
 CREATE INDEX IDX_otp_codes_email ON otp_codes(email, da_su_dung, ngay_het_han DESC); -- OTP validation
-CREATE INDEX IDX_otp_codes_cleanup ON otp_codes(ngay_het_han) WHERE da_su_dung = 1 OR ngay_het_han < GETDATE(); -- Expired OTP cleanup
+-- Tạo chỉ mục cho những bản ghi đã được sử dụng (da_su_dung = 1)
+CREATE INDEX IDX_otp_codes_cleanup_used
+ON otp_codes(ngay_het_han)
+WHERE da_su_dung = 1;
+
+-- Tạo chỉ mục cho những bản ghi đã hết hạn (ngay_het_han < GETDATE())
+-- DECLARE @Today DATETIME = GETDATE();
+-- CREATE INDEX IDX_otp_codes_cleanup_expired 
+-- ON otp_codes(ngay_het_han) 
+-- WHERE ngay_het_han < @Today;
+
+
 GO
 
 -- =============================================

@@ -187,8 +187,7 @@ class SQLBrandModel {
       const request = new sql.Request();
       const result = await request.query(`
         SELECT * FROM brands 
-        WHERE trang_thai = 1 
-        ORDER BY ngay_tao DESC
+        WHERE trang_thai = 1
       `);
       return result.recordset;
     } catch (error) {
@@ -258,16 +257,33 @@ class SQLBrandModel {
   static async create(brandData) {
     try {
       const request = new sql.Request();
-      const result = await request
+      
+      console.log('🔄 Creating brand with data:', brandData);
+      
+      // Insert without OUTPUT clause to avoid trigger conflict
+      const insertQuery = `
+        INSERT INTO brands (ten_thuong_hieu, mo_ta, logo_url, slug, trang_thai, ngay_tao)
+        VALUES (@ten_thuong_hieu, @mo_ta, @logo_url, @slug, @trang_thai, @ngay_tao)
+      `;
+      
+      console.log('🔄 Executing INSERT query:', insertQuery);
+      
+      await request
         .input('ten_thuong_hieu', sql.NVarChar(100), brandData.ten_thuong_hieu)
         .input('mo_ta', sql.NVarChar(500), brandData.mo_ta)
         .input('logo_url', sql.NVarChar(500), brandData.logo_url)
         .input('slug', sql.NVarChar(255), brandData.slug)
-        .query(`
-          INSERT INTO brands (ten_thuong_hieu, mo_ta, logo_url, slug)
-          OUTPUT INSERTED.*
-          VALUES (@ten_thuong_hieu, @mo_ta, @logo_url, @slug)
-        `);
+        .input('trang_thai', sql.Int, brandData.trang_thai !== undefined ? brandData.trang_thai : 1)
+        .input('ngay_tao', sql.DateTime, brandData.ngay_tao || new Date())
+        .query(insertQuery);
+      
+      // Get the newly created brand by slug (unique)
+      const result = await request.query(`
+        SELECT TOP 1 * FROM brands 
+        WHERE slug = @slug 
+        ORDER BY ngay_tao DESC
+      `);
+      
       return result.recordset[0];
     } catch (error) {
       console.error('SQL Brand Error:', error);
@@ -285,7 +301,7 @@ class SQLBrandModel {
           request.input('mo_ta', sql.NVarChar(500), updateData.mo_ta || null);
           request.input('logo_url', sql.NVarChar(500), updateData.logo_url || null);
           request.input('trang_thai', sql.Int, updateData.trang_thai);
-          request.input('updated_at', sql.DateTime, new Date());
+          request.input('ngay_tao', sql.DateTime, new Date());
 
           let slugCondition = '';
           let slugJoin = '';
@@ -302,7 +318,7 @@ class SQLBrandModel {
                   mo_ta = @mo_ta,
                   logo_url = @logo_url,
                   trang_thai = @trang_thai,
-                  ngay_tao = @updated_at
+                  ngay_tao = @ngay_tao
                   ${slugCondition}
               WHERE id = @id;
               
@@ -392,9 +408,7 @@ class SQLBrandModel {
         // 3. Thực hiện xóa thương hiệu (soft delete - cập nhật trạng thái)
         const deleteQuery = `
             UPDATE brands 
-            SET 
-                trang_thai = 0,
-                ngay_tao = GETDATE()
+            SET trang_thai = 0
             ${whereClause};
             
             SELECT * FROM brands ${whereClause};
@@ -505,18 +519,29 @@ class SQLCategoryModel {
     static async create(categoryData) {
         try {
             const request = new sql.Request();
-            const result = await request
+            
+            // Insert without OUTPUT clause to avoid trigger conflict
+            const insertQuery = `
+                INSERT INTO categories (ten_danh_muc, mo_ta, anh_url, thu_tu, danh_muc_cha_id, slug)
+                VALUES (@ten_danh_muc, @mo_ta, @anh_url, @thu_tu, @danh_muc_cha_id, @slug)
+            `;
+            
+            await request
                 .input('ten_danh_muc', sql.NVarChar(100), categoryData.ten_danh_muc)
                 .input('mo_ta', sql.NVarChar(500), categoryData.mo_ta)
                 .input('anh_url', sql.NVarChar(500), categoryData.anh_url)
                 .input('thu_tu', sql.Int, categoryData.thu_tu !== undefined ? categoryData.thu_tu : 0)
                 .input('danh_muc_cha_id', sql.UniqueIdentifier, categoryData.danh_muc_cha_id)
                 .input('slug', sql.NVarChar(255), categoryData.slug)
-                .query(`
-                    INSERT INTO categories (ten_danh_muc, mo_ta, anh_url, thu_tu, danh_muc_cha_id, slug)
-                    OUTPUT INSERTED.*
-                    VALUES (@ten_danh_muc, @mo_ta, @anh_url, @thu_tu, @danh_muc_cha_id, @slug)
-                `);
+                .query(insertQuery);
+            
+            // Get the newly created category by slug (unique)
+            const result = await request.query(`
+                SELECT TOP 1 * FROM categories 
+                WHERE slug = @slug 
+                ORDER BY ngay_tao DESC
+            `);
+            
             return result.recordset[0];
         } catch (error) {
             console.error('SQL Category Error:', error);
@@ -535,7 +560,6 @@ class SQLCategoryModel {
             request.input('thu_tu', sql.Int, updateData.thu_tu !== undefined ? updateData.thu_tu : 0);
             request.input('danh_muc_cha_id', sql.UniqueIdentifier, updateData.danh_muc_cha_id);
             request.input('trang_thai', sql.Int, updateData.trang_thai);
-            request.input('updated_at', sql.DateTime, new Date());
 
             let slugCondition = '';
             
@@ -551,8 +575,7 @@ class SQLCategoryModel {
                     anh_url = @anh_url,
                     thu_tu = @thu_tu,
                     danh_muc_cha_id = @danh_muc_cha_id,
-                    trang_thai = @trang_thai,
-                    ngay_tao = @updated_at
+                    trang_thai = @trang_thai
                     ${slugCondition}
                 WHERE id = @id;
                 
@@ -671,9 +694,7 @@ class SQLCategoryModel {
           // 4. Thực hiện xóa (soft delete)
           const deleteQuery = `
               UPDATE categories 
-              SET 
-                  trang_thai = 0,
-                  ngay_tao = GETDATE()
+              SET trang_thai = 0
               ${whereClause};
               
               SELECT * FROM categories ${whereClause};
@@ -987,13 +1008,19 @@ class SQLProductModel {
             ma_san_pham, ten_san_pham, danh_muc_id, thuong_hieu_id,
             mo_ta_ngan, link_anh_dai_dien, site_origin, trang_thai
           )
-          OUTPUT INSERTED.*
           VALUES (
             @ma_san_pham, @ten_san_pham, @danh_muc_id, @thuong_hieu_id,
             @mo_ta_ngan, @link_anh_dai_dien, @site_origin, @trang_thai
           )
         `);
-      return result.recordset[0];
+      
+      // Get the newly created product by ma_san_pham (unique)
+      const selectResult = await request.query(`
+        SELECT TOP 1 * FROM products 
+        WHERE ma_san_pham = @ma_san_pham 
+        ORDER BY ngay_tao DESC
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL Product Create Error:', error);
       throw error;
@@ -1160,14 +1187,19 @@ class SQLProductVariantModel {
             san_pham_id, ma_sku, ten_hien_thi, gia_niem_yet, gia_ban,
             so_luong_ton_kho, luot_ban, anh_dai_dien, site_origin, trang_thai
           )
-          OUTPUT INSERTED.*
           VALUES (
             @san_pham_id, @ma_sku, @ten_hien_thi, @gia_niem_yet, @gia_ban,
             @so_luong_ton_kho, @luot_ban, @anh_dai_dien, @site_origin, @trang_thai
           )
         `);
       
-      const createdVariant = result.recordset[0];
+      // Get the newly created variant by ma_sku (unique)
+      const selectResult = await request.query(`
+        SELECT TOP 1 * FROM product_variants 
+        WHERE ma_sku = @ma_sku 
+        ORDER BY ngay_tao DESC
+      `);
+      const createdVariant = selectResult.recordset[0];
       
       // Tự động đồng bộ inventory cho variant vừa tạo
       if (createdVariant && createdVariant.id && variantData.site_origin) {
@@ -1229,12 +1261,14 @@ class SQLProductVariantModel {
       const sqlQuery = `
         UPDATE product_variants 
         SET ${setClauses.join(', ')}
-        OUTPUT INSERTED.*
         WHERE id = @id
       `;
       
-      const updateResult = await request.query(sqlQuery);
-      const updatedVariant = updateResult.recordset[0];
+      await request.query(sqlQuery);
+      
+      // Get updated variant
+      const selectResult = await request.query(`SELECT * FROM product_variants WHERE id = @id`);
+      const updatedVariant = selectResult.recordset[0];
       
       // Đồng bộ inventory nếu so_luong_ton_kho hoặc site_origin được update
       if (updatedVariant && (variantData.so_luong_ton_kho !== undefined || variantData.site_origin)) {
@@ -1394,14 +1428,19 @@ class SQLFlashSaleModel {
       
       const query = flashSaleData.nguoi_tao
         ? `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, vung_id, trang_thai, nguoi_tao)
-           OUTPUT INSERTED.*
            VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @vung_id, @trang_thai, @nguoi_tao)`
         : `INSERT INTO flash_sales (ten_flash_sale, mo_ta, ngay_bat_dau, ngay_ket_thuc, vung_id, trang_thai)
-           OUTPUT INSERTED.*
            VALUES (@ten_flash_sale, @mo_ta, @ngay_bat_dau, @ngay_ket_thuc, @vung_id, @trang_thai)`;
       
-      const result = await request.query(query);
-      return result.recordset[0];
+      await request.query(query);
+      
+      // Get newly created flash sale
+      const selectResult = await request.query(`
+        SELECT TOP 1 * FROM flash_sales 
+        WHERE ten_flash_sale = @ten_flash_sale 
+        ORDER BY ngay_tao DESC
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL Flash Sale Create Error:', error);
       throw error;
@@ -1617,10 +1656,16 @@ class SQLFlashSaleItemModel {
         .query(`
           INSERT INTO flash_sale_items 
           (flash_sale_id, variant_id, gia_goc, gia_flash_sale, so_luong_ton, da_ban, gioi_han_mua, thu_tu, trang_thai)
-          OUTPUT INSERTED.*
           VALUES (@flash_sale_id, @variant_id, @gia_goc, @gia_flash_sale, @so_luong_ton, @da_ban, @gioi_han_mua, @thu_tu, @trang_thai)
         `);
-      return result.recordset[0];
+      
+      // Get newly created item
+      const selectResult = await request2.query(`
+        SELECT TOP 1 * FROM flash_sale_items 
+        WHERE flash_sale_id = @flash_sale_id AND variant_id = @variant_id 
+        ORDER BY ngay_tao DESC
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL Flash Sale Item Create Error:', error);
       throw error;
@@ -1757,10 +1802,14 @@ class SQLRegionModel {
         .input('trang_thai', sql.Int, regionData.trang_thai !== undefined ? regionData.trang_thai : 1)
         .query(`
           INSERT INTO regions (ma_vung, ten_vung, mo_ta, trang_thai)
-          OUTPUT INSERTED.*
           VALUES (@ma_vung, @ten_vung, @mo_ta, @trang_thai)
         `);
-      return result.recordset[0];
+      
+      // Get newly created region
+      const selectResult = await request.query(`
+        SELECT TOP 1 * FROM regions WHERE ma_vung = @ma_vung ORDER BY ngay_tao DESC
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL Region Create Error:', error);
       if (error.message && error.message.includes('UNIQUE')) {
@@ -1920,10 +1969,14 @@ class SQLProvinceModel {
         .input('trang_thai', sql.Bit, provinceData.trang_thai !== undefined ? provinceData.trang_thai : 1)
         .query(`
           INSERT INTO provinces (ma_tinh, ten_tinh, vung_id, is_major_city, thu_tu_uu_tien, trang_thai)
-          OUTPUT INSERTED.*
           VALUES (@ma_tinh, @ten_tinh, @vung_id, @is_major_city, @thu_tu_uu_tien, @trang_thai)
         `);
-      return result.recordset[0];
+      
+      // Get newly created province
+      const selectResult = await request.query(`
+        SELECT TOP 1 * FROM provinces WHERE ma_tinh = @ma_tinh ORDER BY ngay_tao DESC
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL Province Create Error:', error);
       if (error.message && error.message.includes('UNIQUE')) {
@@ -2084,10 +2137,14 @@ class SQLWardModel {
         .input('trang_thai', sql.Bit, wardData.trang_thai !== undefined ? wardData.trang_thai : 1)
         .query(`
           INSERT INTO wards (ma_phuong_xa, ten_phuong_xa, tinh_thanh_id, loai, is_inner_area, trang_thai)
-          OUTPUT INSERTED.*
           VALUES (@ma_phuong_xa, @ten_phuong_xa, @tinh_thanh_id, @loai, @is_inner_area, @trang_thai)
         `);
-      return result.recordset[0];
+      
+      // Get newly created ward
+      const selectResult = await request.query(`
+        SELECT TOP 1 * FROM wards WHERE ma_phuong_xa = @ma_phuong_xa ORDER BY ngay_tao DESC
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL Ward Create Error:', error);
       if (error.message && error.message.includes('UNIQUE')) {
@@ -2260,12 +2317,18 @@ class SQLUserModel {
       
       const result = await request.query(`
         INSERT INTO users (ho_ten, email, so_dien_thoai, mat_khau, vung_id, trang_thai)
-        OUTPUT INSERTED.id, INSERTED.ho_ten as name, INSERTED.email, 
-               INSERTED.so_dien_thoai as phone, INSERTED.vung_id,
-               INSERTED.trang_thai as status, INSERTED.ngay_dang_ky as created_at
         VALUES (@ho_ten, @email, @so_dien_thoai, @mat_khau, @vung_id, @trang_thai)
       `);
-      return result.recordset[0];
+      
+      // Get newly created user
+      const selectResult = await request.query(`
+        SELECT 
+          id, ho_ten as name, email, so_dien_thoai as phone, vung_id,
+          trang_thai as status, ngay_dang_ky as created_at
+        FROM users 
+        WHERE email = @email
+      `);
+      return selectResult.recordset[0];
     } catch (error) {
       console.error('SQL User create Error:', error);
       if (error.message && error.message.includes('UNIQUE')) {
@@ -2634,14 +2697,19 @@ class SQLInventoryModel {
               variant_id, kho_id, so_luong_kha_dung, so_luong_da_dat,
               muc_ton_kho_toi_thieu, so_luong_nhap_lai, lan_nhap_hang_cuoi
             )
-            OUTPUT INSERTED.id
             VALUES (
               @variant_id, @kho_id, @so_luong_kha_dung, @so_luong_da_dat,
               @muc_ton_kho_toi_thieu, @so_luong_nhap_lai, @lan_nhap_hang_cuoi
             )
           `);
         
-        const inventoryId = createResult.recordset[0].id;
+        // Get newly created inventory
+        const selectResult = await createRequest.query(`
+          SELECT TOP 1 id FROM inventory 
+          WHERE variant_id = @variant_id AND kho_id = @kho_id
+          ORDER BY ngay_tao DESC
+        `);
+        const inventoryId = selectResult.recordset[0].id;
         console.log(`✅ Created inventory ${inventoryId} for variant ${variantId} in warehouse ${warehouseId}`);
         return { action: 'created', inventoryId };
       }
@@ -2858,7 +2926,17 @@ class SQLWarehouseModel {
       const request = new sql.Request();
       const result = await request.query(`
         SELECT 
-          w.*,
+          w.id,
+          w.ten_kho,
+          w.vung_id,
+          w.phuong_xa_id,
+          w.dia_chi_chi_tiet,
+          w.so_dien_thoai,
+          w.trang_thai,
+          w.priority_levels,
+          w.is_primary,
+          w.ngay_tao,
+          w.ngay_cap_nhat,
           ward.ten_phuong_xa,
           ward.tinh_thanh_id,
           p.ten_tinh,
@@ -2871,7 +2949,8 @@ class SQLWarehouseModel {
         LEFT JOIN provinces p ON ward.tinh_thanh_id = p.id
         LEFT JOIN regions r ON p.vung_id = r.ma_vung
         GROUP BY w.id, w.ten_kho, w.vung_id, w.phuong_xa_id, w.dia_chi_chi_tiet, 
-                 w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat,
+                 w.so_dien_thoai, w.trang_thai, w.priority_levels, w.is_primary, 
+                 w.ngay_tao, w.ngay_cap_nhat,
                  ward.ten_phuong_xa, ward.tinh_thanh_id, p.ten_tinh, p.vung_id, r.ten_vung
         ORDER BY w.ngay_tao DESC
       `);
@@ -2890,7 +2969,17 @@ class SQLWarehouseModel {
         .input('id', sql.UniqueIdentifier, id)
         .query(`
           SELECT 
-            w.*,
+            w.id,
+            w.ten_kho,
+            w.vung_id,
+            w.phuong_xa_id,
+            w.dia_chi_chi_tiet,
+            w.so_dien_thoai,
+            w.trang_thai,
+            w.priority_levels,
+            w.is_primary,
+            w.ngay_tao,
+            w.ngay_cap_nhat,
             ward.ten_phuong_xa,
             ward.tinh_thanh_id,
             p.ten_tinh,
@@ -2904,7 +2993,8 @@ class SQLWarehouseModel {
           LEFT JOIN regions r ON p.vung_id = r.ma_vung
           WHERE w.id = @id
           GROUP BY w.id, w.ten_kho, w.vung_id, w.phuong_xa_id, w.dia_chi_chi_tiet, 
-                   w.so_dien_thoai, w.trang_thai, w.ngay_tao, w.ngay_cap_nhat,
+                   w.so_dien_thoai, w.trang_thai, w.priority_levels, w.is_primary, 
+                   w.ngay_tao, w.ngay_cap_nhat,
                    ward.ten_phuong_xa, ward.tinh_thanh_id, p.ten_tinh, p.vung_id, r.ten_vung
         `);
       
@@ -2921,7 +3011,19 @@ class SQLWarehouseModel {
       const result = await request
         .input('vung_id', sql.NVarChar(10), regionId)
         .query(`
-          SELECT * FROM warehouses 
+          SELECT 
+            id,
+            ten_kho,
+            vung_id,
+            phuong_xa_id,
+            dia_chi_chi_tiet,
+            so_dien_thoai,
+            trang_thai,
+            priority_levels,
+            is_primary,
+            ngay_tao,
+            ngay_cap_nhat
+          FROM warehouses 
           WHERE vung_id = @vung_id AND trang_thai = 1
           ORDER BY ngay_tao ASC
         `);
@@ -2958,7 +3060,11 @@ class SQLWarehouseModel {
             @so_dien_thoai, @trang_thai, @ngay_tao, @ngay_cap_nhat
           );
           
-          SELECT * FROM warehouses WHERE id = @id;
+          SELECT 
+            id, ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet,
+            so_dien_thoai, trang_thai, priority_levels, is_primary,
+            ngay_tao, ngay_cap_nhat
+          FROM warehouses WHERE id = @id;
         `);
       
       return result.recordset[0];
@@ -3013,7 +3119,11 @@ class SQLWarehouseModel {
         SET ${updateFields.join(', ')}
         WHERE id = @id;
         
-        SELECT * FROM warehouses WHERE id = @id;
+        SELECT 
+          id, ten_kho, vung_id, phuong_xa_id, dia_chi_chi_tiet,
+          so_dien_thoai, trang_thai, priority_levels, is_primary,
+          ngay_tao, ngay_cap_nhat
+        FROM warehouses WHERE id = @id;
       `);
       
       return result.recordset[0];

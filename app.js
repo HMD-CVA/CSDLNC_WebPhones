@@ -9,6 +9,11 @@ import mongoose, { mongo } from 'mongoose';
 
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+// import cors from 'cors';
+
+import dotenv from 'dotenv';
+dotenv.config();
 
 import { v2 as cloudinary } from 'cloudinary';
 cloudinary.config({
@@ -17,11 +22,11 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-import fs from 'fs';
-// import cors from 'cors';
-
-import dotenv from 'dotenv';
-dotenv.config();
+console.log('☁️ Cloudinary config:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY ? '✓ Set' : '✗ Missing',
+  api_secret: process.env.CLOUDINARY_API_SECRET ? '✓ Set' : '✗ Missing'
+});
 
 // Import SQL config từ server.js (tránh duplicate)
 const sqlConfig = db.dbConfig;
@@ -778,18 +783,18 @@ app.get('/cart', async (req, res) => {
 });
 
 // Trang thanh toán
-app.get('/payment', async (req, res) => {
+app.get('/dathang', async (req, res) => {
     try {
-        res.render('payment', { 
+        res.render('dathang', { 
             layout: 'HomeMain.handlebars'
         });
     } catch (err) {
-        console.error('Error loading payment page:', err);
+        console.error('Error loading dathang page:', err);
         res.status(500).send('Lỗi server!');
     }
 });
 
-// Trang xác nhận đơn hàng
+// Trang xác nhận đơn hàng / Chi tiết đơn hàng
 app.get('/order-confirmation', async (req, res) => {
     try {
         res.render('order-confirmation', { 
@@ -797,6 +802,18 @@ app.get('/order-confirmation', async (req, res) => {
         });
     } catch (err) {
         console.error('Error loading order confirmation page:', err);
+        res.status(500).send('Lỗi server!');
+    }
+});
+
+// Trang danh sách đơn hàng của tôi
+app.get('/donhang', async (req, res) => {
+    try {
+        res.render('my-orders', { 
+            layout: 'HomeMain.handlebars'
+        });
+    } catch (err) {
+        console.error('Error loading my orders page:', err);
         res.status(500).send('Lỗi server!');
     }
 });
@@ -830,24 +847,32 @@ app.get('/api/cart', async (req, res) => {
         
         const vungId = userResult.recordset[0].vung_id;
         
-        // Tìm hoặc tạo giỏ hàng
+        // Tìm hoặc tạo giỏ hàng theo vùng của user
         let cartRequest = new sql.Request();
         let cartResult = await cartRequest
             .input('userId', sql.UniqueIdentifier, userId)
-            .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId');
+            .input('vungId', sql.NVarChar(10), vungId)
+            .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId AND vung_id = @vungId');
         
         let cartId;
         if (!cartResult.recordset || cartResult.recordset.length === 0) {
-            // Tạo giỏ hàng mới
+            // Tạo giỏ hàng mới theo vùng
             const createCartRequest = new sql.Request();
-            const newCart = await createCartRequest
+            await createCartRequest
                 .input('userId', sql.UniqueIdentifier, userId)
-                .input('vungId', sql.NVarChar, vungId)
+                .input('vungId', sql.NVarChar(10), vungId)
                 .query(`
                     INSERT INTO carts (nguoi_dung_id, vung_id)
-                    OUTPUT INSERTED.id
                     VALUES (@userId, @vungId)
                 `);
+            
+            // Lấy cart vừa tạo
+            const newCartRequest = new sql.Request();
+            const newCart = await newCartRequest
+                .input('userId', sql.UniqueIdentifier, userId)
+                .input('vungId', sql.NVarChar(10), vungId)
+                .query('SELECT TOP 1 id FROM carts WHERE nguoi_dung_id = @userId AND vung_id = @vungId ORDER BY ngay_tao DESC');
+            
             cartId = newCart.recordset[0].id;
         } else {
             cartId = cartResult.recordset[0].id;
@@ -902,11 +927,18 @@ app.get('/api/cart', async (req, res) => {
                 id: item.id,
                 gio_hang_id: item.gio_hang_id,
                 variant_id: item.variant_id,
+                san_pham_id: item.variant_id, // Alias cho compatibility với frontend
                 product_id: item.product_id,
                 so_luong: item.so_luong,
                 ngay_them: item.ngay_them,
                 ten_san_pham: productName,
                 variant_name: variantName,
+                variant_info: { // Thêm variant_info để frontend không warning
+                    id: item.variant_id,
+                    ten_hien_thi: variantName,
+                    ma_sku: item.variant_sku,
+                    so_luong_ton_kho: item.variant_stock
+                },
                 ten_san_pham_day_du: fullName,
                 ma_sku: item.variant_sku || 'N/A',
                 link_anh: variantImage,
@@ -975,26 +1007,51 @@ app.post('/api/cart', async (req, res) => {
             });
         }
 
-        // 3. Lấy hoặc tạo cart cho user
+        // 3. Lấy vùng của user từ database
+        const userRequest = new sql.Request();
+        const userResult = await userRequest
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query('SELECT vung_id FROM users WHERE id = @userId');
+
+        if (!userResult.recordset || userResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy thông tin người dùng'
+            });
+        }
+
+        const vung_id = userResult.recordset[0].vung_id;
+        console.log('📍 User region:', vung_id);
+
+        // 4. Lấy hoặc tạo cart cho user theo vùng của họ
         let cartRequest = new sql.Request();
         let cartResult = await cartRequest
             .input('userId', sql.UniqueIdentifier, userId)
-            .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId');
+            .input('vungId', sql.NVarChar(10), vung_id)
+            .query('SELECT id FROM carts WHERE nguoi_dung_id = @userId AND vung_id = @vungId');
 
         let cartId;
         
         if (!cartResult.recordset || cartResult.recordset.length === 0) {
-            // Tạo cart mới cho user
-            console.log('📦 Creating new cart for user:', userId);
+            // Tạo cart mới cho user theo vùng
+            console.log('📦 Creating new cart for user:', userId, 'region:', vung_id);
             
             const createCartRequest = new sql.Request();
-            const newCart = await createCartRequest
+            await createCartRequest
                 .input('userId', sql.UniqueIdentifier, userId)
+                .input('vungId', sql.NVarChar(10), vung_id)
                 .query(`
-                    INSERT INTO carts (nguoi_dung_id)
-                    OUTPUT INSERTED.id
-                    VALUES (@userId)
+                    INSERT INTO carts (nguoi_dung_id, vung_id)
+                    VALUES (@userId, @vungId)
                 `);
+            
+            // Lấy cart vừa tạo
+            const newCartRequest = new sql.Request();
+            const newCart = await newCartRequest
+                .input('userId', sql.UniqueIdentifier, userId)
+                .input('vungId', sql.NVarChar(10), vung_id)
+                .query('SELECT TOP 1 id FROM carts WHERE nguoi_dung_id = @userId AND vung_id = @vungId ORDER BY ngay_tao DESC');
+            
             cartId = newCart.recordset[0].id;
             
             console.log('✅ Created cart:', cartId);
@@ -1003,7 +1060,7 @@ app.post('/api/cart', async (req, res) => {
             console.log('✅ Found existing cart:', cartId);
         }
 
-        // 4. Kiểm tra variant có tồn tại trong giỏ chưa
+        // 5. Kiểm tra variant có tồn tại trong giỏ chưa
         const checkRequest = new sql.Request();
         const checkResult = await checkRequest
             .input('cartId', sql.UniqueIdentifier, cartId)
@@ -1079,14 +1136,14 @@ app.put('/api/cart/:itemId', async (req, res) => {
             });
         }
         
-        // Lấy thông tin cart item (san_pham_id là variant_id)
+        // Lấy thông tin cart item
         const checkRequest = new sql.Request();
         const checkResult = await checkRequest
             .input('itemId', sql.UniqueIdentifier, itemId)
             .query(`
                 SELECT 
                     ci.id, 
-                    ci.san_pham_id
+                    ci.variant_id
                 FROM cart_items ci
                 WHERE ci.id = @itemId
             `);
@@ -1099,50 +1156,43 @@ app.put('/api/cart/:itemId', async (req, res) => {
         }
         
         const cartItem = checkResult.recordset[0];
-        const variantId = cartItem.san_pham_id;
+        const variantId = cartItem.variant_id;
         
-        // Tìm variant trong MongoDB để lấy stock
-        const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
+        // Lấy thông tin variant từ SQL
+        const variantRequest = new sql.Request();
+        const variantResult = await variantRequest
+            .input('variantId', sql.UniqueIdentifier, variantId)
+            .query(`
+                SELECT 
+                    pv.id,
+                    pv.ten_hien_thi,
+                    pv.so_luong_ton_kho,
+                    pv.trang_thai,
+                    p.ten_san_pham
+                FROM product_variants pv
+                INNER JOIN products p ON pv.san_pham_id = p.id
+                WHERE pv.id = @variantId
+            `);
         
-        let foundVariant = null;
-        let productName = 'Sản phẩm';
-        
-        for (const doc of allProducts) {
-            const combinations = doc.variants?.variant_combinations || [];
-            const variant = combinations.find(v => 
-                v.variant_id && v.variant_id.toLowerCase() === variantId.toLowerCase()
-            );
-            
-            if (variant) {
-                foundVariant = variant;
-                // Lấy tên sản phẩm từ SQL
-                if (doc.sql_product_id) {
-                    const sqlProduct = await DataModel.SQL.Product.findById(doc.sql_product_id);
-                    if (sqlProduct) {
-                        productName = sqlProduct.ten_san_pham;
-                    }
-                }
-                break;
-            }
-        }
-        
-        if (!foundVariant) {
+        if (!variantResult.recordset || variantResult.recordset.length === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Không tìm thấy thông tin biến thể sản phẩm'
             });
         }
         
+        const variant = variantResult.recordset[0];
+        
         // Kiểm tra variant có active không
-        if (foundVariant.active === false) {
+        if (variant.trang_thai === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Sản phẩm này đã ngừng bán'
             });
         }
         
-        // Kiểm tra số lượng tồn kho từ variant
-        const availableStock = foundVariant.stock || 0;
+        // Kiểm tra số lượng tồn kho từ SQL
+        const availableStock = variant.so_luong_ton_kho || 0;
         
         if (so_luong > availableStock) {
             return res.status(400).json({
@@ -1430,7 +1480,7 @@ app.post('/api/auth/register', async (req, res) => {
         
         // Tạo user mới
         const insertRequest = new sql.Request();
-        const result = await insertRequest
+        await insertRequest
             .input('email', sql.NVarChar(255), email.trim())
             .input('mat_khau', sql.NVarChar(255), hashedPassword)
             .input('ho_ten', sql.NVarChar(100), ho_ten || null)
@@ -1438,10 +1488,10 @@ app.post('/api/auth/register', async (req, res) => {
             .input('vung_id', sql.NVarChar(10), vung_id || 'bac')
             .query(`
                 INSERT INTO users (email, mat_khau, ho_ten, so_dien_thoai, vung_id, trang_thai)
-                OUTPUT INSERTED.*
                 VALUES (@email, @mat_khau, @ho_ten, @so_dien_thoai, @vung_id, 1)
             `);
         
+        const result = await insertRequest.query(`SELECT TOP 1 * FROM users WHERE email = @email ORDER BY ngay_tao DESC`);
         const newUser = result.recordset[0];
         
         console.log('✅ Registration successful:', newUser.email);
@@ -2254,7 +2304,8 @@ app.get('/product/:id', async (req, res) => {
             layout: 'HomeMain.handlebars',
             product: formattedProduct,
             inventory: inventory, // ✅ Truyền inventory variants xuống view (legacy)
-            productVariants: variantsWithFlashSale // ✅ NEW: Variants với flash sale info
+            productVariants: variantsWithFlashSale, // ✅ NEW: Variants với flash sale info
+            mongoVariants: variants // ✅ MongoDB variants grouped by site_origin
         });
     } catch (err) {
         console.error('Error loading product detail:', err);
@@ -2321,7 +2372,7 @@ app.get('/admin/sanpham', async (req, res) => {
         
         // Lấy danh sách brands
         const brandsResult = await pool.request()
-            .query('SELECT id, ten_thuong_hieu, slug, logo_url FROM brands WHERE trang_thai = 1 ORDER BY ten_thuong_hieu');
+            .query('SELECT id, ten_thuong_hieu, slug, logo_url FROM brands');
         
         // Lấy danh sách regions
         const regionsResult = await pool.request()
@@ -2796,7 +2847,8 @@ app.post('/api/products', async (req, res) => {
         }
 
         // Insert product
-        const result = await pool.request()
+        const insertRequest = pool.request();
+        await insertRequest
             .input('ma_san_pham', sql.NVarChar(100), ma_san_pham)
             .input('ten_san_pham', sql.NVarChar(255), ten_san_pham)
             .input('danh_muc_id', sql.UniqueIdentifier, danh_muc_id)
@@ -2812,17 +2864,18 @@ app.post('/api/products', async (req, res) => {
                     ma_san_pham, ten_san_pham, danh_muc_id, thuong_hieu_id,
                     mo_ta_ngan, link_anh_dai_dien, site_created, gia_ban, gia_niem_yet, trang_thai
                 )
-                OUTPUT INSERTED.*
                 VALUES (
                     @ma_san_pham, @ten_san_pham, @danh_muc_id, @thuong_hieu_id,
                     @mo_ta_ngan, @link_anh_dai_dien, @site_created, @gia_ban, @gia_niem_yet, @trang_thai
                 )
             `);
+        
+        const selectResult = await insertRequest.query(`SELECT TOP 1 * FROM products WHERE ma_san_pham = @ma_san_pham ORDER BY ngay_tao DESC`);
 
         res.status(201).json({
             success: true,
             message: 'Tạo sản phẩm thành công',
-            data: result.recordset[0]
+            data: selectResult.recordset[0]
         });
 
     } catch (error) {
@@ -2870,7 +2923,8 @@ app.put('/api/products/:id', async (req, res) => {
         }
 
         // Update
-        const result = await pool.request()
+        const updateRequest = pool.request();
+        await updateRequest
             .input('id', sql.UniqueIdentifier, id)
             .input('ma_san_pham', sql.NVarChar(100), ma_san_pham)
             .input('ten_san_pham', sql.NVarChar(255), ten_san_pham)
@@ -2898,14 +2952,15 @@ app.put('/api/products/:id', async (req, res) => {
                     mongo_detail_id = ISNULL(@mongo_detail_id, mongo_detail_id),
                     trang_thai = ISNULL(@trang_thai, trang_thai),
                     ngay_cap_nhat = GETDATE()
-                OUTPUT INSERTED.*
                 WHERE id = @id
             `);
+        
+        const selectResult = await updateRequest.query(`SELECT * FROM products WHERE id = @id`);
 
         res.json({
             success: true,
             message: 'Cập nhật sản phẩm thành công',
-            data: result.recordset[0]
+            data: selectResult.recordset[0]
         });
 
     } catch (error) {
@@ -3088,7 +3143,8 @@ app.post('/api/products/:productId/variants', async (req, res) => {
         }
 
         // Insert variant
-        const result = await pool.request()
+        const insertRequest = pool.request();
+        await insertRequest
             .input('san_pham_id', sql.UniqueIdentifier, productId)
             .input('ma_sku', sql.NVarChar(100), ma_sku)
             .input('ten_hien_thi', sql.NVarChar(200), ten_hien_thi)
@@ -3104,14 +3160,14 @@ app.post('/api/products/:productId/variants', async (req, res) => {
                     san_pham_id, ma_sku, ten_hien_thi, gia_niem_yet, gia_ban,
                     so_luong_ton_kho, luot_ban, anh_dai_dien, site_origin, trang_thai
                 )
-                OUTPUT INSERTED.*
                 VALUES (
                     @san_pham_id, @ma_sku, @ten_hien_thi, @gia_niem_yet, @gia_ban,
                     @so_luong_ton_kho, @luot_ban, @anh_dai_dien, @site_origin, @trang_thai
                 )
             `);
-
-        const newVariant = result.recordset[0];
+        
+        const selectResult = await insertRequest.query(`SELECT TOP 1 * FROM product_variants WHERE ma_sku = @ma_sku ORDER BY ngay_tao DESC`);
+        const newVariant = selectResult.recordset[0];
         
         // Tự động tạo inventory cho variant mới
         try {
@@ -3162,7 +3218,8 @@ app.put('/api/variants/:id', async (req, res) => {
 
         const pool = await sql.connect(sqlConfig);
 
-        const result = await pool.request()
+        const updateRequest = pool.request();
+        await updateRequest
             .input('id', sql.UniqueIdentifier, id)
             .input('ma_sku', sql.NVarChar(100), ma_sku)
             .input('ten_hien_thi', sql.NVarChar(200), ten_hien_thi)
@@ -3186,18 +3243,19 @@ app.put('/api/variants/:id', async (req, res) => {
                     site_origin = ISNULL(@site_origin, site_origin),
                     trang_thai = ISNULL(@trang_thai, trang_thai),
                     ngay_cap_nhat = GETDATE()
-                OUTPUT INSERTED.*
                 WHERE id = @id
             `);
+        
+        const selectResult = await updateRequest.query(`SELECT * FROM product_variants WHERE id = @id`);
 
-        if (result.recordset.length === 0) {
+        if (selectResult.recordset.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Không tìm thấy biến thể'
             });
         }
 
-        const updatedVariant = result.recordset[0];
+        const updatedVariant = selectResult.recordset[0];
 
         // Cập nhật inventory nếu so_luong_ton_kho hoặc site_origin thay đổi
         if (so_luong_ton_kho !== undefined || site_origin !== undefined) {
@@ -3248,8 +3306,36 @@ app.put('/api/variants/:id', async (req, res) => {
                         }
                         
                         // Lấy link_anh_dai_dien từ variant đầu tiên
-                        if (mongoDoc.variants?.variant_combinations?.[0]?.image) {
-                            updateProductData.link_anh_dai_dien = mongoDoc.variants.variant_combinations[0].image;
+                        let firstVariantImage = null;
+                        
+                        // Check structure: grouped by region or flat?
+                        const variantsObj = mongoDoc.variants;
+                        if (variantsObj) {
+                            const isGroupedByRegion = Object.keys(variantsObj).some(key => 
+                                ['bac', 'trung', 'nam'].includes(key) && 
+                                variantsObj[key] && 
+                                typeof variantsObj[key] === 'object'
+                            );
+                            
+                            if (isGroupedByRegion) {
+                                // NEW: Get from first region that has combinations
+                                const regions = ['bac', 'trung', 'nam'];
+                                for (const region of regions) {
+                                    if (variantsObj[region]?.variant_combinations?.[0]?.image) {
+                                        firstVariantImage = variantsObj[region].variant_combinations[0].image;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                // OLD: Flat structure
+                                if (variantsObj.variant_combinations?.[0]?.image) {
+                                    firstVariantImage = variantsObj.variant_combinations[0].image;
+                                }
+                            }
+                        }
+                        
+                        if (firstVariantImage) {
+                            updateProductData.link_anh_dai_dien = firstVariantImage;
                         } else if (mongoDoc.link_avatar) {
                             updateProductData.link_anh_dai_dien = mongoDoc.link_avatar;
                         }
@@ -3522,9 +3608,7 @@ app.get('/api/thuonghieu', async (req, res) => {
     try {
         console.log('🔄 API: Lấy danh sách thương hiệu');
         
-        const brands = await DataModel.SQL.Brand.findAll({
-            order: [['ten_thuong_hieu', 'ASC']]
-        });
+        const brands = await DataModel.SQL.Brand.findAll();
 
         console.log(`✅ Lấy được ${brands.length} thương hiệu`);
 
@@ -3600,9 +3684,13 @@ app.post('/api/thuonghieu', async (req, res) => {
 
         // Tạo slug từ tên thương hiệu
         const slug = generateSlug(brandData.ten_thuong_hieu);
+        console.log('📝 Generated slug:', slug);
 
         // Kiểm tra slug trùng lặp
+        console.log('🔍 Checking for existing brand with slug:', slug);
         const existingBrand = await DataModel.SQL.Brand.findOne({ where: { slug } });
+        console.log('🔍 Existing brand result:', existingBrand);
+        
         if (existingBrand) {
             return res.status(400).json({
                 success: false,
@@ -3610,6 +3698,8 @@ app.post('/api/thuonghieu', async (req, res) => {
             });
         }
 
+        console.log('✅ No duplicate found, proceeding to create brand...');
+        
         const newBrand = await DataModel.SQL.Brand.create({
             ten_thuong_hieu: brandData.ten_thuong_hieu,
             mo_ta: brandData.mo_ta || '',
@@ -3701,8 +3791,7 @@ app.put('/api/thuonghieu/:id', async (req, res) => {
             ten_thuong_hieu: brandData.ten_thuong_hieu.trim(),
             mo_ta: brandData.mo_ta || existingBrand.mo_ta,
             logo_url: brandData.logo_url || existingBrand.logo_url,
-            trang_thai: brandData.trang_thai !== undefined ? parseInt(brandData.trang_thai) : existingBrand.trang_thai,
-            updated_at: new Date()
+            trang_thai: brandData.trang_thai !== undefined ? parseInt(brandData.trang_thai) : existingBrand.trang_thai
         };
 
         // Chỉ cập nhật slug nếu tên thay đổi
@@ -3969,8 +4058,7 @@ app.put('/api/danhmuc/:id', async (req, res) => {
             anh_url: categoryData.anh_url || existingCategory.anh_url,
             thu_tu: categoryData.thu_tu !== undefined ? parseInt(categoryData.thu_tu) : existingCategory.thu_tu,
             danh_muc_cha_id: categoryData.danh_muc_cha_id || existingCategory.danh_muc_cha_id,
-            trang_thai: categoryData.trang_thai !== undefined ? parseInt(categoryData.trang_thai) : existingCategory.trang_thai,
-            updated_at: new Date()
+            trang_thai: categoryData.trang_thai !== undefined ? parseInt(categoryData.trang_thai) : existingCategory.trang_thai
         };
 
         if (hasNameChanged) {
@@ -4368,20 +4456,38 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         });
 
         // ===== KIỂM TRA XEM CÓ DỮ LIỆU MONGO NÀO KHÔNG =====
+        // Check if variants are grouped by region (new structure: {bac: {...}, trung: {...}, nam: {...}})
+        const hasVariantData = variants && typeof variants === 'object' && (() => {
+            // Check old structure (flat variants object)
+            if (variants.variant_options || variants.variant_combinations) {
+                return (variants.variant_options && variants.variant_options.length > 0) ||
+                       (variants.variant_combinations && variants.variant_combinations.length > 0);
+            }
+            
+            // Check new structure (grouped by region)
+            const regions = Object.keys(variants);
+            return regions.some(region => {
+                const regionData = variants[region];
+                return regionData && typeof regionData === 'object' && (
+                    (regionData.variant_options && regionData.variant_options.length > 0) ||
+                    (regionData.variant_combinations && regionData.variant_combinations.length > 0)
+                );
+            });
+        })();
+        
         const hasMongoData = (
             (thong_so_ky_thuat && Object.keys(thong_so_ky_thuat).length > 0) ||
             (hinh_anh && Array.isArray(hinh_anh) && hinh_anh.length > 0) ||
             (videos && Array.isArray(videos) && videos.length > 0) ||
             (video_links && Array.isArray(video_links) && video_links.length > 0) ||
-            (variants && typeof variants === 'object' && (
-                (variants.variant_options && variants.variant_options.length > 0) ||
-                (variants.variant_combinations && variants.variant_combinations.length > 0)
-            )) ||
+            hasVariantData ||
             (thong_tin_khac && typeof thong_tin_khac === 'object' && Object.keys(thong_tin_khac).length > 0) ||
             link_avatar ||
             mo_ta_chi_tiet ||
             (chi_tiet && typeof chi_tiet === 'object' && Object.keys(chi_tiet).length > 0)
         );
+
+        console.log('🔍 Variant data check:', { hasVariantData, variantsKeys: variants ? Object.keys(variants) : [] });
 
         if (!hasMongoData) {
             console.log('⚠️ Không có dữ liệu MongoDB nào để lưu - bỏ qua tạo document');
@@ -4489,36 +4595,66 @@ app.post('/api/mongo/sanpham', async (req, res) => {
         let calculated_original_price = null;
         
         if (variants && typeof variants === 'object') {
-            // Ensure all variants have variant_id (or create default variant with sql_product_id)
-            const processedVariants = ensureVariantIds(variants, sql_product_id);
+            // Xác định structure: grouped by region hoặc flat
+            const isGroupedByRegion = !variants.variant_options && !variants.variant_combinations;
             
-            // Lưu variants object chứa cả variant_options và variant_combinations
-            documentData.variants = processedVariants;
-            console.log('✅ Variants data saved:', JSON.stringify(processedVariants, null, 2));
-            
-            // Tính calculated_price từ variant_combinations
-            if (processedVariants.variant_combinations && Array.isArray(processedVariants.variant_combinations)) {
-                processedVariants.variant_combinations.forEach(combo => {
-                    if (combo.price) {
-                        const price = parseFloat(combo.price);
-                        const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
-                        
-                        if (calculated_price === null || price < calculated_price) {
-                            calculated_price = price;
-                            calculated_original_price = originalPrice;
-                        }
+            if (isGroupedByRegion) {
+                console.log('📦 Variants grouped by region (site_origin) structure detected');
+                // Lưu trực tiếp structure grouped by region
+                documentData.variants = variants;
+                
+                // Tính calculated_price từ tất cả regions
+                Object.keys(variants).forEach(region => {
+                    const regionData = variants[region];
+                    if (regionData.variant_combinations && Array.isArray(regionData.variant_combinations)) {
+                        regionData.variant_combinations.forEach(combo => {
+                            if (combo.price) {
+                                const price = parseFloat(combo.price);
+                                const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
+                                
+                                if (calculated_price === null || price < calculated_price) {
+                                    calculated_price = price;
+                                    calculated_original_price = originalPrice;
+                                }
+                            }
+                        });
                     }
                 });
                 
-                // Lưu calculated_price vào MongoDB
-                documentData.calculated_price = calculated_price;
-                documentData.calculated_original_price = calculated_original_price;
+                console.log('✅ Variants data saved (grouped by region):', Object.keys(variants));
+            } else {
+                console.log('📦 Flat variants structure detected (legacy)');
+                // Ensure all variants have variant_id (or create default variant with sql_product_id)
+                const processedVariants = ensureVariantIds(variants, sql_product_id);
                 
-                console.log('💰 Calculated prices from variants:', {
-                    calculated_price,
-                    calculated_original_price
-                });
+                // Lưu variants object chứa cả variant_options và variant_combinations
+                documentData.variants = processedVariants;
+                console.log('✅ Variants data saved (flat):', JSON.stringify(processedVariants, null, 2));
+                
+                // Tính calculated_price từ variant_combinations
+                if (processedVariants.variant_combinations && Array.isArray(processedVariants.variant_combinations)) {
+                    processedVariants.variant_combinations.forEach(combo => {
+                        if (combo.price) {
+                            const price = parseFloat(combo.price);
+                            const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
+                            
+                            if (calculated_price === null || price < calculated_price) {
+                                calculated_price = price;
+                                calculated_original_price = originalPrice;
+                            }
+                        }
+                    });
+                }
             }
+            
+            // Lưu calculated_price vào MongoDB
+            documentData.calculated_price = calculated_price;
+            documentData.calculated_original_price = calculated_original_price;
+                
+            console.log('💰 Calculated prices from variants:', {
+                calculated_price,
+                calculated_original_price
+            });
         } else {
             // No variants provided - create default variant with sql_product_id
             documentData.variants = ensureVariantIds(null, sql_product_id);
@@ -4595,8 +4731,36 @@ app.post('/api/mongo/sanpham', async (req, res) => {
                     }
                     
                     // Lấy link_anh_dai_dien từ variant đầu tiên
-                    if (savedDetail.variants?.variant_combinations?.[0]?.image) {
-                        updatePriceData.link_anh_dai_dien = savedDetail.variants.variant_combinations[0].image;
+                    let firstVariantImage = null;
+                    
+                    // Check structure: grouped by region or flat?
+                    const variantsObj = savedDetail.variants;
+                    if (variantsObj) {
+                        const isGroupedByRegion = Object.keys(variantsObj).some(key => 
+                            ['bac', 'trung', 'nam'].includes(key) && 
+                            variantsObj[key] && 
+                            typeof variantsObj[key] === 'object'
+                        );
+                        
+                        if (isGroupedByRegion) {
+                            // NEW: Get from first region that has combinations
+                            const regions = ['bac', 'trung', 'nam'];
+                            for (const region of regions) {
+                                if (variantsObj[region]?.variant_combinations?.[0]?.image) {
+                                    firstVariantImage = variantsObj[region].variant_combinations[0].image;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // OLD: Flat structure
+                            if (variantsObj.variant_combinations?.[0]?.image) {
+                                firstVariantImage = variantsObj.variant_combinations[0].image;
+                            }
+                        }
+                    }
+                    
+                    if (firstVariantImage) {
+                        updatePriceData.link_anh_dai_dien = firstVariantImage;
                     } else if (savedDetail.link_avatar) {
                         updatePriceData.link_anh_dai_dien = savedDetail.link_avatar;
                     }
@@ -4695,7 +4859,21 @@ app.get('/api/check-mongodb', async (req, res) => {
 app.put('/api/mongo/sanpham/:id', async (req, res) => {
     try {
         const mongoId = req.params.id;
+        
+        // 🔍 LOG TOÀN BỘ req.body TRƯỚC KHI DESTRUCTURE
+        console.log('🔍 RAW req.body:', JSON.stringify(req.body, null, 2));
+        console.log('🔍 req.body keys:', Object.keys(req.body));
+        
         const { sql_product_id, thong_so_ky_thuat, hinh_anh, videos, video_links, variants, thong_tin_khac, link_avatar, mo_ta_chi_tiet, trang_thai, san_pham_noi_bat, slug, chi_tiet } = req.body;
+
+        // 🔍 LOG CÁC GIÁ TRỊ SAU KHI DESTRUCTURE
+        console.log('🔍 After destructuring:', {
+            sql_product_id: sql_product_id,
+            trang_thai: trang_thai,
+            san_pham_noi_bat: san_pham_noi_bat,
+            slug: slug,
+            thong_tin_khac: thong_tin_khac ? 'YES' : 'NO'
+        });
 
         console.log(`🔄 API: Cập nhật document MongoDB ${mongoId}`);
         console.log('📝 Update data:', { 
@@ -4724,15 +4902,44 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
             }));
             
             // If no variants, return specs as-is
-            const variantOpts = variants?.variant_options;
-            if (!variantOpts || !Array.isArray(variantOpts)) {
+            if (!variants || typeof variants !== 'object') {
                 return specsArray;
             }
             
             // Build mapping of spec keys to variant values
             const variantValuesBySpec = {};
             
-            variantOpts.forEach(option => {
+            // Check structure: grouped by region or flat?
+            const isGroupedByRegion = Object.keys(variants).some(key => 
+                ['bac', 'trung', 'nam'].includes(key) && 
+                variants[key] && 
+                typeof variants[key] === 'object'
+            );
+            
+            let allVariantOptions = [];
+            
+            if (isGroupedByRegion) {
+                // NEW: Collect variant_options from all regions
+                Object.keys(variants).forEach(region => {
+                    const regionData = variants[region];
+                    if (regionData?.variant_options && Array.isArray(regionData.variant_options)) {
+                        allVariantOptions = allVariantOptions.concat(regionData.variant_options);
+                    }
+                });
+            } else {
+                // OLD: Flat structure
+                const variantOpts = variants?.variant_options;
+                if (variantOpts && Array.isArray(variantOpts)) {
+                    allVariantOptions = variantOpts;
+                }
+            }
+            
+            if (allVariantOptions.length === 0) {
+                return specsArray;
+            }
+            
+            // Process all collected variant_options
+            allVariantOptions.forEach(option => {
                 if (!option.name || !option.values || !Array.isArray(option.values)) return;
                 
                 const optionName = option.name.trim();
@@ -4746,9 +4953,19 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
                 );
                 
                 if (matchingSpecIndex !== -1) {
-                    // Store variant values for this spec
-                    variantValuesBySpec[specsArray[matchingSpecIndex].ten] = uniqueValues.join('/');
-                    console.log(`📊 Aggregated spec "${specsArray[matchingSpecIndex].ten}": ${uniqueValues.join('/')}`);
+                    // Merge values from all regions
+                    const existingValues = variantValuesBySpec[specsArray[matchingSpecIndex].ten];
+                    const newValues = uniqueValues.join('/');
+                    
+                    if (existingValues) {
+                        // Merge and deduplicate
+                        const merged = [...new Set([...existingValues.split('/'), ...uniqueValues])];
+                        variantValuesBySpec[specsArray[matchingSpecIndex].ten] = merged.join('/');
+                    } else {
+                        variantValuesBySpec[specsArray[matchingSpecIndex].ten] = newValues;
+                    }
+                    
+                    console.log(`📊 Aggregated spec "${specsArray[matchingSpecIndex].ten}": ${variantValuesBySpec[specsArray[matchingSpecIndex].ten]}`);
                 }
             });
             
@@ -4775,40 +4992,97 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
 
         if (sql_product_id !== undefined) updateData.sql_product_id = sql_product_id;
         if (thong_so_ky_thuat !== undefined) updateData.thong_so_ky_thuat = thongSoKyThuatArray;
-        if (hinh_anh !== undefined) updateData.hinh_anh = hinh_anh;
+        
+        // MERGE hinh_anh: Lấy array cũ từ DB, merge với array mới (loại duplicate)
+        if (hinh_anh !== undefined) {
+            try {
+                const existingDoc = await DataModel.Mongo.ProductDetail.findById(mongoId).lean();
+                const existingImages = existingDoc?.hinh_anh || [];
+                
+                // Merge: giữ ảnh cũ + thêm ảnh mới (loại duplicate)
+                const mergedImages = [...existingImages];
+                hinh_anh.forEach(img => {
+                    if (img && !mergedImages.includes(img)) {
+                        mergedImages.push(img);
+                    }
+                });
+                
+                updateData.hinh_anh = mergedImages;
+                console.log(`📸 Merged hinh_anh: ${existingImages.length} existing + ${hinh_anh.length} new = ${mergedImages.length} total`);
+            } catch (err) {
+                console.warn('⚠️ Could not merge hinh_anh, using new array:', err.message);
+                updateData.hinh_anh = hinh_anh;
+            }
+        }
         
         // Xử lý variants và tính calculated_price
         let calculated_price = null;
         let calculated_original_price = null;
         
         if (variants !== undefined) {
-            // Ensure all variants have variant_id (or create default variant with sql_product_id)
-            const updatedVariants = ensureVariantIds(variants, sql_product_id);
-            updateData.variants = updatedVariants;
+            // Check structure: grouped by region or flat?
+            const isGroupedByRegion = Object.keys(variants).some(key => 
+                ['bac', 'trung', 'nam'].includes(key) && 
+                variants[key] && 
+                typeof variants[key] === 'object'
+            );
             
-            // Tính calculated_price từ variant_combinations
-            if (updatedVariants.variant_combinations && Array.isArray(updatedVariants.variant_combinations)) {
-                updatedVariants.variant_combinations.forEach(combo => {
-                    if (combo.price) {
-                        const price = parseFloat(combo.price);
-                        const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
-                        
-                        if (calculated_price === null || price < calculated_price) {
-                            calculated_price = price;
-                            calculated_original_price = originalPrice;
-                        }
+            if (isGroupedByRegion) {
+                console.log('📦 UPDATE: Variants grouped by region structure detected');
+                // Lưu trực tiếp structure grouped by region
+                updateData.variants = variants;
+                
+                // Tính calculated_price từ tất cả regions
+                Object.keys(variants).forEach(region => {
+                    const regionData = variants[region];
+                    if (regionData.variant_combinations && Array.isArray(regionData.variant_combinations)) {
+                        regionData.variant_combinations.forEach(combo => {
+                            if (combo.price) {
+                                const price = parseFloat(combo.price);
+                                const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
+                                
+                                if (calculated_price === null || price < calculated_price) {
+                                    calculated_price = price;
+                                    calculated_original_price = originalPrice;
+                                }
+                            }
+                        });
                     }
                 });
                 
-                // Lưu calculated_price vào MongoDB
-                updateData.calculated_price = calculated_price;
-                updateData.calculated_original_price = calculated_original_price;
+                console.log('✅ Variants data updated (grouped by region):', Object.keys(variants));
+            } else {
+                console.log('📦 UPDATE: Flat variants structure detected (legacy)');
+                // Ensure all variants have variant_id (or create default variant with sql_product_id)
+                const updatedVariants = ensureVariantIds(variants, sql_product_id);
+                updateData.variants = updatedVariants;
                 
-                console.log('💰 Calculated prices from variants:', {
-                    calculated_price,
-                    calculated_original_price
-                });
+                // Tính calculated_price từ variant_combinations
+                if (updatedVariants.variant_combinations && Array.isArray(updatedVariants.variant_combinations)) {
+                    updatedVariants.variant_combinations.forEach(combo => {
+                        if (combo.price) {
+                            const price = parseFloat(combo.price);
+                            const originalPrice = combo.original_price ? parseFloat(combo.original_price) : null;
+                            
+                            if (calculated_price === null || price < calculated_price) {
+                                calculated_price = price;
+                                calculated_original_price = originalPrice;
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ Variants data updated (flat)');
+                }
             }
+            
+            // Lưu calculated_price vào MongoDB
+            updateData.calculated_price = calculated_price;
+            updateData.calculated_original_price = calculated_original_price;
+            
+            console.log('💰 Calculated prices from variants:', {
+                calculated_price,
+                calculated_original_price
+            });
         }
         
         if (videos !== undefined) updateData.videos = videos;
@@ -4821,9 +5095,62 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
         if (slug !== undefined) updateData.slug = slug;
         if (thong_tin_khac !== undefined) updateData.thong_tin_khac = thong_tin_khac;
 
+        // � Loại bỏ các field timestamps (MongoDB tự động quản lý)
+        delete updateData.createdAt;
+        delete updateData.updatedAt;
+        delete updateData.__v;
+
+        // �🔥 Tách fields có giá trị null để xóa ($unset) và fields có giá trị để update ($set)
+        const fieldsToSet = {};
+        const fieldsToUnset = {};
+        
+        Object.entries(updateData).forEach(([key, value]) => {
+            // Xóa field hoàn toàn khỏi document nếu:
+            // - value === null
+            // - value là empty array []
+            // - value là empty object {}
+            // - value là empty string ""
+            const isEmpty = 
+                value === null ||
+                (Array.isArray(value) && value.length === 0) ||
+                (typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value).length === 0) ||
+                (typeof value === 'string' && value.trim() === '');
+            
+            if (isEmpty) {
+                fieldsToUnset[key] = "";  // MongoDB $unset syntax - xóa field hoàn toàn
+            } else {
+                fieldsToSet[key] = value;
+            }
+        });
+        
+        console.log('💾 Fields to SET:', Object.keys(fieldsToSet));
+        console.log('🗑️ Fields to UNSET (delete):', Object.keys(fieldsToUnset));
+        
+        // Tạo update query object
+        const mongoUpdateQuery = {};
+        if (Object.keys(fieldsToSet).length > 0) {
+            mongoUpdateQuery.$set = fieldsToSet;
+        }
+        if (Object.keys(fieldsToUnset).length > 0) {
+            mongoUpdateQuery.$unset = fieldsToUnset;
+        }
+        
+        console.log('🔧 Final MongoDB update query:', JSON.stringify(mongoUpdateQuery, null, 2));
+
+        // 🔍 DEBUG: Log document TRƯỚC KHI update
+        const docBefore = await DataModel.Mongo.ProductDetail.findById(mongoId).lean();
+        console.log('📄 Document BEFORE update:', {
+            _id: docBefore?._id,
+            sql_product_id: docBefore?.sql_product_id,
+            slug: docBefore?.slug,
+            trang_thai: docBefore?.trang_thai,
+            thong_tin_khac: docBefore?.thong_tin_khac,
+            has_variants: !!docBefore?.variants
+        });
+
         const updatedDetail = await DataModel.Mongo.ProductDetail.findByIdAndUpdate(
             mongoId,
-            { $set: updateData },
+            mongoUpdateQuery,
             { new: true, runValidators: true }
         );
 
@@ -4834,7 +5161,28 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
             });
         }
 
+        // 🔍 DEBUG: Log document SAU KHI update
         console.log('✅ MongoDB document updated:', mongoId);
+        console.log('📄 Document AFTER update:', {
+            _id: updatedDetail._id,
+            sql_product_id: updatedDetail.sql_product_id,
+            slug: updatedDetail.slug,
+            trang_thai: updatedDetail.trang_thai,
+            san_pham_noi_bat: updatedDetail.san_pham_noi_bat,
+            thong_tin_khac: updatedDetail.thong_tin_khac,
+            mo_ta_chi_tiet: updatedDetail.mo_ta_chi_tiet,
+            has_variants: !!updatedDetail.variants,
+            variants_keys: updatedDetail.variants ? Object.keys(updatedDetail.variants) : [],
+            variants_bac_combos: updatedDetail.variants?.bac?.variant_combinations?.length || 0,
+            default_variant_count: updatedDetail.variants?.variant_combinations?.length || 0
+        });
+        
+        // 🔍 Log chi tiết variants để verify
+        if (updatedDetail.variants?.bac) {
+            console.log('✅ Variants structure verified:');
+            console.log('  - Region "bac" has', updatedDetail.variants.bac.variant_combinations?.length || 0, 'combinations');
+            console.log('  - Sample combo:', updatedDetail.variants.bac.variant_combinations?.[0]?.name);
+        }
         
         // Cập nhật giá và ảnh đại diện vào SQL từ MongoDB
         if (updatedDetail.calculated_price !== null && updatedDetail.sql_product_id) {
@@ -4853,8 +5201,36 @@ app.put('/api/mongo/sanpham/:id', async (req, res) => {
                     }
                     
                     // Lấy link_anh_dai_dien từ variant đầu tiên
-                    if (updatedDetail.variants?.variant_combinations?.[0]?.image) {
-                        updatePriceData.link_anh_dai_dien = updatedDetail.variants.variant_combinations[0].image;
+                    let firstVariantImage = null;
+                    
+                    // Check structure: grouped by region or flat?
+                    const variantsObj = updatedDetail.variants;
+                    if (variantsObj) {
+                        const isGroupedByRegion = Object.keys(variantsObj).some(key => 
+                            ['bac', 'trung', 'nam'].includes(key) && 
+                            variantsObj[key] && 
+                            typeof variantsObj[key] === 'object'
+                        );
+                        
+                        if (isGroupedByRegion) {
+                            // NEW: Get from first region that has combinations
+                            const regions = ['bac', 'trung', 'nam'];
+                            for (const region of regions) {
+                                if (variantsObj[region]?.variant_combinations?.[0]?.image) {
+                                    firstVariantImage = variantsObj[region].variant_combinations[0].image;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // OLD: Flat structure
+                            if (variantsObj.variant_combinations?.[0]?.image) {
+                                firstVariantImage = variantsObj.variant_combinations[0].image;
+                            }
+                        }
+                    }
+                    
+                    if (firstVariantImage) {
+                        updatePriceData.link_anh_dai_dien = firstVariantImage;
                     } else if (updatedDetail.link_avatar) {
                         updatePriceData.link_anh_dai_dien = updatedDetail.link_avatar;
                     }
@@ -7674,14 +8050,26 @@ app.get('/api/donhang', async (req, res) => {
 
 // GET /api/donhang/:id - Get single order with full details
 app.get('/api/donhang/:id', async (req, res) => {
+    console.log('🔄 Route /api/donhang/:id HIT');
     try {
         const { id } = req.params;
-        console.log('🔄 API /api/donhang/:id called with id:', id);
+        console.log('🔄 Received ID:', id);
+        
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(id)) {
+            console.log('❌ Invalid UUID format:', id);
+            return res.status(400).json({ 
+                success: false, 
+                message: 'ID đơn hàng không hợp lệ' 
+            });
+        }
         
         const pool = await sql.connect(sqlConfig);
+        console.log('✅ SQL connected, querying order...');
         
-        // Get order info
-        const orderResult = await pool.request()
+        // Get order info with all details in one query
+        const result = await pool.request()
             .input('id', sql.UniqueIdentifier, id)
             .query(`
                 SELECT 
@@ -7689,6 +8077,7 @@ app.get('/api/donhang/:id', async (req, res) => {
                     o.ma_don_hang,
                     o.nguoi_dung_id,
                     o.vung_don_hang,
+                    o.is_split_order,
                     o.tong_tien_hang,
                     o.phi_van_chuyen,
                     o.gia_tri_giam_voucher,
@@ -7696,74 +8085,104 @@ app.get('/api/donhang/:id', async (req, res) => {
                     o.trang_thai,
                     o.ngay_tao,
                     o.ngay_cap_nhat,
+                    o.payment_method,
+                    o.ghi_chu_order,
                     u.ho_ten,
                     u.email,
                     u.so_dien_thoai,
                     w.ten_kho,
-                    ua.dia_chi_chi_tiet,
-                    ua.phuong_xa,
-                    ua.quan_huyen,
-                    ua.tinh_thanh,
-                    sm.ten_phuong_thuc
+                    ua.dia_chi_cu_the,
+                    ua.ten_nguoi_nhan,
+                    ua.sdt_nguoi_nhan,
+                    ward.ten_phuong_xa,
+                    prov.ten_tinh,
+                    sm.ten_phuong_thuc,
+                    -- Get order items with product info and warehouse details
+                    (
+                        SELECT 
+                            od.id,
+                            od.variant_id,
+                            od.warehouse_id,
+                            od.warehouse_region,
+                            od.so_luong,
+                            od.don_gia,
+                            od.thanh_tien,
+                            pv.ten_hien_thi AS ten_bien_the,
+                            pv.ma_sku,
+                            p.ten_san_pham,
+                            p.ma_san_pham,
+                            wh.ten_kho AS ten_kho_xuat
+                        FROM order_details od
+                        LEFT JOIN product_variants pv ON od.variant_id = pv.id
+                        LEFT JOIN products p ON pv.san_pham_id = p.id
+                        LEFT JOIN warehouses wh ON od.warehouse_id = wh.id
+                        WHERE od.don_hang_id = o.id
+                        FOR JSON PATH
+                    ) AS items_json
                 FROM orders o
                 LEFT JOIN users u ON o.nguoi_dung_id = u.id
                 LEFT JOIN warehouses w ON o.kho_giao_hang = w.id
                 LEFT JOIN user_addresses ua ON o.dia_chi_giao_hang_id = ua.id
+                LEFT JOIN wards ward ON ua.phuong_xa_id = ward.id
+                LEFT JOIN provinces prov ON ward.tinh_thanh_id = prov.id
                 LEFT JOIN shipping_method_regions smr ON o.shipping_method_region_id = smr.id
-                LEFT JOIN shipping_methods sm ON smr.phuong_thuc_van_chuyen_id = sm.id
+                LEFT JOIN shipping_methods sm ON smr.shipping_method_id = sm.id
                 WHERE o.id = @id
             `);
 
-        if (orderResult.recordset.length === 0) {
+        console.log('✅ Query completed, records:', result.recordset.length);
+
+        if (result.recordset.length === 0) {
+            console.log('❌ No order found with ID:', id);
             return res.status(404).json({ 
                 success: false, 
                 message: 'Không tìm thấy đơn hàng' 
             });
         }
 
-        const order = orderResult.recordset[0];
-
-        // Get order items
-        const itemsResult = await pool.request()
-            .input('orderId', sql.UniqueIdentifier, id)
-            .query(`
-                SELECT 
-                    od.id,
-                    od.san_pham_id,
-                    od.so_luong,
-                    od.don_gia,
-                    od.thanh_tien,
-                    p.ten_san_pham,
-                    p.ma_sku
-                FROM order_details od
-                LEFT JOIN products p ON od.san_pham_id = p.id
-                WHERE od.don_hang_id = @orderId
-            `);
+        const order = result.recordset[0];
+        
+        // Parse items JSON
+        if (order.items_json) {
+            try {
+                order.items = JSON.parse(order.items_json);
+            } catch (e) {
+                console.error('Error parsing items JSON:', e);
+                order.items = [];
+            }
+        } else {
+            order.items = [];
+        }
+        delete order.items_json;
 
         // Format delivery address
         const addressParts = [
-            order.dia_chi_chi_tiet,
-            order.phuong_xa,
-            order.quan_huyen,
-            order.tinh_thanh
+            order.dia_chi_cu_the,
+            order.ten_phuong_xa,
+            order.ten_tinh
         ].filter(Boolean);
         
         order.dia_chi_giao_hang = addressParts.join(', ');
-        order.items = itemsResult.recordset;
 
+        console.log('✅ Returning order with', order.items.length, 'items');
+        
         res.json({ 
             success: true, 
             order 
         });
         
     } catch (error) {
-        console.error('Order Detail GET Error:', error);
+        console.error('❌ Order Detail GET Error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ 
             success: false, 
-            message: 'Lỗi khi lấy chi tiết đơn hàng' 
+            message: 'Lỗi khi lấy chi tiết đơn hàng: ' + error.message 
         });
     }
 });
+
+// Test route
+console.log('✅ Order API routes registered at /api/donhang');
 
 // PUT /api/donhang/:id/status - Update order status
 app.put('/api/donhang/:id/status', async (req, res) => {
@@ -8829,8 +9248,11 @@ app.get('/api/vouchers', async (req, res) => {
         let queryString = `
             SELECT 
                 v.*,
-                u.ho_ten as ten_nguoi_tao
+                r.ten_vung,
+                u.ho_ten as ten_nguoi_tao,
+                (v.so_luong - ISNULL(v.da_su_dung, 0)) as so_luong_con_lai
             FROM vouchers v
+            LEFT JOIN regions r ON v.vung_id = r.ma_vung
             LEFT JOIN users u ON v.nguoi_tao = u.id
             WHERE 1=1
         `;
@@ -8899,8 +9321,11 @@ app.get('/api/vouchers/:id', async (req, res) => {
             .query(`
                 SELECT 
                     v.*,
-                    u.ho_ten as ten_nguoi_tao
+                    r.ten_vung,
+                    u.ho_ten as ten_nguoi_tao,
+                    (v.so_luong - ISNULL(v.da_su_dung, 0)) as so_luong_con_lai
                 FROM vouchers v
+                LEFT JOIN regions r ON v.vung_id = r.ma_vung
                 LEFT JOIN users u ON v.nguoi_tao = u.id
                 WHERE v.id = @id
             `);
@@ -9009,10 +9434,12 @@ app.post('/api/vouchers', async (req, res) => {
             gia_tri_toi_da: req.body.gia_tri_toi_da ? parseFloat(req.body.gia_tri_toi_da) : null,
             don_hang_toi_thieu: parseFloat(req.body.don_hang_toi_thieu) || 0,
             so_luong: parseInt(req.body.so_luong),
+            da_su_dung: 0, // Khởi tạo = 0
             ngay_bat_dau: req.body.ngay_bat_dau,
             ngay_ket_thuc: req.body.ngay_ket_thuc,
             pham_vi: req.body.pham_vi || 'toan_cuc',
             loai_voucher: req.body.loai_voucher || null,
+            vung_id: req.body.vung_id || 'bac', // Mặc định Bắc nếu không có
             trang_thai: req.body.trang_thai ? 1 : 0,
             nguoi_tao: req.session?.user?.id || null
         };
@@ -9043,25 +9470,27 @@ app.post('/api/vouchers', async (req, res) => {
             .input('gia_tri_toi_da', sql.Decimal(15, 2), voucherData.gia_tri_toi_da)
             .input('don_hang_toi_thieu', sql.Decimal(15, 2), voucherData.don_hang_toi_thieu)
             .input('so_luong', sql.Int, voucherData.so_luong)
+            .input('da_su_dung', sql.Int, voucherData.da_su_dung)
             .input('ngay_bat_dau', sql.DateTime2, voucherData.ngay_bat_dau)
             .input('ngay_ket_thuc', sql.DateTime2, voucherData.ngay_ket_thuc)
             .input('pham_vi', sql.NVarChar(20), voucherData.pham_vi)
             .input('loai_voucher', sql.NVarChar(50), voucherData.loai_voucher)
+            .input('vung_id', sql.NVarChar(10), voucherData.vung_id)
             .input('trang_thai', sql.Bit, voucherData.trang_thai)
             .input('nguoi_tao', sql.UniqueIdentifier, voucherData.nguoi_tao)
             .query(`
                 INSERT INTO vouchers 
                 (ma_voucher, ten_voucher, mo_ta, loai_giam_gia, gia_tri_giam, gia_tri_toi_da, 
-                 don_hang_toi_thieu, so_luong, ngay_bat_dau, ngay_ket_thuc, pham_vi, loai_voucher, 
-                 trang_thai, nguoi_tao)
-                OUTPUT INSERTED.*
+                 don_hang_toi_thieu, so_luong, da_su_dung, ngay_bat_dau, ngay_ket_thuc, pham_vi, 
+                 loai_voucher, vung_id, trang_thai, nguoi_tao)
                 VALUES 
                 (@ma_voucher, @ten_voucher, @mo_ta, @loai_giam_gia, @gia_tri_giam, @gia_tri_toi_da, 
-                 @don_hang_toi_thieu, @so_luong, @ngay_bat_dau, @ngay_ket_thuc, @pham_vi, @loai_voucher, 
-                 @trang_thai, @nguoi_tao)
+                 @don_hang_toi_thieu, @so_luong, @da_su_dung, @ngay_bat_dau, @ngay_ket_thuc, @pham_vi, 
+                 @loai_voucher, @vung_id, @trang_thai, @nguoi_tao)
             `);
         
-        const newVoucher = result.recordset[0];
+        const selectResult = await request.query(`SELECT TOP 1 * FROM vouchers WHERE ma_voucher = @ma_voucher ORDER BY ngay_tao DESC`);
+        const newVoucher = selectResult.recordset[0];
         console.log('✅ SQL created with ID:', newVoucher.id);
         
         // Bước 2: Tạo MongoDB document với _id = SQL voucher id (nếu cần mở rộng)
@@ -9164,6 +9593,7 @@ app.put('/api/vouchers/:id', async (req, res) => {
             ngay_ket_thuc: req.body.ngay_ket_thuc,
             pham_vi: req.body.pham_vi || 'toan_cuc',
             loai_voucher: req.body.loai_voucher || null,
+            vung_id: req.body.vung_id || 'bac',
             trang_thai: req.body.trang_thai ? 1 : 0
         };
         
@@ -9198,6 +9628,7 @@ app.put('/api/vouchers/:id', async (req, res) => {
             .input('ngay_ket_thuc', sql.DateTime2, voucherData.ngay_ket_thuc)
             .input('pham_vi', sql.NVarChar(20), voucherData.pham_vi)
             .input('loai_voucher', sql.NVarChar(50), voucherData.loai_voucher)
+            .input('vung_id', sql.NVarChar(10), voucherData.vung_id)
             .input('trang_thai', sql.Bit, voucherData.trang_thai)
             .query(`
                 UPDATE vouchers 
@@ -9213,13 +9644,14 @@ app.put('/api/vouchers/:id', async (req, res) => {
                     ngay_ket_thuc = @ngay_ket_thuc,
                     pham_vi = @pham_vi,
                     loai_voucher = @loai_voucher,
+                    vung_id = @vung_id,
                     trang_thai = @trang_thai,
                     ngay_cap_nhat = GETDATE()
-                OUTPUT INSERTED.*
                 WHERE id = @id
             `);
         
-        const updatedVoucher = result.recordset[0];
+        const selectResult = await request.query(`SELECT * FROM vouchers WHERE id = @id`);
+        const updatedVoucher = selectResult.recordset[0];
         
         if (!updatedVoucher) {
             return res.status(404).json({
@@ -9505,8 +9937,21 @@ app.post('/api/vouchers/validate', async (req, res) => {
 // POST /api/orders - Tạo đơn hàng mới
 app.post('/api/orders', async (req, res) => {
     try {
-        const { userId, addressId, items, paymentMethod, voucher_id, subtotal, discount, shipping, total, regionId, warehouseId, shippingMethodRegionId } = req.body;
+        const { 
+            userId, 
+            addressId, 
+            vung_khach_hang,
+            items, 
+            shipping_method_region_id,
+            voucher_id, 
+            payment_method,
+            ghi_chu_order,
+            tong_tien_hang,
+            gia_tri_giam_voucher,
+            phi_van_chuyen_khach
+        } = req.body;
 
+        // Basic validation
         if (!userId || !addressId || !items || items.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -9514,75 +9959,172 @@ app.post('/api/orders', async (req, res) => {
             });
         }
 
-        // Validate required IDs
-        if (!regionId || !warehouseId || !shippingMethodRegionId) {
+        // Validate required IDs from new workflow
+        if (!vung_khach_hang || !shipping_method_region_id) {
             return res.status(400).json({
                 success: false,
-                message: 'Thiếu thông tin vùng, kho hàng hoặc phương thức vận chuyển'
+                message: 'Thiếu thông tin vùng hoặc phương thức vận chuyển'
             });
         }
 
-        // Tạo đơn hàng trong transaction
+        console.log('=== Creating Order ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+        // 1. Query warehouses BEFORE starting transaction
+        console.log('Step 1: Allocating warehouses...');
+        const warehouseRequest = new sql.Request();
+        const warehouseResult = await warehouseRequest
+            .input('vung_id', sql.NVarChar(10), vung_khach_hang)
+            .query(`
+                SELECT id, ten_kho, vung_id 
+                FROM warehouses 
+                WHERE trang_thai = 1
+                ORDER BY 
+                    CASE WHEN vung_id = @vung_id THEN 1 ELSE 2 END,
+                    priority_levels DESC,
+                    is_primary DESC,
+                    ten_kho
+            `);
+
+        const warehouses = warehouseResult.recordset;
+        console.log('Warehouses found:', warehouses);
+        
+        if (!warehouses || warehouses.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Không tìm thấy kho hàng khả dụng'
+            });
+        }
+
+        // Allocate primary warehouse (same region preferred)
+        const primaryWarehouse = warehouses[0];
+        const kho_giao_hang = primaryWarehouse.id;
+        const site_processed = primaryWarehouse.vung_id;
+
+        // Check if items need to be fulfilled from multiple warehouses
+        const itemsWithWarehouse = [];
+        for (const item of items) {
+            // For now, allocate all items to primary warehouse
+            // TODO: Implement inventory check and smart allocation
+            itemsWithWarehouse.push({
+                ...item,
+                warehouse_id: primaryWarehouse.id,
+                warehouse_region: primaryWarehouse.vung_id
+            });
+        }
+
+        // Calculate chi_phi_noi_bo if cross-region fulfillment
+        let chi_phi_noi_bo = 0;
+        const hasCrossRegion = itemsWithWarehouse.some(
+            item => item.warehouse_region !== vung_khach_hang
+        );
+        if (hasCrossRegion) {
+            // TODO: Calculate based on distance/region mapping
+            chi_phi_noi_bo = phi_van_chuyen_khach * 0.5; // Simplified calculation
+        }
+
+        // Check if split order (items from different warehouses)
+        const uniqueWarehouses = [...new Set(itemsWithWarehouse.map(i => i.warehouse_id))];
+        const is_split_order = uniqueWarehouses.length > 1;
+
+        // Calculate total
+        const tong_thanh_toan = tong_tien_hang - (gia_tri_giam_voucher || 0) + (phi_van_chuyen_khach || 0);
+
+        // Generate ma_don_hang (format: DH + timestamp + random)
+        const ma_don_hang = 'DH' + Date.now() + Math.floor(Math.random() * 1000);
+
+        // NOW start transaction
         const transaction = new sql.Transaction();
         await transaction.begin();
 
         try {
-            // 1. Tạo order với schema mới
+            console.log('Step 2: Creating order...');
+            console.log('Order params:', {
+                ma_don_hang,
+                userId,
+                vung_khach_hang,
+                site_processed,
+                shipping_method_region_id,
+                addressId,
+                kho_giao_hang,
+                voucher_id,
+                payment_method,
+                tong_tien_hang,
+                gia_tri_giam_voucher,
+                phi_van_chuyen_khach,
+                chi_phi_noi_bo,
+                tong_thanh_toan,
+                is_split_order
+            });
+
+            // 2. Create order
             const orderRequest = new sql.Request(transaction);
             const orderResult = await orderRequest
+                .input('ma_don_hang', sql.NVarChar(50), ma_don_hang)
                 .input('nguoi_dung_id', sql.UniqueIdentifier, userId)
-                .input('vung_don_hang', sql.NVarChar, regionId)
-                .input('shipping_method_region_id', sql.UniqueIdentifier, shippingMethodRegionId)
+                .input('vung_don_hang', sql.NVarChar(10), vung_khach_hang)
+                .input('site_processed', sql.NVarChar(10), site_processed)
+                .input('shipping_method_region_id', sql.UniqueIdentifier, shipping_method_region_id)
                 .input('dia_chi_giao_hang_id', sql.UniqueIdentifier, addressId)
-                .input('kho_giao_hang', sql.UniqueIdentifier, warehouseId)
+                .input('kho_giao_hang', sql.UniqueIdentifier, kho_giao_hang)
                 .input('voucher_id', sql.UniqueIdentifier, voucher_id || null)
-                .input('tong_tien_hang', sql.Decimal(18, 2), subtotal)
-                .input('gia_tri_giam_voucher', sql.Decimal(18, 2), discount)
-                .input('phi_van_chuyen', sql.Decimal(18, 2), shipping)
-                .input('tong_thanh_toan', sql.Decimal(18, 2), total)
-                .input('trang_thai', sql.NVarChar, 'cho_xac_nhan')
+                .input('payment_method', sql.NVarChar(50), payment_method || 'cod')
+                .input('ghi_chu_order', sql.NVarChar(sql.MAX), ghi_chu_order || null)
+                .input('tong_tien_hang', sql.Decimal(15, 2), parseFloat(tong_tien_hang) || 0)
+                .input('gia_tri_giam_voucher', sql.Decimal(15, 2), parseFloat(gia_tri_giam_voucher) || 0)
+                .input('phi_van_chuyen', sql.Decimal(15, 2), parseFloat(phi_van_chuyen_khach) || 0)
+                .input('chi_phi_noi_bo', sql.Decimal(15, 2), parseFloat(chi_phi_noi_bo) || 0)
+                .input('tong_thanh_toan', sql.Decimal(15, 2), parseFloat(tong_thanh_toan) || 0)
+                .input('is_split_order', sql.Bit, is_split_order ? 1 : 0)
+                .input('trang_thai', sql.NVarChar(20), 'cho_xac_nhan')
                 .query(`
                     INSERT INTO orders (
-                        nguoi_dung_id, vung_don_hang, shipping_method_region_id,
-                        dia_chi_giao_hang_id, kho_giao_hang, voucher_id,
-                        tong_tien_hang, gia_tri_giam_voucher, phi_van_chuyen, tong_thanh_toan,
-                        trang_thai, ngay_tao
+                        ma_don_hang, nguoi_dung_id, vung_don_hang, site_processed, shipping_method_region_id,
+                        dia_chi_giao_hang_id, kho_giao_hang, voucher_id, payment_method, ghi_chu_order,
+                        tong_tien_hang, gia_tri_giam_voucher, phi_van_chuyen, chi_phi_noi_bo, 
+                        tong_thanh_toan, is_split_order, trang_thai, ngay_tao
                     )
                     VALUES (
-                        @nguoi_dung_id, @vung_don_hang, @shipping_method_region_id,
-                        @dia_chi_giao_hang_id, @kho_giao_hang, @voucher_id,
-                        @tong_tien_hang, @gia_tri_giam_voucher, @phi_van_chuyen, @tong_thanh_toan,
-                        @trang_thai, GETDATE()
+                        @ma_don_hang, @nguoi_dung_id, @vung_don_hang, @site_processed, @shipping_method_region_id,
+                        @dia_chi_giao_hang_id, @kho_giao_hang, @voucher_id, @payment_method, @ghi_chu_order,
+                        @tong_tien_hang, @gia_tri_giam_voucher, @phi_van_chuyen, @chi_phi_noi_bo,
+                        @tong_thanh_toan, @is_split_order, @trang_thai, GETDATE()
                     );
-                    
-                    SELECT TOP 1 id, ma_don_hang 
-                    FROM orders 
-                    WHERE nguoi_dung_id = @nguoi_dung_id 
-                    ORDER BY ngay_tao DESC
                 `);
+            
+            const orderSelectResult = await orderRequest.query(`SELECT TOP 1 id, ma_don_hang FROM orders WHERE ma_don_hang = @ma_don_hang ORDER BY ngay_tao DESC`);
 
-            const orderId = orderResult.recordset[0].id;
-            const orderCode = orderResult.recordset[0].ma_don_hang;
+            console.log('Order created, result:', orderSelectResult.recordset);
+            const orderId = orderSelectResult.recordset[0].id;
+            const orderCode = orderSelectResult.recordset[0].ma_don_hang;
+            console.log('Order ID:', orderId, 'Order Code:', orderCode);
 
-            // 2. Thêm order details
-            for (const item of items) {
+            console.log('Step 3: Creating order details...');
+            // 3. Create order details with allocated warehouses
+            for (const item of itemsWithWarehouse) {
+                console.log('Processing item:', item);
                 const itemRequest = new sql.Request(transaction);
                 await itemRequest
                     .input('don_hang_id', sql.UniqueIdentifier, orderId)
-                    .input('san_pham_id', sql.UniqueIdentifier, item.san_pham_id)
-                    .input('so_luong', sql.Int, item.so_luong)
-                    .input('don_gia', sql.Decimal(18, 2), item.gia_ban)
-                    .input('thanh_tien', sql.Decimal(18, 2), item.gia_ban * item.so_luong)
+                    .input('variant_id', sql.UniqueIdentifier, item.variant_id)
+                    .input('warehouse_id', sql.UniqueIdentifier, item.warehouse_id)
+                    .input('warehouse_region', sql.NVarChar(10), item.warehouse_region)
+                    .input('so_luong', sql.Int, parseInt(item.so_luong) || 1)
+                    .input('don_gia', sql.Decimal(15, 2), parseFloat(item.don_gia) || 0)
+                    .input('thanh_tien', sql.Decimal(15, 2), parseFloat(item.don_gia * item.so_luong) || 0)
+                    .input('flash_sale_item_id', sql.UniqueIdentifier, item.flash_sale_item_id || null)
                     .query(`
                         INSERT INTO order_details (
-                            don_hang_id, san_pham_id, so_luong, don_gia, thanh_tien
+                            don_hang_id, variant_id, warehouse_id, warehouse_region,
+                            so_luong, don_gia, thanh_tien, flash_sale_item_id
                         )
                         VALUES (
-                            @don_hang_id, @san_pham_id, @so_luong, @don_gia, @thanh_tien
-                        )
+                            @don_hang_id, @variant_id, @warehouse_id, @warehouse_region,
+                            @so_luong, @don_gia, @thanh_tien, @flash_sale_item_id
+                        );
                     `);
 
-                // 3. Xóa item khỏi giỏ hàng
+                // 4. Delete from cart
                 if (item.cart_item_id) {
                     const deleteCartRequest = new sql.Request(transaction);
                     await deleteCartRequest
@@ -9590,14 +10132,14 @@ app.post('/api/orders', async (req, res) => {
                         .query('DELETE FROM cart_items WHERE id = @cart_item_id');
                 }
 
-                // 4. Cập nhật stock trong MongoDB
+                // 5. Update stock in MongoDB
                 try {
                     const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
                     
                     for (const doc of allProducts) {
                         const combinations = doc.variants?.variant_combinations || [];
                         const variantIndex = combinations.findIndex(v => 
-                            v.variant_id && v.variant_id.toLowerCase() === item.san_pham_id.toLowerCase()
+                            v.variant_id && v.variant_id.toLowerCase() === item.variant_id.toLowerCase()
                         );
                         
                         if (variantIndex !== -1) {
@@ -9613,11 +10155,11 @@ app.post('/api/orders', async (req, res) => {
                     }
                 } catch (mongoError) {
                     console.error('Error updating MongoDB stock:', mongoError);
-                    // Không rollback transaction vì đây chỉ là cập nhật stock
+                    // Don't rollback transaction for stock update failure
                 }
             }
 
-            // 5. Cập nhật số lần sử dụng voucher
+            // 6. Update voucher usage
             if (voucher_id) {
                 const voucherRequest = new sql.Request(transaction);
                 await voucherRequest
@@ -9628,13 +10170,13 @@ app.post('/api/orders', async (req, res) => {
                         WHERE id = @voucher_id
                     `);
 
-                // Thêm vào voucher_usage_history
+                // Add to voucher_usage_history
                 const usageRequest = new sql.Request(transaction);
                 await usageRequest
                     .input('voucher_id', sql.UniqueIdentifier, voucher_id)
                     .input('nguoi_dung_id', sql.UniqueIdentifier, userId)
                     .input('don_hang_id', sql.UniqueIdentifier, orderId)
-                    .input('gia_tri_giam', sql.Decimal(18, 2), discount)
+                    .input('gia_tri_giam', sql.Decimal(18, 2), gia_tri_giam_voucher || 0)
                     .query(`
                         INSERT INTO voucher_usage_history (
                             voucher_id, nguoi_dung_id, don_hang_id, gia_tri_giam, ngay_su_dung
@@ -9659,6 +10201,17 @@ app.post('/api/orders', async (req, res) => {
 
         } catch (error) {
             await transaction.rollback();
+            console.error('Transaction Error Details:', {
+                message: error.message,
+                code: error.code,
+                number: error.number,
+                state: error.state,
+                class: error.class,
+                serverName: error.serverName,
+                procName: error.procName,
+                lineNumber: error.lineNumber,
+                stack: error.stack
+            });
             throw error;
         }
 
@@ -9666,7 +10219,101 @@ app.post('/api/orders', async (req, res) => {
         console.error('Create Order Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Lỗi khi tạo đơn hàng: ' + error.message
+            message: 'Lỗi khi tạo đơn hàng: ' + error.message,
+            details: error.number ? `SQL Error ${error.number}: ${error.message}` : error.message
+        });
+    }
+});
+
+// GET /api/orders - Lấy danh sách đơn hàng theo user
+app.get('/api/orders', async (req, res) => {
+    try {
+        const { userId } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu userId'
+            });
+        }
+
+        const request = new sql.Request();
+        const result = await request
+            .input('userId', sql.UniqueIdentifier, userId)
+            .query(`
+                SELECT 
+                    o.id,
+                    o.ma_don_hang,
+                    o.nguoi_dung_id,
+                    o.vung_don_hang,
+                    o.tong_tien_hang,
+                    o.phi_van_chuyen,
+                    o.gia_tri_giam_voucher,
+                    o.tong_thanh_toan,
+                    o.trang_thai,
+                    o.ngay_tao,
+                    o.ngay_cap_nhat
+                FROM orders o
+                WHERE o.nguoi_dung_id = @userId
+                ORDER BY o.ngay_tao DESC
+            `);
+
+        // Get items for each order
+        const orders = result.recordset;
+        for (let order of orders) {
+            const itemsRequest = new sql.Request();
+            const itemsResult = await itemsRequest
+                .input('orderId', sql.UniqueIdentifier, order.id)
+                .query(`
+                    SELECT 
+                        od.id,
+                        od.variant_id,
+                        od.so_luong,
+                        od.don_gia,
+                        od.thanh_tien,
+                        pv.ten_hien_thi as ten_bien_the,
+                        p.ten_san_pham
+                    FROM order_details od
+                    LEFT JOIN product_variants pv ON od.variant_id = pv.id
+                    LEFT JOIN products p ON pv.san_pham_id = p.id
+                    WHERE od.don_hang_id = @orderId
+                `);
+
+            // Get product images from MongoDB
+            for (let item of itemsResult.recordset) {
+                try {
+                    const productDetail = await DataModel.Mongo.ProductDetail.findOne({
+                        'variants.variant_combinations.variant_id': item.variant_id
+                    }).lean();
+
+                    if (productDetail && productDetail.variants) {
+                        const variant = productDetail.variants.variant_combinations.find(
+                            v => v.variant_id && v.variant_id.toLowerCase() === item.variant_id.toLowerCase()
+                        );
+                        if (variant && variant.images && variant.images.length > 0) {
+                            item.hinh_anh = variant.images[0];
+                        } else if (productDetail.images && productDetail.images.length > 0) {
+                            item.hinh_anh = productDetail.images[0];
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching image:', err);
+                }
+            }
+
+            order.items = itemsResult.recordset;
+        }
+
+        res.json({
+            success: true,
+            orders: orders
+        });
+
+    } catch (error) {
+        console.error('Get Orders Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách đơn hàng: ' + error.message
         });
     }
 });
@@ -9721,58 +10368,65 @@ app.get('/api/orders/:orderId', async (req, res) => {
                 WHERE od.don_hang_id = @orderId
             `);
 
-        // Lấy thông tin variant cho mỗi item
-        const itemsWithVariants = await Promise.all(itemsResult.recordset.map(async (item) => {
-            const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
-            
-            let variantInfo = null;
-            let productName = 'Sản phẩm';
-            let variantImage = '/image/default-product.png';
+        // Lấy thông tin variant và product từ SQL
+        const itemsWithDetails = await Promise.all(itemsResult.recordset.map(async (item) => {
+            // Get variant and product info from SQL
+            const variantRequest = new sql.Request();
+            const variantResult = await variantRequest
+                .input('variantId', sql.UniqueIdentifier, item.variant_id)
+                .query(`
+                    SELECT 
+                        pv.ten_hien_thi,
+                        pv.ma_sku,
+                        p.ten_san_pham
+                    FROM product_variants pv
+                    LEFT JOIN products p ON pv.san_pham_id = p.id
+                    WHERE pv.id = @variantId
+                `);
 
-            for (const doc of allProducts) {
-                const combinations = doc.variants?.variant_combinations || [];
-                const variant = combinations.find(v => 
-                    v.variant_id && v.variant_id.toLowerCase() === item.san_pham_id.toLowerCase()
-                );
-                
-                if (variant) {
-                    variantInfo = variant;
-                    variantImage = doc.link_avatar || variantImage;
+            let ten_san_pham = 'Sản phẩm';
+            let ten_bien_the = '';
+            let hinh_anh = '/image/placeholder.png';
+
+            if (variantResult.recordset.length > 0) {
+                const variantData = variantResult.recordset[0];
+                ten_san_pham = variantData.ten_san_pham || 'Sản phẩm';
+                ten_bien_the = variantData.ten_hien_thi || '';
+            }
+
+            // Get image from MongoDB
+            try {
+                const productDetail = await DataModel.Mongo.ProductDetail.findOne({
+                    'variants.variant_combinations.variant_id': item.variant_id
+                }).lean();
+
+                if (productDetail) {
+                    const variant = productDetail.variants?.variant_combinations?.find(v => 
+                        v.variant_id && v.variant_id.toLowerCase() === item.variant_id.toLowerCase()
+                    );
                     
-                    if (doc.sql_product_id) {
-                        const sqlProduct = await DataModel.SQL.Product.findById(doc.sql_product_id);
-                        if (sqlProduct) {
-                            productName = sqlProduct.ten_san_pham;
-                        }
+                    if (variant && variant.images && variant.images.length > 0) {
+                        hinh_anh = variant.images[0];
+                    } else if (productDetail.images && productDetail.images.length > 0) {
+                        hinh_anh = productDetail.images[0];
                     }
-                    break;
                 }
+            } catch (mongoErr) {
+                console.error('MongoDB image fetch error:', mongoErr);
             }
 
             return {
                 ...item,
-                variant_info: variantInfo,
-                ten_san_pham: productName,
-                ten_san_pham_day_du: variantInfo ? `${productName} - ${variantInfo.name}` : productName,
-                link_anh: variantImage,
-                gia_ban: item.don_gia,
-                gia_ban_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.don_gia),
-                thanh_tien_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.thanh_tien)
+                ten_san_pham,
+                ten_bien_the,
+                hinh_anh
             };
         }));
 
         res.json({
             success: true,
-            data: {
-                order: {
-                    ...order,
-                    tong_tien_hang_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.tong_tien_hang),
-                    gia_tri_giam_voucher_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.gia_tri_giam_voucher || 0),
-                    phi_van_chuyen_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.phi_van_chuyen),
-                    tong_thanh_toan_formatted: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.tong_thanh_toan)
-                },
-                items: itemsWithVariants
-            }
+            order: orderResult.recordset[0],
+            items: itemsWithDetails
         });
 
     } catch (error) {
@@ -9780,6 +10434,63 @@ app.get('/api/orders/:orderId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Lỗi khi lấy thông tin đơn hàng: ' + error.message
+        });
+    }
+});
+
+// PUT /api/orders/:orderId/cancel - Hủy đơn hàng
+app.put('/api/orders/:orderId/cancel', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        // Check if order exists and can be cancelled
+        const checkRequest = new sql.Request();
+        const checkResult = await checkRequest
+            .input('orderId', sql.UniqueIdentifier, orderId)
+            .query(`
+                SELECT trang_thai 
+                FROM orders 
+                WHERE id = @orderId
+            `);
+
+        if (checkResult.recordset.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy đơn hàng'
+            });
+        }
+
+        const currentStatus = checkResult.recordset[0].trang_thai;
+        if (currentStatus !== 'cho_xac_nhan') {
+            return res.status(400).json({
+                success: false,
+                message: 'Chỉ có thể hủy đơn hàng đang chờ xác nhận'
+            });
+        }
+
+        // Update order status to cancelled
+        const updateRequest = new sql.Request();
+        await updateRequest
+            .input('orderId', sql.UniqueIdentifier, orderId)
+            .query(`
+                UPDATE orders 
+                SET trang_thai = N'huy', 
+                    ngay_cap_nhat = GETDATE() 
+                WHERE id = @orderId
+            `);
+
+        // TODO: Restore inventory for cancelled items
+
+        res.json({
+            success: true,
+            message: 'Đã hủy đơn hàng thành công'
+        });
+
+    } catch (error) {
+        console.error('Cancel Order Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi hủy đơn hàng: ' + error.message
         });
     }
 });
@@ -9996,16 +10707,18 @@ app.post('/api/shipping-methods', async (req, res) => {
             trangThaiBit = 0;
         }
         
-        const result = await new sql.Request()
+        const request = new sql.Request();
+        await request
             .input('ten_phuong_thuc', sql.NVarChar(100), ten_phuong_thuc)
             .input('mo_ta', sql.NVarChar(500), mo_ta || null)
             .input('chi_phi_co_ban', sql.Decimal(15, 2), chi_phi_co_ban)
             .input('trang_thai', sql.Bit, trangThaiBit)
             .query(`
                 INSERT INTO shipping_methods (ten_phuong_thuc, mo_ta, chi_phi_co_ban, trang_thai)
-                OUTPUT INSERTED.*
                 VALUES (@ten_phuong_thuc, @mo_ta, @chi_phi_co_ban, @trang_thai)
             `);
+        
+        const result = await request.query(`SELECT TOP 1 * FROM shipping_methods WHERE ten_phuong_thuc = @ten_phuong_thuc ORDER BY ngay_tao DESC`);
         
         res.status(201).json({
             success: true,
@@ -10060,11 +10773,12 @@ app.put('/api/shipping-methods/:id', async (req, res) => {
                     mo_ta = @mo_ta,
                     chi_phi_co_ban = @chi_phi_co_ban,
                     trang_thai = @trang_thai
-                OUTPUT INSERTED.*
                 WHERE id = @id
             `);
         
-        if (result.recordset.length === 0) {
+        const selectResult = await request.query(`SELECT * FROM shipping_methods WHERE id = @id`);
+        
+        if (selectResult.recordset.length === 0) {
             return res.status(404).json({ 
                 success: false,
                 message: 'Không tìm thấy phương thức vận chuyển' 
@@ -10073,7 +10787,7 @@ app.put('/api/shipping-methods/:id', async (req, res) => {
         
         res.json({
             success: true,
-            data: result.recordset[0]
+            data: selectResult.recordset[0]
         });
     } catch (error) {
         console.error('Update Shipping Method Error:', error);
@@ -10249,7 +10963,8 @@ app.post('/api/shipping-method-regions', async (req, res) => {
             return res.status(400).json({ message: 'Giá cho vùng này đã tồn tại' });
         }
         
-        const result = await new sql.Request()
+        const request = new sql.Request();
+        await request
             .input('shipping_method_id', sql.UniqueIdentifier, shipping_method_id)
             .input('region_id', sql.NVarChar(10), region_id)
             .input('chi_phi_van_chuyen', sql.Decimal(15, 2), chi_phi_van_chuyen)
@@ -10258,10 +10973,11 @@ app.post('/api/shipping-method-regions', async (req, res) => {
             .query(`
                 INSERT INTO shipping_method_regions 
                     (shipping_method_id, region_id, chi_phi_van_chuyen, thoi_gian_giao_du_kien, trang_thai)
-                OUTPUT INSERTED.*
                 VALUES 
                     (@shipping_method_id, @region_id, @chi_phi_van_chuyen, @thoi_gian_giao_du_kien, @trang_thai)
             `);
+        
+        const result = await request.query(`SELECT TOP 1 * FROM shipping_method_regions WHERE shipping_method_id = @shipping_method_id AND region_id = @region_id ORDER BY ngay_tao DESC`);
         
         res.status(201).json(result.recordset[0]);
     } catch (error) {
@@ -10306,11 +11022,12 @@ app.put('/api/shipping-method-regions/:id', async (req, res) => {
                     chi_phi_van_chuyen = @chi_phi_van_chuyen,
                     thoi_gian_giao_du_kien = @thoi_gian_giao_du_kien,
                     trang_thai = @trang_thai
-                OUTPUT INSERTED.*
                 WHERE id = @id
             `);
         
-        if (result.recordset.length === 0) {
+        const selectResult = await request.query(`SELECT * FROM shipping_method_regions WHERE id = @id`);
+        
+        if (selectResult.recordset.length === 0) {
             return res.status(404).json({ 
                 success: false,
                 message: 'Không tìm thấy giá vùng' 
@@ -10319,7 +11036,7 @@ app.put('/api/shipping-method-regions/:id', async (req, res) => {
         
         res.json({
             success: true,
-            data: result.recordset[0]
+            data: selectResult.recordset[0]
         });
     } catch (error) {
         console.error('Update Shipping Method Region Error:', error);

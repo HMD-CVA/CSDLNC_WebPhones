@@ -76,24 +76,22 @@
             </div>
           </div>
 
-          <!-- Variants (Phiên bản sản phẩm) - CellphoneS Style -->
-          {{#if product.variants}}
-          {{#if product.variants.variant_options}}
-          <div class="cps-variants-section">
-            {{#each product.variants.variant_options}}
-            <div class="cps-variant-group">
-              <div class="cps-variant-label">{{this.name}}:</div>
-              <div class="cps-variant-options">
-                {{#each this.values}}
-                <button class="cps-variant-option" 
-                        data-option-type="{{../this.name}}" 
-                        data-option-value="{{this}}">
-                  {{this}}
-                </button>
-                {{/each}}
-              </div>
+          <!-- Variants (Phiên bản sản phẩm) - SQL Schema -->
+          {{#if productVariants}}
+          {{#if productVariants.length}}
+          <div class="cps-variants-section" id="variantsSection">
+            <!-- Site Origin Selector -->
+            <div class="cps-variant-group" id="siteOriginGroup">
+              <div class="cps-variant-label">Chọn khu vực:</div>
+              <select id="siteOriginSelect" class="form-control" style="max-width: 200px;">
+                <option value="">-- Chọn khu vực --</option>
+              </select>
             </div>
-            {{/each}}
+            
+            <!-- Variants will be rendered by JavaScript based on selected site_origin -->
+            <div id="variantsContainer">
+              <!-- JS will inject variants here -->
+            </div>
             
             <!-- Thông tin variant đã chọn -->
             <div class="cps-selected-variant-info" id="selectedVariantInfo">
@@ -1721,16 +1719,267 @@ document.addEventListener('DOMContentLoaded', function() {
   const variantStockText = document.getElementById('variantStockText');
   
   // Store variant data from server
-  const variantData = {
-    options: {{{json product.variants.variant_options}}},
-    combinations: {{{json product.variants.variant_combinations}}}
-  };
+  // MongoDB variants grouped by site_origin (bac, trung, nam)
+  const mongoVariants = {{{json mongoVariants}}};
+  console.log('📦 MongoDB Variants by site_origin:', mongoVariants);
+  console.log('📦 Available regions:', mongoVariants ? Object.keys(mongoVariants) : 'none');
   
-  // Store product variants with flash sale info from SQL
+  // SQL product variants with flash sale info
   const productVariantsData = {{{json productVariants}}};
-  console.log('🔥 Product Variants with Flash Sale:', productVariantsData);
+  console.log('🔥 SQL Product Variants with Flash Sale:', productVariantsData);
   
-  // Tạo map: MongoDB variant_id -> SQL variant
+  // Populate site_origin select box from MongoDB variants
+  function populateSiteOriginSelect() {
+    console.log('🔧 populateSiteOriginSelect() called');
+    console.log('🔧 mongoVariants:', mongoVariants);
+    
+    const select = document.getElementById('siteOriginSelect');
+    console.log('🔧 Select element:', select);
+    
+    if (!select) {
+      console.error('❌ Select element not found');
+      return;
+    }
+    
+    if (!mongoVariants) {
+      console.warn('⚠️ No mongoVariants data');
+      document.getElementById('siteOriginGroup').style.display = 'none';
+      return;
+    }
+    
+    // Filter only valid site_origin keys from MongoDB variants
+    // A valid site_origin must have variant_combinations as an array
+    const siteOrigins = Object.keys(mongoVariants).filter(key => {
+      const regionData = mongoVariants[key];
+      const isValid = regionData && 
+                     typeof regionData === 'object' && 
+                     !Array.isArray(regionData) && // Not an array itself
+                     (Array.isArray(regionData.variant_options) || Array.isArray(regionData.variant_combinations));
+      
+      console.log(`🔧 Checking key "${key}":`, {
+        isObject: typeof regionData === 'object',
+        isNotArray: !Array.isArray(regionData),
+        hasOptions: Array.isArray(regionData?.variant_options),
+        hasCombinations: Array.isArray(regionData?.variant_combinations),
+        isValid: isValid
+      });
+      
+      return isValid;
+    });
+    
+    console.log('🔧 All keys:', Object.keys(mongoVariants));
+    console.log('🔧 Valid site origins from MongoDB:', siteOrigins);
+    
+    if (siteOrigins.length === 0) {
+      console.warn('⚠️ No valid site origins found');
+      document.getElementById('siteOriginGroup').style.display = 'none';
+      return;
+    }
+    
+    const labels = {
+      'bac': 'Miền Bắc',
+      'trung': 'Miền Trung',
+      'nam': 'Miền Nam'
+    };
+    
+    siteOrigins.forEach(origin => {
+      const option = document.createElement('option');
+      option.value = origin;
+      option.textContent = labels[origin] || origin.toUpperCase();
+      select.appendChild(option);
+    });
+    
+    console.log('✅ Populated site_origin select with', siteOrigins.length, 'options:', siteOrigins);
+  }
+  
+  // Build variants UI - Display variant names directly
+  function buildVariantsUI(siteOrigin) {
+    const variantsContainer = document.getElementById('variantsContainer');
+    if (!variantsContainer) return;
+    
+    if (!siteOrigin || !mongoVariants || !mongoVariants[siteOrigin]) {
+      variantsContainer.innerHTML = '<p style="color: #999;">Vui lòng chọn khu vực</p>';
+      return;
+    }
+    
+    const regionData = mongoVariants[siteOrigin];
+    const combinations = regionData.variant_combinations || [];
+    
+    if (combinations.length === 0) {
+      variantsContainer.innerHTML = '<p style="color: #999;">Không có phiên bản cho khu vực này</p>';
+      return;
+    }
+    
+    let html = '<div class="cps-variant-group">';
+    html += '<div class="cps-variant-label">Chọn phiên bản:</div>';
+    html += '<div class="cps-variant-options">';
+    
+    // Render each variant combination as a button with its name
+    combinations.forEach((combo, index) => {
+      html += `
+        <button class="cps-variant-option" 
+                data-variant-index="${index}"
+                data-sku="${combo.sku}">
+          ${combo.name}
+        </button>
+      `;
+    });
+    
+    html += '</div></div>';
+    variantsContainer.innerHTML = html;
+    
+    console.log('✅ Built variants UI for', siteOrigin, 'with', combinations.length, 'variants');
+  }
+  
+  // Site origin change handler
+  function onSiteOriginChange() {
+    const select = document.getElementById('siteOriginSelect');
+    const selectedOrigin = select.value;
+    
+    console.log('📍 Selected site_origin:', selectedOrigin);
+    
+    if (!selectedOrigin) {
+      document.getElementById('variantsContainer').innerHTML = '<p style="color: #999;">Vui lòng chọn khu vực</p>';
+      return;
+    }
+    
+    buildVariantsUI(selectedOrigin);
+    setupVariantOptionListeners(selectedOrigin);
+  }
+  
+  // Setup listeners for variant buttons (click to select variant directly)
+  function setupVariantOptionListeners(siteOrigin) {
+    const optionButtons = document.querySelectorAll('.cps-variant-option');
+    
+    optionButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const variantIndex = parseInt(this.getAttribute('data-variant-index'));
+        const sku = this.getAttribute('data-sku');
+        
+        // Remove active from all siblings
+        optionButtons.forEach(b => b.classList.remove('active'));
+        
+        // Add active to this button
+        this.classList.add('active');
+        
+        console.log('✅ Selected variant index:', variantIndex, 'SKU:', sku);
+        
+        // Display the selected variant directly
+        displaySelectedVariant(siteOrigin, variantIndex);
+      });
+    });
+  }
+  
+  // Display selected variant directly by index
+  function displaySelectedVariant(siteOrigin, variantIndex) {
+    if (!mongoVariants || !mongoVariants[siteOrigin]) return;
+    
+    const regionData = mongoVariants[siteOrigin];
+    const combinations = regionData.variant_combinations || [];
+    
+    const selectedCombo = combinations[variantIndex];
+    
+    if (!selectedCombo) {
+      console.log('⚠️ No variant found at index', variantIndex);
+      updateVariantDisplay(null, null);
+      return;
+    }
+    
+    console.log('✅ Selected combo:', selectedCombo);
+    
+    // Find corresponding SQL variant using variant_id
+    const sqlVariant = productVariantsData.find(v => 
+      v.id === selectedCombo.variant_id || 
+      v.ma_sku === selectedCombo.sku
+    );
+    
+    console.log('✅ Found SQL variant:', sqlVariant);
+    
+    updateVariantDisplay(selectedCombo, sqlVariant);
+  }
+  
+  // Update displayed variant info (price, stock)
+  function updateVariantDisplay(combo, sqlVariant) {
+    const variantPriceElem = document.getElementById('variantPrice');
+    const variantOriginalPriceElem = document.getElementById('variantOriginalPrice');
+    const variantStockText = document.getElementById('variantStockText');
+    const availabilityElem = document.querySelector('.cps-variant-availability');
+    
+    if (!combo) {
+      variantPriceElem.textContent = 'Vui lòng chọn phiên bản';
+      variantOriginalPriceElem.style.display = 'none';
+      if (availabilityElem) availabilityElem.style.display = 'none';
+      window.selectedVariant = null;
+      return;
+    }
+    
+    // Display price from variant_combination (MongoDB) - prioritize combo.price
+    // Fallback to SQL only if combo doesn't have price
+    const salePrice = combo.price || sqlVariant?.gia_ban || 0;
+    const originalPrice = combo.original_price || sqlVariant?.gia_niem_yet || null;
+    
+    console.log('💰 Price display:', {
+      comboPrice: combo.price,
+      comboOriginalPrice: combo.original_price,
+      sqlPrice: sqlVariant?.gia_ban,
+      sqlOriginalPrice: sqlVariant?.gia_niem_yet,
+      finalSalePrice: salePrice,
+      finalOriginalPrice: originalPrice
+    });
+    
+    if (salePrice) {
+      variantPriceElem.textContent = new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+      }).format(salePrice);
+    }
+    
+    if (originalPrice && originalPrice > salePrice) {
+      variantOriginalPriceElem.textContent = new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+      }).format(originalPrice);
+      variantOriginalPriceElem.style.display = 'inline-block';
+    } else {
+      variantOriginalPriceElem.style.display = 'none';
+    }
+    
+    // Display stock from variant_combination (MongoDB) - prioritize combo.stock
+    const stock = combo.stock || sqlVariant?.so_luong_ton_kho || 0;
+    if (availabilityElem) {
+      availabilityElem.style.display = 'flex';
+      variantStockText.textContent = stock > 0 ? `Còn ${stock} sản phẩm` : 'Hết hàng';
+      
+      if (stock > 0) {
+        availabilityElem.classList.remove('out-of-stock');
+        availabilityElem.querySelector('i').className = 'fas fa-check-circle';
+      } else {
+        availabilityElem.classList.add('out-of-stock');
+        availabilityElem.querySelector('i').className = 'fas fa-times-circle';
+      }
+    }
+    
+    // Store selected variant for cart
+    window.selectedVariant = {
+      ...combo,
+      sql_variant_id: sqlVariant?.id,
+      gia_ban: salePrice,
+      gia_niem_yet: originalPrice,
+      so_luong_ton_kho: stock
+    };
+    
+    // Show action buttons when variant is selected
+    const actionButtons = document.getElementById('variantActionButtons');
+    if (actionButtons) {
+      actionButtons.style.display = stock > 0 ? 'flex' : 'none';
+    }
+    
+    console.log('💰 Updated variant display:', window.selectedVariant);
+  }
+  
+  // Site origin selection initialized above in main DOMContentLoaded
+  
+  // Tạo map: variant_id -> SQL variant
   const variantIdMap = new Map();
   if (productVariantsData && Array.isArray(productVariantsData)) {
     productVariantsData.forEach(sqlVariant => {
@@ -1754,53 +2003,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   let selectedOptions = {};
   
-  // Add flash sale badges to variant options
-  function addFlashSaleBadges() {
-    if (!productVariantsData || !Array.isArray(productVariantsData)) return;
-    
-    // Group variants by flash_sale_id to get unique flash sales
-    const flashSaleMap = new Map();
-    
-    productVariantsData.forEach(v => {
-      if (v.isFlashSale && v.flashSale) {
-        // Store flash sale info by flash_sale_id (from backend)
-        const flashSaleId = v.flashSale.id || v.id;
-        if (!flashSaleMap.has(flashSaleId)) {
-          flashSaleMap.set(flashSaleId, v.flashSale);
-        }
-      }
-    });
-    
-    console.log('🔥 Flash Sale Map:', flashSaleMap);
-    
-    variantOptions.forEach(btn => {
-      const optionValue = btn.getAttribute('data-option-value');
-      
-      // Find matching variant with flash sale
-      const flashSaleVariant = productVariantsData.find(v => {
-        if (!v.isFlashSale) return false;
-        
-        // Check if option value matches variant name or attributes
-        const variantName = v.ten_hien_thi || '';
-        return variantName.includes(optionValue) || optionValue.includes(variantName);
-      });
-      
-      if (flashSaleVariant && flashSaleVariant.isFlashSale) {
-        btn.classList.add('flash-sale-variant');
-        
-        // Chỉ thêm icon tia flash nhỏ
-        const badge = document.createElement('span');
-        badge.className = 'flash-sale-badge';
-        badge.innerHTML = `<i class="fas fa-bolt"></i>`;
-        btn.appendChild(badge);
-        
-        console.log('🔥 Added flash sale badge to variant:', optionValue);
-      }
-    });
-  }
-  
-  // Call after DOM is ready
-  addFlashSaleBadges();
+  // Flash sale badges are now added in buildVariantsUI(), no need for separate function
   
   // Flash sale countdown timer
   let flashSaleCountdownInterval = null;
@@ -1873,248 +2076,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  variantOptions.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const optionType = this.getAttribute('data-option-type');
-      const optionValue = this.getAttribute('data-option-value');
-      
-      // Deselect other options of same type
-      document.querySelectorAll(`[data-option-type="${optionType}"]`).forEach(opt => {
-        opt.classList.remove('active');
-      });
-      
-      // Select this option
-      this.classList.add('active');
-      selectedOptions[optionType] = optionValue;
-      
-      console.log('🎨 Selected options:', selectedOptions);
-      
-      // Find matching combination
-      updateVariantInfo();
-    });
-  });
-  
-  function updateVariantInfo() {
-    if (!variantData.combinations) return;
-    
-    const variantDiscountBadge = document.getElementById('variantDiscountBadge');
-    const variantDiscountPercent = document.getElementById('variantDiscountPercent');
-    const discountTag = document.getElementById('discountTag');
-    const discountTagText = document.getElementById('discountTagText');
-    
-    // Find combination that matches selected options
-    const matchingCombo = variantData.combinations.find(combo => {
-      if (!combo.attributes) return false;
-      
-      // Check if all selected options match
-      for (let key in selectedOptions) {
-        const normalizedKey = key.toLowerCase().replace(/\s+/g, '_');
-        if (combo.attributes[normalizedKey] !== selectedOptions[key]) {
-          return false;
-        }
-      }
-      return true;
-    });
-    
-    if (matchingCombo) {
-      console.log('✅ Found matching combination:', matchingCombo);
-      
-      // 🔍 Tìm SQL variant tương ứng với MongoDB combo
-      let sqlVariant = null;
-      
-      // Cách 1: Match theo tên variant
-      if (matchingCombo.name) {
-        const variantKey = matchingCombo.name.toLowerCase();
-        sqlVariant = variantIdMap.get(variantKey);
-      }
-      
-      // Cách 2: Match theo SKU
-      if (!sqlVariant && matchingCombo.sku) {
-        sqlVariant = productVariantsData.find(v => v.ma_sku === matchingCombo.sku);
-      }
-      
-      // Cách 3: Match theo attributes
-      if (!sqlVariant && matchingCombo.attributes) {
-        const comboName = Object.values(matchingCombo.attributes).join(' - ');
-        sqlVariant = productVariantsData.find(v => 
-          v.ten_hien_thi && v.ten_hien_thi.toLowerCase().includes(comboName.toLowerCase())
-        );
-      }
-      
-      console.log('🔍 SQL Variant found:', sqlVariant);
-      
-      // Thêm SQL variant ID vào matchingCombo
-      if (sqlVariant) {
-        matchingCombo.sql_variant_id = sqlVariant.id;
-        matchingCombo.sql_variant = sqlVariant;
-      } else {
-        console.warn('⚠️ Could not find SQL variant for combo:', matchingCombo);
-      }
-      
-      console.log('🔍 Checking flash sale for combo:', matchingCombo);
-      console.log('🔍 Available productVariantsData:', productVariantsData);
-      
-      // 🔥 Kiểm tra xem variant này có flash sale không
-      // Thử nhiều cách matching
-      let flashSaleVariant = null;
-      
-      if (sqlVariant) {
-        // Dùng SQL variant ID để tìm flash sale
-        flashSaleVariant = productVariantsData.find(v => 
-          v.isFlashSale && v.id === sqlVariant.id
-        );
-      }
-      
-      console.log('🔥 Flash sale variant found:', flashSaleVariant);
-      
-      if (flashSaleVariant && flashSaleVariant.flashSale) {
-        // ✅ Hiển thị giá flash sale
-        console.log('🔥 Variant có flash sale:', flashSaleVariant.flashSale);
-        
-        // Hiển thị flash sale info box
-        showFlashSaleInfo(flashSaleVariant.flashSale);
-        
-        variantPriceElem.innerHTML = `<span style="color: #d70018; font-weight: bold;">${new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
-        }).format(flashSaleVariant.flashSale.gia_flash_sale)}</span>`;
-        
-        // Hiển thị giá gốc gạch ngang
-        const formattedOriginalPrice = new Intl.NumberFormat('vi-VN', {
-          style: 'currency',
-          currency: 'VND'
-        }).format(flashSaleVariant.flashSale.gia_goc);
-        
-        variantOriginalPriceElem.textContent = formattedOriginalPrice;
-        variantOriginalPriceElem.style.display = 'inline-block';
-        
-        // Hiển thị % giảm giá flash sale
-        const discountPercent = flashSaleVariant.flashSale.phan_tram_giam;
-        
-        if (variantDiscountBadge && variantDiscountPercent) {
-          variantDiscountPercent.textContent = `-${discountPercent}%`;
-          variantDiscountBadge.style.display = 'inline-block';
-          variantDiscountBadge.style.background = '#d70018';
-        }
-        
-        if (discountTag && discountTagText) {
-          discountTagText.textContent = `-${discountPercent}%`;
-          discountTag.style.display = 'block';
-        }
-        
-      } else {
-        // ✅ Variant thường - ẩn flash sale info
-        hideFlashSaleInfo();
-        
-        // ✅ Variant thường - hiển thị giá bình thường
-        console.log('💰 Variant thường - Price:', matchingCombo.price);
-        
-        if (matchingCombo.price) {
-          variantPriceElem.textContent = new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-          }).format(matchingCombo.price);
-        }
-        
-        // Update original price - use combo's original_price or fallback to SQL
-        const originalPriceToUse = matchingCombo.original_price || sqlOriginalPrice;
-        
-        if (originalPriceToUse) {
-          // Show original price
-          const formattedOriginalPrice = new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-          }).format(originalPriceToUse);
-          
-          variantOriginalPriceElem.textContent = formattedOriginalPrice;
-          variantOriginalPriceElem.style.display = 'inline-block';
-          
-          // Calculate and show discount percentage if price is lower
-          if (originalPriceToUse > matchingCombo.price) {
-            const discountPercent = Math.round((1 - matchingCombo.price / originalPriceToUse) * 100);
-            
-            if (variantDiscountBadge && variantDiscountPercent) {
-              variantDiscountPercent.textContent = `-${discountPercent}%`;
-              variantDiscountBadge.style.display = 'inline-block';
-            }
-            
-            if (discountTag && discountTagText) {
-              discountTagText.textContent = `-${discountPercent}%`;
-              discountTag.style.display = 'block';
-            }
-          } else {
-            if (variantDiscountBadge) {
-              variantDiscountBadge.style.display = 'none';
-            }
-            if (discountTag) {
-              discountTag.style.display = 'none';
-            }
-          }
-        } else {
-          variantOriginalPriceElem.style.display = 'none';
-          if (variantDiscountBadge) {
-            variantDiscountBadge.style.display = 'none';
-          }
-          if (discountTag) {
-            discountTag.style.display = 'none';
-          }
-        }
-      }
-      
-      // Update stock
-      const availabilityElem = document.querySelector('.cps-variant-availability');
-      if (availabilityElem) {
-        availabilityElem.style.display = 'flex';
-        if (matchingCombo.stock && matchingCombo.stock > 0) {
-          variantStockText.textContent = `Còn ${matchingCombo.stock} sản phẩm`;
-          availabilityElem.classList.remove('out-of-stock');
-          availabilityElem.querySelector('i').className = 'fas fa-check-circle';
-        } else {
-          variantStockText.textContent = 'Hết hàng';
-          availabilityElem.classList.add('out-of-stock');
-          availabilityElem.querySelector('i').className = 'fas fa-times-circle';
-        }
-      }
-      
-      // Store selected variant for add to cart
-      window.selectedVariant = matchingCombo;
-      
-      // Show quantity and action buttons when variant is selected
-      const quantitySection = document.getElementById('variantQuantitySection');
-      const actionButtons = document.getElementById('variantActionButtons');
-      if (quantitySection) {
-        quantitySection.style.display = 'flex';
-      }
-      if (actionButtons) {
-        actionButtons.style.display = 'flex';
-      }
-      
-      // Update specs table with selected variant
-      updateSpecsTable();
-    } else {
-      variantPriceElem.textContent = 'Vui lòng chọn đầy đủ phiên bản';
-      variantOriginalPriceElem.style.display = 'none';
-      if (variantDiscountBadge) {
-        variantDiscountBadge.style.display = 'none';
-      }
-      const availabilityElem = document.querySelector('.cps-variant-availability');
-      if (availabilityElem) {
-        availabilityElem.style.display = 'none';
-      }
-      
-      // Hide quantity and action buttons when no variant selected
-      const quantitySection = document.getElementById('variantQuantitySection');
-      const actionButtons = document.getElementById('variantActionButtons');
-      if (quantitySection) {
-        quantitySection.style.display = 'none';
-      }
-      if (actionButtons) {
-        actionButtons.style.display = 'none';
-      }
-      
-      window.selectedVariant = null;
-    }
-  }
+  // OLD SQL-based functions - removed (now using MongoDB site_origin based variants)
   
   // Function to update specs table based on selected variant
   function updateSpecsTable() {
@@ -2130,36 +2092,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Track which variant options are already in specs
     const existingSpecNames = displaySpecs.map(s => s.ten.toLowerCase().trim());
     
-    // Add variant options that don't exist in specs
-    if (variantData && variantData.options && Array.isArray(variantData.options)) {
-      variantData.options.forEach(option => {
-        if (!option.name || !option.values || !Array.isArray(option.values)) return;
-        
-        const optionName = option.name.trim();
-        const optionNameLower = optionName.toLowerCase();
-        
-        // Check if this variant option already exists in specs (exact or partial match)
-        const alreadyExists = existingSpecNames.some(specName => 
-          specName === optionNameLower || 
-          specName.includes(optionNameLower) || 
-          optionNameLower.includes(specName)
-        );
-        
-        if (!alreadyExists) {
-          // Auto-add this variant option to display specs
-          const uniqueValues = [...new Set(option.values)];
-          const aggregatedValue = uniqueValues.join('/');
-          
-          displaySpecs.push({
-            ten: optionName,
-            gia_tri: aggregatedValue,
-            _isAutoAdded: true // Mark as auto-added for debugging
-          });
-          
-          console.log(`➕ Auto-added spec "${optionName}": ${aggregatedValue}`);
-        }
-      });
-    }
+    // Removed: Auto-add variant options (no longer using MongoDB variantData.options)
     
     // Build table with all specs (original + auto-added)
     displaySpecs.forEach(spec => {
@@ -2213,17 +2146,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize specs table on page load
   updateSpecsTable();
   
-  // Auto-select first option of each type
-  if (variantData.options) {
-    variantData.options.forEach(optionGroup => {
-      if (optionGroup.values && optionGroup.values.length > 0) {
-        const firstBtn = document.querySelector(`[data-option-type="${optionGroup.name}"][data-option-value="${optionGroup.values[0]}"]`);
-        if (firstBtn) {
-          firstBtn.click();
-        }
-      }
-    });
-  }
+  // Removed: Auto-select first option (no longer using MongoDB variantData.options)
 
   // =============================================
   // LOAD REVIEWS FROM SQL SERVER
@@ -2361,6 +2284,23 @@ document.addEventListener('DOMContentLoaded', function() {
       // Reviews are already loaded, but you could refresh here if needed
       console.log('📋 Reviews tab activated');
     });
+  }
+  
+  // ========== VARIANT SITE ORIGIN SELECTION ==========
+  console.log('🚀 Initializing site origin selection');
+  populateSiteOriginSelect();
+  
+  // Setup site origin select listener
+  const siteOriginSelect = document.getElementById('siteOriginSelect');
+  if (siteOriginSelect) {
+    siteOriginSelect.addEventListener('change', onSiteOriginChange);
+    
+    // Auto-select first site_origin if only one exists
+    if (mongoVariants && Object.keys(mongoVariants).length === 1) {
+      const firstOrigin = Object.keys(mongoVariants)[0];
+      siteOriginSelect.value = firstOrigin;
+      onSiteOriginChange();
+    }
   }
 });
 </script>
