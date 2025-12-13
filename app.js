@@ -10124,7 +10124,44 @@ app.post('/api/orders', async (req, res) => {
                         );
                     `);
 
-                // 4. Delete from cart
+                // 4. Update SQL product_variants stock
+                console.log('📊 Updating product_variants - variant:', item.variant_id, 'quantity:', item.so_luong);
+                
+                const updateVariantStockRequest = new sql.Request(transaction);
+                const variantUpdateResult = await updateVariantStockRequest
+                    .input('variant_id', sql.UniqueIdentifier, item.variant_id)
+                    .input('quantity', sql.Int, parseInt(item.so_luong))
+                    .query(`
+                        UPDATE product_variants 
+                        SET 
+                            so_luong_ton_kho = so_luong_ton_kho - @quantity,
+                            luot_ban = luot_ban + @quantity,
+                            ngay_cap_nhat = GETDATE()
+                        WHERE id = @variant_id
+                    `);
+                
+                console.log('✅ Variant update result - rows affected:', variantUpdateResult.rowsAffected[0]);
+
+                // 5. Update SQL inventory table
+                console.log('📦 Updating inventory - variant:', item.variant_id, 'warehouse:', item.warehouse_id, 'quantity:', item.so_luong);
+                
+                const updateInventoryRequest = new sql.Request(transaction);
+                const inventoryUpdateResult = await updateInventoryRequest
+                    .input('variant_id', sql.UniqueIdentifier, item.variant_id)
+                    .input('warehouse_id', sql.UniqueIdentifier, item.warehouse_id)
+                    .input('quantity', sql.Int, parseInt(item.so_luong))
+                    .query(`
+                        UPDATE inventory 
+                        SET 
+                            so_luong_kha_dung = so_luong_kha_dung - @quantity,
+                            so_luong_da_dat = so_luong_da_dat + @quantity,
+                            ngay_cap_nhat = GETDATE()
+                        WHERE variant_id = @variant_id
+                    `);
+                
+                console.log('✅ Inventory update result - rows affected:', inventoryUpdateResult.rowsAffected[0]);
+
+                // 6. Delete from cart
                 if (item.cart_item_id) {
                     const deleteCartRequest = new sql.Request(transaction);
                     await deleteCartRequest
@@ -10132,7 +10169,7 @@ app.post('/api/orders', async (req, res) => {
                         .query('DELETE FROM cart_items WHERE id = @cart_item_id');
                 }
 
-                // 5. Update stock in MongoDB
+                // 7. Update stock in MongoDB (optional - for compatibility)
                 try {
                     const allProducts = await DataModel.Mongo.ProductDetail.find({}).lean();
                     
@@ -10155,22 +10192,24 @@ app.post('/api/orders', async (req, res) => {
                     }
                 } catch (mongoError) {
                     console.error('Error updating MongoDB stock:', mongoError);
-                    // Don't rollback transaction for stock update failure
+                    // Don't rollback transaction for MongoDB failure
                 }
             }
 
-            // 6. Update voucher usage
+            // 8. Update voucher usage
             if (voucher_id) {
+                console.log('🎫 Updating voucher usage:', voucher_id);
+                
                 const voucherRequest = new sql.Request(transaction);
                 await voucherRequest
                     .input('voucher_id', sql.UniqueIdentifier, voucher_id)
                     .query(`
                         UPDATE vouchers 
-                        SET so_lan_da_su_dung = so_lan_da_su_dung + 1
+                        SET da_su_dung = da_su_dung + 1
                         WHERE id = @voucher_id
                     `);
 
-                // Add to voucher_usage_history
+                // Add to used_vouchers (not voucher_usage_history)
                 const usageRequest = new sql.Request(transaction);
                 await usageRequest
                     .input('voucher_id', sql.UniqueIdentifier, voucher_id)
@@ -10178,17 +10217,21 @@ app.post('/api/orders', async (req, res) => {
                     .input('don_hang_id', sql.UniqueIdentifier, orderId)
                     .input('gia_tri_giam', sql.Decimal(18, 2), gia_tri_giam_voucher || 0)
                     .query(`
-                        INSERT INTO voucher_usage_history (
+                        INSERT INTO used_vouchers (
                             voucher_id, nguoi_dung_id, don_hang_id, gia_tri_giam, ngay_su_dung
                         )
                         VALUES (
                             @voucher_id, @nguoi_dung_id, @don_hang_id, @gia_tri_giam, GETDATE()
                         )
                     `);
+                
+                console.log('✅ Voucher usage recorded');
             }
 
             // Commit transaction
+            console.log('💾 Committing transaction...');
             await transaction.commit();
+            console.log('✅ Transaction committed successfully!');
 
             res.json({
                 success: true,
